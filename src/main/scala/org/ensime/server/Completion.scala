@@ -8,7 +8,8 @@ import scala.concurrent.Await
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
 import org.ensime.util.Arrays
 import org.ensime.model.{ CompletionInfo, CompletionSignature, SymbolSearchResults }
-import scala.concurrent.duration._
+import akka.util.duration._
+import akka.util.Duration
 
 trait CompletionControl {
   self: RichPresentationCompiler =>

@@ -11,7 +11,8 @@ import org.ensime.util.CanonFile
 import org.ensime.server.RichPresentationCompiler
 import org.ensime.server.SourceFileCandidatesReq
 import org.ensime.server.AbstractFiles
-import scala.concurrent.duration._
+import akka.util.duration._
+import akka.util.Duration
 
 abstract class EntityInfo(val name: String, val members: Iterable[EntityInfo]) {}
 
@@ -245,7 +246,7 @@ trait ModelBuilders { self: RichPresentationCompiler =>
     else if (sym.pos != NoPosition) sym.pos
     else {
       val pack = sym.enclosingPackage.fullName
-      val top = sym.enclosingTopLevelClass
+      val top = sym.toplevelClass
       val name = if (sym.owner.isPackageObjectClass) "package$.class"
       else top.name + (if (top.isModuleClass) "$" else "")
 

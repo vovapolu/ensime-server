@@ -13,7 +13,8 @@ import org.ensime.protocol.SwankProtocol
 import scala.reflect.internal.util.RangePosition
 import scala.reflect.internal.util.BatchSourceFile
 import scala.tools.nsc.io.{ VirtualFile, PlainFile, ZipArchive }
-import scala.concurrent.duration._
+import akka.util.duration._
+import akka.util.Duration
 
 class SwankProtocolSpec extends FunSpec with ShouldMatchers with BeforeAndAfterAll {
 

@@ -183,7 +183,7 @@ trait SemanticHighlighting { self: Global with Helpers =>
     tpes: List[scala.Symbol]): SymbolDesignations = {
     val tpeSet = Set[scala.Symbol]() ++ tpes
     val typed: Response[Tree] = new Response[Tree]
-    askLoadedTyped(p.source, keepLoaded = true, typed)
+    askType(p.source, forceReload = false, typed)
     typed.get.left.toOption match {
       case Some(tree) =>
 

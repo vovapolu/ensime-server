@@ -7,7 +7,7 @@ import org.ensime.model._
 import org.slf4j.LoggerFactory
 import scala.collection.mutable
 import scala.tools.nsc.interactive.{ CompilerControl, Global }
-import scala.tools.nsc.util._
+import scala.tools.nsc.util.FailedInterrupt
 import scala.reflect.internal.util._
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.Reporter
@@ -323,9 +323,9 @@ class RichPresentationCompiler(
   protected def symbolByName(name: String): Option[Symbol] = {
     try {
       val sym = if (name.endsWith("$")) {
-        rootMirror.getModuleByName(newTermName(name.substring(0, name.length - 1)))
+        rootMirror.getModule(newTermName(name.substring(0, name.length - 1)))
       } else {
-        rootMirror.getClassByName(newTypeName(name))
+        rootMirror.getClass(newTypeName(name))
       }
       sym match {
         case NoSymbol => None

@@ -69,7 +69,7 @@ class Server(cacheDir: File, host: String, requestedPort: Int) {
         try {
           val socket = listener.accept()
           logger.info("Got connection, creating handler...")
-          val handler = actorSystem.actorOf(Props(classOf[SocketHandler], socket, protocol, project))
+          val handler = actorSystem.actorOf(Props(new SocketHandler(socket, protocol, project)))
         } catch {
           case e: IOException =>
             logger.error("ENSIME Server: ", e)

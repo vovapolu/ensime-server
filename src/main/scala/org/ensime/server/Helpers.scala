@@ -3,6 +3,9 @@ import scala.tools.nsc.interactive.Global
 
 trait Helpers { self: Global =>
 
+  // 2.10 compat
+  protected val rootMirror = definitions
+
   import rootMirror.{ RootPackage, EmptyPackage }
 
   def applySynonyms(sym: Symbol): List[Symbol] = {

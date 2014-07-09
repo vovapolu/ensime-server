@@ -1,21 +1,14 @@
-branches:
-  only:
-  - master
-  - scala-2.9
 language: scala
 jdk:
 - openjdk6
 scala:
-- 2.10.4
-script:
+- 2.9.2
+- 2.9.3
+-script:
 - sbt ++$TRAVIS_SCALA_VERSION clean test
 - ./.check-diff.sh
-- sbt ++$TRAVIS_SCALA_VERSION clean scoverage:test
 after_success:
 - sbt ++$TRAVIS_SCALA_VERSION clean publish
-- sbt ++$TRAVIS_SCALA_VERSION scalastyleGenerateConfig scalastyle
-# https://github.com/scoverage/sbt-coveralls/issues/18
-#- sbt ++$TRAVIS_SCALA_VERSION coveralls
 env:
   global:
     # travis encrypt -r ensime/ensime-server SONATYPE_USERNAME=<USERNAME>

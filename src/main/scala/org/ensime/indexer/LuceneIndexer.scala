@@ -259,7 +259,8 @@ object LuceneIndex extends StringSimilarity {
     println("Updated: Indexing classpath...")
     ClassIterator.findPublicSymbols(files, handler)
 
-    import scala.concurrent.duration._
+    import akka.util.duration._
+    import akka.util.Duration
     // wait for the worker to complete
     Await.result(ask(indexWorkQ, StopEvent)(Timeout(3.hours)), Duration.Inf)
     val elapsed = System.currentTimeMillis() - t

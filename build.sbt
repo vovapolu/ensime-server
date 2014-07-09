@@ -1,16 +1,18 @@
 import sbt._
 import java.io._
 import net.virtualvoid.sbt.graph.Plugin.graphSettings
-import org.scalastyle.sbt.ScalastylePlugin
-//import CoverallsPlugin.CoverallsKeys._
 
 organization := "org.ensime"
 
 name := "ensime"
 
-scalaVersion := "2.10.4"
+// we also create a 2.9.3 build in travis
+scalaVersion := "2.9.2"
 
 version := "0.9.10-SNAPSHOT"
+
+// needed for akka 2.0.x
+resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies <<= scalaVersion { scalaVersion => Seq(
   "org.apache.lucene"          %  "lucene-core"          % "3.5.0",
@@ -18,14 +20,13 @@ libraryDependencies <<= scalaVersion { scalaVersion => Seq(
   "asm"                        %  "asm-commons"          % "3.3.1",
   "asm"                        %  "asm-util"             % "3.3.1",
   "com.googlecode.json-simple" %  "json-simple"          % "1.1.1" intransitive(),
-  "org.scalatest"              %% "scalatest"            % "2.2.0" % "test",
+  "org.scalatest"              %% "scalatest"            % "1.9.2" % "test",
   "org.scalariform"            %% "scalariform"          % "0.1.4",
   "org.scala-lang"             %  "scala-compiler"       % scalaVersion,
-  "org.scala-lang"             %  "scala-reflect"        % scalaVersion,
-  "com.typesafe.akka"          %% "akka-actor" 	         % "2.3.4",
-  "com.typesafe.akka"          %% "akka-slf4j"           % "2.3.4",
-  "com.typesafe.akka"          %% "akka-testkit"         % "2.3.4" % "test",
-  "ch.qos.logback"             % "logback-classic"       % "1.0.13",
+  "com.typesafe.akka"          %  "akka-actor"           % "2.0.5",
+  "com.typesafe.akka"          %  "akka-slf4j"           % "2.0.5",
+  "com.typesafe.akka"          %  "akka-testkit"         % "2.0.5" % "test",
+  "ch.qos.logback"             %  "logback-classic"      % "1.0.13",
   "org.scala-refactoring"      %% "org.scala-refactoring.library" % "0.6.2"
 )}
 
@@ -53,15 +54,8 @@ val JavaTools = List[Option[String]] (
 
 internalDependencyClasspath in Compile += { Attributed.blank(JavaTools) }
 
-// 0.10 is busted
-addCompilerPlugin("org.brianmckenna" %% "wartremover" % "0.9")
-
 scalacOptions in Compile ++= Seq(
-  "-encoding", "UTF-8", "-target:jvm-1.6", "-feature", "-deprecation",
-  "-Xfatal-warnings",
-  "-language:postfixOps", "-language:implicitConversions"
-  //"-P:wartremover:only-warn-traverser:org.brianmckenna.wartremover.warts.Unsafe"
-  //"-P:wartremover:traverser:org.brianmckenna.wartremover.warts.Unsafe"
+  "-encoding", "UTF-8", "-unchecked" //, "-Xfatal-warnings"
 )
 
 javacOptions in (Compile, compile) ++= Seq (
@@ -76,20 +70,6 @@ maxErrors := 1
 graphSettings
 
 scalariformSettings
-
-ScalastylePlugin.Settings
-
-instrumentSettings
-
-// let's bump this every time we get more tests
-ScoverageKeys.minimumCoverage := 23
-
-// might be buggy
-ScoverageKeys.highlighting := true
-
-ScoverageKeys.failOnMinimumCoverage := true
-
-//coverallsSettings
 
 licenses := Seq("BSD 3 Clause" -> url("http://opensource.org/licenses/BSD-3-Clause"))
 
