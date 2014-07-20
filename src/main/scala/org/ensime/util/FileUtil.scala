@@ -5,7 +5,7 @@ import java.nio.charset.Charset
 import java.security.MessageDigest
 import scala.collection.Seq
 import scala.collection.mutable
-import scala.tools.nsc.io.{ AbstractFile, ZipArchive }
+import scala.reflect.io.{ AbstractFile, ZipArchive }
 
 // This routine copied from http://rosettacode.org/wiki/Walk_a_directory/Recursively#Scala
 
@@ -114,10 +114,18 @@ object FileUtils {
     }).toSet
   }
 
+  // NOTE: Taken from ZipArchive internals to replace deepIterator that will be removed 2.11
+  private def walkIterator(its: Iterator[AbstractFile]): Iterator[AbstractFile] = {
+    its flatMap { f =>
+      if (f.isDirectory) walkIterator(f.iterator)
+      else Iterator(f)
+    }
+  }
+
   def expandSourceJars(fileList: Iterable[CanonFile]): Iterable[AbstractFile] = {
     fileList.flatMap { f =>
       if (isValidArchive(f)) {
-        ZipArchive.fromFile(f).deepIterator.filter(f => isValidSourceName(f.name))
+        walkIterator(ZipArchive.fromFile(f).iterator).filter(f => isValidSourceName(f.name))
       } else {
         Seq(AbstractFile.getFile(f))
       }
@@ -234,12 +242,11 @@ object FileUtils {
    * Creates a temporary directory and provides its location to the given function.  The directory
    * is deleted after the function returns.
    */
-  def withTemporaryDirectory[T](action: File => T): T =
-    {
-      val dir = createTemporaryDirectory
-      try { action(dir) }
-      finally { delete(dir) }
-    }
+  def withTemporaryDirectory[T](action: File => T): T = {
+    val dir = createTemporaryDirectory.getCanonicalFile
+    try { action(dir) }
+    finally { delete(dir) }
+  }
 
   def createTemporaryDirectory: File = createUniqueDirectory(temporaryDirectory)
   def createUniqueDirectory(baseDirectory: File): File =
@@ -322,7 +329,7 @@ object FileUtils {
   def inverseEdits(edits: Iterable[FileEdit]): List[FileEdit] = {
     val result = new mutable.ListBuffer[FileEdit]
     val editsByFile = edits.groupBy(_.file)
-    val rewriteList = editsByFile.map {
+    editsByFile.foreach {
       case (file, edits) =>
         readFile(file) match {
           case Right(contents) =>
@@ -410,6 +417,4 @@ object FileUtils {
       case e: Exception => Left(e)
     }
   }
-
 }
-

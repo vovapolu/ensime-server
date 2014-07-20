@@ -6,11 +6,65 @@ import akka.actor.{ ActorRef, Actor, Props, ActorSystem }
 import org.ensime.protocol._
 import org.ensime.util.WireFormat
 import org.ensime.config.Environment
-import org.slf4j.LoggerFactory
+import org.slf4j._
+import scala.Console
 import scala.util.Properties._
+import org.slf4j.bridge.SLF4JBridgeHandler
+
+/**
+ * For when your upstream dependencies can't be trusted with
+ * stdout and stderr.
+ */
+object ConsoleOutputWorkaround {
+  def redirectScalaConsole(): Unit = {
+    // workaround SI-8717
+    Console.setOut(OutLog)
+    Console.setErr(ErrLog)
+  }
+
+  private val blacklist = Set("sun.", "java.", "scala.Console", "scala.Predef")
+  private abstract class StreamToLog extends OutputStream {
+    val buffer = new StringBuilder
+
+    override def write(b: Int): Unit = try {
+      val c = b.toChar
+      if (c == '\n') {
+        val message = buffer.toString()
+        buffer.clear()
+
+        // reasonably expensive, but not as bad as printing to the
+        // screen (which is very slow and blocking)
+        val breadcrumbs = Thread.currentThread.getStackTrace.
+          toList.drop(2).map(_.getClassName).filterNot {
+            c => blacklist.exists(c.startsWith)
+          }
+        val logName = breadcrumbs.headOption.getOrElse("UNKNOWN SOURCE")
+        val log = LoggerFactory.getLogger(logName)
+
+        doLog(log, message)
+      } else buffer.append(c)
+    } catch {
+      case t: Throwable => // bad logging shouldn't kill the app
+    }
+
+    protected def doLog(log: Logger, message: String): Unit
+  }
+
+  private object ErrLog extends StreamToLog {
+    def doLog(log: Logger, m: String) = log.warn(m)
+  }
+
+  private object OutLog extends StreamToLog {
+    def doLog(log: Logger, m: String) = log.info(m)
+  }
+}
 
 object Server {
-  val logger = LoggerFactory.getLogger("Server")
+  SLF4JBridgeHandler.removeHandlersForRootLogger()
+  SLF4JBridgeHandler.install()
+  ConsoleOutputWorkaround.redirectScalaConsole()
+
+  val log = LoggerFactory.getLogger(classOf[Server])
 
   def main(args: Array[String]): Unit = {
     def setFallbackProp(name: String, fallback: String): Unit = {
@@ -23,7 +77,7 @@ object Server {
 
     val (cacheDir, host, requestedPort) = if (args.length > 0) {
       // legacy interface
-      logger.warn("WARNING: org.ensime.server.Server now takes properties instead of arguments")
+      log.warn("WARNING: org.ensime.server.Server now takes properties instead of arguments")
       args match {
         case Array(a, b, c) => (
           new File(new File(a).getParentFile, ".ensime_cache"), b, c.toInt)
@@ -39,40 +93,41 @@ object Server {
     )
 
     val server = new Server(cacheDir, host, requestedPort)
-    server.startServer
+    server.startSocketListener()
   }
 }
 
 class Server(cacheDir: File, host: String, requestedPort: Int) {
 
-  import Server.logger
+  import Server.log
 
-  def startServer: Unit = {
-    require(!cacheDir.exists || cacheDir.isDirectory, cacheDir + " is not a valid cache directory")
-    cacheDir.mkdirs()
+  require(!cacheDir.exists || cacheDir.isDirectory, cacheDir + " is not a valid cache directory")
+  cacheDir.mkdirs()
 
-    val actorSystem = ActorSystem.create()
-    val listener = new ServerSocket(requestedPort, 0, InetAddress.getByName(host))
-    val actualPort = listener.getLocalPort
+  val actorSystem = ActorSystem.create()
+  // TODO move this to only be started when we want to receive
+  val listener = new ServerSocket(requestedPort, 0, InetAddress.getByName(host))
+  val actualPort = listener.getLocalPort
 
-    logger.info("ENSIME Server on " + host + ":" + actualPort)
-    logger.info("cacheDir=" + cacheDir)
-    logger.info(Environment.info)
+  log.info("ENSIME Server on " + host + ":" + actualPort)
+  log.info("cacheDir=" + cacheDir)
+  log.info(Environment.info)
 
-    writePort(cacheDir, actualPort)
+  writePort(cacheDir, actualPort)
 
-    val protocol = new SwankProtocol
-    val project = new Project(protocol, actorSystem)
+  val protocol = new SwankProtocol
+  val project = new Project(protocol, actorSystem)
 
+  def startSocketListener(): Unit = {
     try {
       while (true) {
         try {
           val socket = listener.accept()
-          logger.info("Got connection, creating handler...")
+          log.info("Got connection, creating handler...")
           val handler = actorSystem.actorOf(Props(new SocketHandler(socket, protocol, project)))
         } catch {
           case e: IOException =>
-            logger.error("ENSIME Server: ", e)
+            log.error("ENSIME Server: ", e)
         }
       }
     } finally {
@@ -80,11 +135,16 @@ class Server(cacheDir: File, host: String, requestedPort: Int) {
     }
   }
 
-  private def writePort(cacheDir: File, port: Int) {
+  def shutdown() {
+    log.info("Shutting down server")
+    listener.close()
+    actorSystem.shutdown()
+  }
+  private def writePort(cacheDir: File, port: Int): Unit = {
     val portfile = new File(cacheDir, "port")
     println("")
     if (!portfile.exists()) {
-      logger.info("CREATING " + portfile)
+      log.info("CREATING " + portfile)
       portfile.createNewFile()
     } else if (portfile.length > 0)
       // LEGACY: older clients create an empty file

@@ -26,7 +26,7 @@ import org.ensime.util._
 import org.ensime.model.{ SymbolSearchResult, TypeSearchResult, MethodSearchResult }
 import org.slf4j.LoggerFactory
 import scala.collection.{ mutable, JavaConversions }
-import scala.concurrent.Await
+import akka.dispatch.Await
 import scala.util.matching.Regex
 import scala.collection.mutable.ListBuffer
 import org.objectweb.asm.Opcodes
@@ -257,8 +257,7 @@ object LuceneIndex extends StringSimilarity {
     log.info("Updated: Indexing classpath...")
     ClassIterator.findPublicSymbols(files, handler)
 
-    import akka.util.duration._
-    import akka.util.Duration
+    import scala.concurrent.backport.duration._
     // wait for the worker to complete
     Await.result(ask(indexWorkQ, StopEvent)(Timeout(3.hours)), Duration.Inf)
     val elapsed = System.currentTimeMillis() - t
@@ -288,6 +287,7 @@ class LuceneIndex {
     includes: Iterable[Regex],
     excludes: Iterable[Regex]): Unit = {
 
+    // TODO this should come from the config!!!
     val dir: File = new File(propOrNull("ensime.cachedir"), "lucene")
 
     val hashed = files.map { f =>
@@ -465,34 +465,5 @@ class LuceneIndex {
     for (w <- indexWriter) {
       w.close()
     }
-  }
-}
-
-// TODO This needs to move into a unit test
-object IndexTest extends LuceneIndex {
-
-  def projectConfig() {
-    println("done")
-  }
-
-  def main(args: Array[String]) {
-    val classpath = "/Users/aemon/projects/ensime/target/scala-2.9.2/classes:/Users/aemon/projects/ensime/lib/org.scala-refactoring_2.9.2-SNAPSHOT-0.5.0-SNAPSHOT.jar"
-    val files = classpath.split(":").map { new File(_) }.toSet
-    val actorSystem = ActorSystem.create()
-    initialize(actorSystem, new File("."), files, List(), List())
-
-    import java.util.Scanner
-    val in = new Scanner(System.in)
-    var line = in.nextLine()
-    while (!line.isEmpty) {
-      val keys = line.split(" ")
-      for (l <- getImportSuggestions(keys, 20)) {
-        for (s <- l) {
-          println(s.name)
-        }
-      }
-      line = in.nextLine()
-    }
-    actorSystem.shutdown()
   }
 }

@@ -1,6 +1,6 @@
 package org.ensime.test
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
+import java.io.{ File, ByteArrayInputStream, ByteArrayOutputStream }
 
 import akka.actor.TypedActor.MethodCall
 import akka.actor.{ TypedProps, TypedActor, ActorSystem }
@@ -10,11 +10,11 @@ import org.ensime.util.SExp
 import org.scalatest.{ BeforeAndAfterAll, FunSpec, ShouldMatchers }
 import org.ensime.protocol.{ OutgoingMessageEvent, SExpConversion }
 import org.ensime.protocol.SwankProtocol
+import scala.reflect.io.ZipArchive
 import scala.reflect.internal.util.RangePosition
 import scala.reflect.internal.util.BatchSourceFile
-import scala.tools.nsc.io.{ VirtualFile, PlainFile, ZipArchive }
-import akka.util.duration._
-import akka.util.Duration
+import scala.tools.nsc.io.{ VirtualFile, PlainFile }
+import scala.concurrent.backport.duration._
 
 class SwankProtocolSpec extends FunSpec with ShouldMatchers with BeforeAndAfterAll {
 
@@ -98,7 +98,7 @@ class SwankProtocolSpec extends FunSpec with ShouldMatchers with BeforeAndAfterA
     }
 
     it("can convert a Position in a ZipArchive entry") {
-      val a = ZipArchive.fromPath("stuff.zip")
+      val a = ZipArchive.fromFile(new File("stuff.zip"))
       val f = new BatchSourceFile(new MockZipEntry("stuff", a), "ABCDEF")
       val p = f.position(2)
       val s = SExpConversion.posToSExp(p)
@@ -117,7 +117,7 @@ class SwankProtocolSpec extends FunSpec with ShouldMatchers with BeforeAndAfterA
     }
 
     it("can convert a RangePosition in a ZipArchive entry") {
-      val a = ZipArchive.fromPath("stuff.zip")
+      val a = ZipArchive.fromFile(new File("stuff.zip"))
       val f = new BatchSourceFile(new MockZipEntry("stuff", a), "ABCDEF")
       val p = new RangePosition(f, 1, 2, 3)
       val s = SExpConversion.posToSExp(p)

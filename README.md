@@ -7,6 +7,7 @@
 [![Coverage Status](https://coveralls.io/repos/bountysource/frontend/badge.png)](https://coveralls.io/r/ensime/ensime-server)
 -->
 
+This is the Scala 2.10 branch of the ENSIME server.
 
 
 This is the Scala 2.9 branch of the ENSIME server.
