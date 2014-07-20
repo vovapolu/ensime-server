@@ -1,6 +1,7 @@
 package org.ensime.server
 
 import org.ensime.model.{ Helpers, SymbolDesignation, SymbolDesignations }
+import org.slf4j.LoggerFactory
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.interactive.Global
 import scala.reflect.internal.util.RangePosition
@@ -10,6 +11,7 @@ trait SemanticHighlighting { self: Global with Helpers =>
 
   class SymDesigsTraverser(p: RangePosition, tpeSet: Set[scala.Symbol]) extends Traverser {
 
+    val log = LoggerFactory.getLogger(getClass)
     val syms = ListBuffer[SymbolDesignation]()
 
     override def traverse(t: Tree) {
@@ -71,13 +73,9 @@ trait SemanticHighlighting { self: Global with Helpers =>
               }
             case Select(qual, selector: Name) =>
               val sym = t.symbol
-              val start = try {
-                qual.pos.end + 1
-              } catch {
-                case _: Throwable => treeP.start
-              }
               val len = selector.decode.length()
-              val end = start + len
+              val end = treeP.end
+              val start = end - len
 
               if (sym.isCaseApplyOrUnapply) {
                 val owner = sym.owner
@@ -92,10 +90,8 @@ trait SemanticHighlighting { self: Global with Helpers =>
                   addAt(start, end, 'valField)
                 }
               } else if (sym.isConstructor) {
-                val start = try { sym.pos.start }
-                catch { case _: Throwable => treeP.start }
-                val end = try { sym.pos.end }
-                catch { case _: Throwable => treeP.end }
+                val start = treeP.start
+                val end = treeP.end
                 addAt(start, end, 'constructor)
               } else if (sym.isMethod) {
                 if (sym.nameString == "apply" || sym.nameString == "update") {}
@@ -171,15 +167,15 @@ trait SemanticHighlighting { self: Global with Helpers =>
           }
         } catch {
           case e: Throwable =>
-            System.err.println("Error in AST traverse:")
-            e.printStackTrace(System.err);
+            log.error("Error in AST traverse:", e)
         }
         super.traverse(t)
       }
     }
   }
 
-  protected def symbolDesignationsInRegion(p: RangePosition,
+  protected def symbolDesignationsInRegion(
+    p: RangePosition,
     tpes: List[scala.Symbol]): SymbolDesignations = {
     val tpeSet = Set[scala.Symbol]() ++ tpes
     val typed: Response[Tree] = new Response[Tree]
@@ -203,7 +199,8 @@ trait SemanticHighlighting { self: Global with Helpers =>
         traverser.traverse(tree)
         SymbolDesignations(
           p.source.file.path,
-          traverser.syms.toList)
+          traverser.syms.toList
+        )
       case None => SymbolDesignations("", List())
     }
   }
