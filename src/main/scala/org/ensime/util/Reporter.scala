@@ -45,8 +45,8 @@ class PresentationReporter(handler: ReportHandler) extends Reporter {
             f,
             formatMessage(msg),
             severity.id,
-            pos.start,
-            pos.end,
+            pos.startOrPoint,
+            pos.endOrPoint,
             pos.line,
             pos.column)
           handler.reportScalaNotes(List(note))

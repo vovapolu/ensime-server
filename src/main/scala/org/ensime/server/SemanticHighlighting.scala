@@ -53,7 +53,7 @@ trait SemanticHighlighting { self: Global with Helpers =>
                   add('param)
                 } else if (sym.isMethod) {
                   add('functionCall)
-                } else if (sym.hasPackageFlag) {
+                } else if (sym.isPackage) {
                   add('package)
                 } else if (sym.isTrait) {
                   add('trait)
@@ -61,9 +61,9 @@ trait SemanticHighlighting { self: Global with Helpers =>
                   add('class)
                 } else if (sym.isModule) {
                   add('object)
-                } else if (sym.isVariable && sym.isLocalToBlock) {
+                } else if (sym.isVariable && sym.isLocal) {
                   add('var)
-                } else if (sym.isValue && sym.isLocalToBlock) {
+                } else if (sym.isValue && sym.isLocal) {
                   add('val)
                 } else if (sym.isVariable) {
                   add('varField)
@@ -100,7 +100,7 @@ trait SemanticHighlighting { self: Global with Helpers =>
                 } else {
                   addAt(start, end, 'functionCall)
                 }
-              } else if (sym.hasPackageFlag) {
+              } else if (sym.isPackage) {
                 addAt(start, end, 'package)
               } else if (sym.isTrait) {
                 addAt(start, end, 'trait)

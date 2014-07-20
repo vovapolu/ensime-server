@@ -7,6 +7,7 @@ import org.ensime.protocol._
 import org.ensime.util.WireFormat
 import org.ensime.config.Environment
 import org.slf4j._
+import scala.Console
 import scala.util.Properties._
 import org.slf4j.bridge.SLF4JBridgeHandler
 
@@ -17,8 +18,8 @@ import org.slf4j.bridge.SLF4JBridgeHandler
 object ConsoleOutputWorkaround {
   def redirectScalaConsole(): Unit = {
     // workaround SI-8717
-    ConsoleRedirect.setOut(OutLog)
-    ConsoleRedirect.setErr(ErrLog)
+    Console.setOut(OutLog)
+    Console.setErr(ErrLog)
   }
 
   private val blacklist = Set("sun.", "java.", "scala.Console", "scala.Predef")
