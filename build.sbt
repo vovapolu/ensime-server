@@ -8,7 +8,7 @@ organization := "org.ensime"
 
 name := "ensime"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.11.1"
 
 version := "0.9.10-SNAPSHOT"
 
@@ -19,7 +19,7 @@ libraryDependencies <<= scalaVersion { scalaVersion => Seq(
   "org.ow2.asm"                %  "asm-util"             % "5.0.3",
   "com.googlecode.json-simple" %  "json-simple"          % "1.1.1" intransitive(),
   "org.scalatest"              %% "scalatest"            % "2.2.0" % "test",
-  "org.scalariform"            %% "scalariform"          % "0.1.4",
+  "com.danieltrinh"            %% "scalariform"          % "0.1.5",
   "org.scala-lang"             %  "scala-compiler"       % scalaVersion,
   "org.scala-lang"             %  "scala-reflect"        % scalaVersion,
   "com.typesafe.akka"          %% "akka-actor" 	         % "2.3.4",
@@ -27,6 +27,7 @@ libraryDependencies <<= scalaVersion { scalaVersion => Seq(
   "com.typesafe.akka"          %% "akka-testkit"         % "2.3.4" % "test",
   "ch.qos.logback"             %  "logback-classic"      % "1.0.13",
   "org.slf4j"                  %  "jul-to-slf4j"         % "1.7.7",
+  "commons-io"                 % "commons-io"            % "2.4" % "test",
   "org.scala-refactoring"      %% "org.scala-refactoring.library" % "0.6.2"
 )}
 
@@ -55,7 +56,7 @@ val JavaTools = List[Option[String]] (
 internalDependencyClasspath in Compile += { Attributed.blank(JavaTools) }
 
 // 0.10 is busted
-addCompilerPlugin("org.brianmckenna" %% "wartremover" % "0.9")
+addCompilerPlugin("org.brianmckenna" % "wartremover_2.11.0-RC4" % "0.9")
 
 scalacOptions in Compile ++= Seq(
   "-encoding", "UTF-8", "-target:jvm-1.6", "-feature", "-deprecation",
@@ -83,7 +84,7 @@ ScalastylePlugin.Settings
 instrumentSettings
 
 // let's bump this every time we get more tests
-ScoverageKeys.minimumCoverage := 25
+ScoverageKeys.minimumCoverage := 41
 
 // might be buggy
 ScoverageKeys.highlighting := true
