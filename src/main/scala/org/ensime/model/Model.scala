@@ -5,14 +5,13 @@ import akka.pattern.Patterns
 import akka.util.Timeout
 
 import scala.collection.mutable
-import scala.concurrent.Await
+import scala.concurrent.backport.Await
 import scala.reflect.internal.util.{ NoPosition, Position }
 import org.ensime.util.CanonFile
 import org.ensime.server.RichPresentationCompiler
 import org.ensime.server.SourceFileCandidatesReq
 import org.ensime.server.AbstractFiles
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.backport.duration._
 
 abstract class EntityInfo(val name: String, val members: Iterable[EntityInfo]) {}
 
@@ -250,7 +249,7 @@ trait ModelBuilders { self: RichPresentationCompiler =>
       val name = if (sym.owner.isPackageObjectClass) "package$.class"
       else top.name + (if (top.isModuleClass) "$" else "")
 
-      import scala.concurrent.ExecutionContext.Implicits.global
+      import scala.concurrent.backport.ExecutionContext.Implicits.global
       val askRes = Patterns.ask(indexer, SourceFileCandidatesReq(pack, name), Timeout(1000.milliseconds))
       val optFut = askRes map (Some(_)) recover { case _ => None }
       val result = Await.result(optFut, Duration.Inf)

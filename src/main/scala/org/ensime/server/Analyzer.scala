@@ -10,7 +10,7 @@ import org.ensime.protocol.ProtocolConversions
 import org.ensime.protocol.ProtocolConst._
 import org.ensime.util._
 import org.slf4j.LoggerFactory
-import scala.concurrent.Future
+import scala.concurrent.backport.Future
 import scala.reflect.internal.util.RangePosition
 import scala.tools.nsc.Settings
 import scala.reflect.internal.util.OffsetPosition

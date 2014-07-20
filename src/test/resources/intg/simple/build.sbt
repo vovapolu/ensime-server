@@ -7,14 +7,12 @@ organization := "org.ensime"
 
 name := "simple"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.9.3"
 
 version := "0.1-SNAPSHOT"
 
 scalacOptions in Compile ++= Seq(
-  "-encoding", "UTF-8", "-target:jvm-1.6", "-feature", "-deprecation",
-  "-Xfatal-warnings",
-  "-language:postfixOps", "-language:implicitConversions"
+  "-encoding", "UTF-8", "-unchecked" //, "-Xfatal-warnings"
 )
 
 javacOptions in (Compile, compile) ++= Seq (
@@ -29,16 +27,6 @@ maxErrors := 1
 scalariformSettings
 
 ScalastylePlugin.Settings
-
-instrumentSettings
-
-// let's bump this every time we get more tests
-ScoverageKeys.minimumCoverage := 0
-
-// might be buggy
-ScoverageKeys.highlighting := true
-
-ScoverageKeys.failOnMinimumCoverage := true
 
 licenses := Seq("BSD 3 Clause" -> url("http://opensource.org/licenses/BSD-3-Clause"))
 

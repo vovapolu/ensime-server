@@ -26,7 +26,7 @@ import org.ensime.util._
 import org.ensime.model.{ SymbolSearchResult, TypeSearchResult, MethodSearchResult }
 import org.slf4j.LoggerFactory
 import scala.collection.{ mutable, JavaConversions }
-import scala.concurrent.Await
+import akka.dispatch.Await
 import scala.util.matching.Regex
 import scala.collection.mutable.ListBuffer
 import org.objectweb.asm.Opcodes
@@ -257,8 +257,7 @@ object LuceneIndex extends StringSimilarity {
     log.info("Updated: Indexing classpath...")
     ClassIterator.findPublicSymbols(files, handler)
 
-    import akka.util.duration._
-    import akka.util.Duration
+    import scala.concurrent.backport.duration._
     // wait for the worker to complete
     Await.result(ask(indexWorkQ, StopEvent)(Timeout(3.hours)), Duration.Inf)
     val elapsed = System.currentTimeMillis() - t

@@ -23,9 +23,9 @@ libraryDependencies <<= scalaVersion { scalaVersion => Seq(
   "org.scalatest"              %% "scalatest"            % "1.9.2" % "test",
   "org.scalariform"            %% "scalariform"          % "0.1.4",
   "org.scala-lang"             %  "scala-compiler"       % scalaVersion,
-  "com.typesafe.akka"          %% "akka-actor" 	         % "2.3.4",
-  "com.typesafe.akka"          %% "akka-slf4j"           % "2.3.4",
-  "com.typesafe.akka"          %% "akka-testkit"         % "2.3.4" % "test",
+  "com.typesafe.akka"          %  "akka-actor" 	         % "2.0.5",
+  "com.typesafe.akka"          %  "akka-slf4j"           % "2.0.5",
+  "com.typesafe.akka"          %  "akka-testkit"         % "2.0.5" % "test",
   "ch.qos.logback"             %  "logback-classic"      % "1.0.13",
   "org.slf4j"                  %  "jul-to-slf4j"         % "1.7.7",
   "commons-io"                 % "commons-io"            % "2.4" % "test",
@@ -56,12 +56,14 @@ val JavaTools = List[Option[String]] (
 
 internalDependencyClasspath in Compile += { Attributed.blank(JavaTools) }
 
+compileOrder := CompileOrder.JavaThenScala
+
 scalacOptions in Compile ++= Seq(
-  "-encoding", "UTF-8", "-unchecked" //, "-Xfatal-warnings"
+  "-encoding", "UTF-8", "-unchecked", "-deprecation", "-Xfatal-warnings"
 )
 
 javacOptions in (Compile, compile) ++= Seq (
-  "-source", "1.6", "-target", "1.6", "-Xlint:all", //"-Werror",
+  "-source", "1.6", "-target", "1.6", "-Xlint:all", "-Werror",
   "-Xlint:-options", "-Xlint:-path", "-Xlint:-processing"
 )
 

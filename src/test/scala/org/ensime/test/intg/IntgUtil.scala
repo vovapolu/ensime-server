@@ -12,8 +12,8 @@ import org.ensime.util._
 import org.scalatest.Assertions
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.dispatch.Await
+import scala.concurrent.backport.duration._
 import scala.reflect.io.{ File => SFile }
 
 /**
@@ -54,14 +54,14 @@ object IntgUtil extends Assertions {
 
       override def receive: Receive = {
         case AsyncRequest(req) =>
-          outstandingAsyncs = outstandingAsyncs :+ (req, sender())
+          outstandingAsyncs :+= (req -> sender)
           processOutstandingRequests()
         case RPCRequest(req) =>
           val rpcId = nextRPCid
           nextRPCid += 1
-          val msg = s"""(:swank-rpc ${req.toWireString} $rpcId)"""
+          val msg = "(:swank-rpc " + req.toWireString + " " + rpcId + ")"
           project ! IncomingMessageEvent(SExp.read(msg))
-          rpcExpectations += (rpcId -> sender())
+          rpcExpectations += (rpcId -> sender)
         // this is the message from the server
         case OutgoingMessageEvent(obj) =>
           log.info("Received message from server: ")
@@ -97,7 +97,7 @@ object IntgUtil extends Assertions {
             throw new IllegalStateException("Unknown type returned from rpc request: " + r)
         }
       } catch {
-        case t: TimeoutException =>
+        case _: Throwable =>
           fail("Timed out waiting for rpc response to " + msg)
       }
     }
@@ -124,7 +124,7 @@ object IntgUtil extends Assertions {
       try {
         Await.result(askRes, Duration.Inf)
       } catch {
-        case t: TimeoutException =>
+        case _: Throwable =>
           fail("Timed out waiting for async msg: " + expected)
       }
 
@@ -169,19 +169,19 @@ object IntgUtil extends Assertions {
 
       // drop the last brace in the ensime file and add some extra confg
       val configStr = dotEnsimeFile.trim.dropRight(1) +
-        s"""
-         | :rootDir "$projectBase"
-         | :source-jars-dir "$projectBase/.ensime_cache/dep-src/source-jars/"
+        """
+         | :rootDir """".stripMargin + projectBase + """"
+         | :source-jars-dir """".stripMargin + projectBase + """/.ensime_cache/dep-src/source-jars/"
          | :active-subproject "simple"
          |)
          """.stripMargin
 
-      val initMsg = s"""(swank:init-project
-                        | $configStr
+      val initMsg = """(swank:init-project
+                        | """.stripMargin + configStr + """
                         | )""".stripMargin
 
       interactor.expectRPC(3 seconds, initMsg,
-        s"""(:ok (:project-name "$projectName" :source-roots ("$projectBase/src/main/scala")))""")
+        """(:ok (:project-name """" + projectName + """" :source-roots ("""" + projectBase + """/src/main/scala")))""")
 
       interactor.expectAsync(30 seconds, """(:background-message 105 "Initializing Analyzer. Please wait...")""")
       interactor.expectAsync(30 seconds, """(:compiler-ready)""")

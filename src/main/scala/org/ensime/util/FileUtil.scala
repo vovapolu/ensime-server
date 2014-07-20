@@ -5,8 +5,7 @@ import java.nio.charset.Charset
 import java.security.MessageDigest
 import scala.collection.Seq
 import scala.collection.mutable
-import scala.tools.nsc.io.AbstractFile
-import scala.reflect.io.ZipArchive
+import scala.reflect.io.{ AbstractFile, ZipArchive }
 
 // This routine copied from http://rosettacode.org/wiki/Walk_a_directory/Recursively#Scala
 

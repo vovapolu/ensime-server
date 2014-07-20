@@ -4,12 +4,11 @@ import akka.pattern.Patterns
 import akka.util.Timeout
 import org.ensime.model.CompletionInfoList
 import scala.collection.mutable
-import scala.concurrent.Await
+import scala.concurrent.backport.Await
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
 import org.ensime.util.Arrays
 import org.ensime.model.{ CompletionInfo, CompletionSignature, SymbolSearchResults }
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.backport.duration._
 
 trait CompletionControl {
   self: RichPresentationCompiler =>
@@ -56,7 +55,7 @@ trait CompletionControl {
     def makeTypeSearchCompletions(prefix: String): List[CompletionInfo] = {
       val req = TypeCompletionsReq(prefix, maxResults)
 
-      import scala.concurrent.ExecutionContext.Implicits.global
+      import scala.concurrent.backport.ExecutionContext.Implicits.global
       val askRes = Patterns.ask(indexer, req, Timeout(1000.milliseconds))
       val optFut = askRes map (Some(_)) recover { case _ => None }
       val result = Await.result(optFut, Duration.Inf)
