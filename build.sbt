@@ -17,16 +17,18 @@ resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/release
 libraryDependencies <<= scalaVersion { scalaVersion => Seq(
   "org.apache.lucene"          %  "lucene-core"          % "3.5.0",
   "org.sonatype.tycho"         %  "org.eclipse.jdt.core" % "3.6.2.v_A76_R36x",
-  "asm"                        %  "asm-commons"          % "3.3.1",
-  "asm"                        %  "asm-util"             % "3.3.1",
+  "org.ow2.asm"                %  "asm-commons"          % "5.0.3",
+  "org.ow2.asm"                %  "asm-util"             % "5.0.3",
   "com.googlecode.json-simple" %  "json-simple"          % "1.1.1" intransitive(),
   "org.scalatest"              %% "scalatest"            % "1.9.2" % "test",
   "org.scalariform"            %% "scalariform"          % "0.1.4",
   "org.scala-lang"             %  "scala-compiler"       % scalaVersion,
-  "com.typesafe.akka"          %  "akka-actor"           % "2.0.5",
-  "com.typesafe.akka"          %  "akka-slf4j"           % "2.0.5",
-  "com.typesafe.akka"          %  "akka-testkit"         % "2.0.5" % "test",
+  "com.typesafe.akka"          %% "akka-actor" 	         % "2.3.4",
+  "com.typesafe.akka"          %% "akka-slf4j"           % "2.3.4",
+  "com.typesafe.akka"          %% "akka-testkit"         % "2.3.4" % "test",
   "ch.qos.logback"             %  "logback-classic"      % "1.0.13",
+  "org.slf4j"                  %  "jul-to-slf4j"         % "1.7.7",
+  "commons-io"                 % "commons-io"            % "2.4" % "test",
   "org.scala-refactoring"      %% "org.scala-refactoring.library" % "0.6.2"
 )}
 

@@ -1,4 +1,5 @@
 package org.ensime.model
+
 import scala.tools.nsc.interactive.Global
 
 trait Helpers { self: Global =>
@@ -169,8 +170,8 @@ trait Helpers { self: Global =>
   }
 
   /*
-  * Get the valid member symbols of the package denoted by aSym.
-  */
+   * Get the valid member symbols of the package denoted by aSym.
+   */
   def packageMembers(parent: Symbol): Iterable[Symbol] = {
 
     def isRoot(s: Symbol) = s.isRoot || s.isRootPackage
