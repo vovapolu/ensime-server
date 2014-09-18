@@ -64,9 +64,9 @@ class SemanticHighlighting(val global: RichPresentationCompiler) extends Compile
           } else {
             add('functionCall)
           }
-        } else if (sym.isVariable && sym.isLocalToBlock) {
+        } else if (sym.isVariable && sym.isLocal) {
           add('var)
-        } else if (sym.isValue && sym.isLocalToBlock) {
+        } else if (sym.isValue && sym.isLocal) {
           add('val)
         } else if (sym.hasPackageFlag) {
           add('package)

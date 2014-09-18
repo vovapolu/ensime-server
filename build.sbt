@@ -12,7 +12,7 @@ organization := "org.ensime"
 
 name := "ensime"
 
-scalaVersion := "2.11.2"
+scalaVersion := "2.10.4"
 
 version := "0.9.10-SNAPSHOT"
 
@@ -40,7 +40,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka"          %% "akka-testkit"         % "2.3.6" % "test",
   "commons-io"                 %  "commons-io"           % "2.4"   % "test",
   "org.scalatest"              %% "scalatest"            % "2.2.2" % "test",
-  "org.scalamock"              %% "scalamock-scalatest-support" % "3.1.2" % "test",
+  "org.scalamock"              %% "scalamock-scalatest-support" % "3.1.RC1" % "test",
   "ch.qos.logback"             %  "logback-classic"      % "1.1.2",
   "org.slf4j"                  %  "jul-to-slf4j"         % "1.7.7",
   "org.slf4j"                  %  "jcl-over-slf4j"       % "1.7.7",
