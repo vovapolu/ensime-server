@@ -1,35 +1,51 @@
 import sbt._
 import java.io._
+import java.util.concurrent.atomic.AtomicReference
 import net.virtualvoid.sbt.graph.Plugin.graphSettings
-import org.scalastyle.sbt.ScalastylePlugin
-//import CoverallsPlugin.CoverallsKeys._
+import scoverage.ScoverageSbtPlugin.instrumentSettings
+import org.scoverage.coveralls.CoverallsPlugin.coverallsSettings
+
+// NOTE: the following skips the slower tests
+// test-only * -- -l SlowTest
 
 organization := "org.ensime"
 
 name := "ensime"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.11.2"
 
 version := "0.9.10-SNAPSHOT"
 
-libraryDependencies <<= scalaVersion { scalaVersion => Seq(
-  "org.apache.lucene"          %  "lucene-core"          % "3.5.0",
+resolvers += Resolver.sonatypeRepo("snapshots")
+
+libraryDependencies ++= Seq(
+  "com.github.stacycurl"       %% "pimpathon-core"       % "1.0.0",
+  "org.parboiled"              %% "parboiled-scala"      % "1.1.6",
+  "com.h2database"             %  "h2"                   % "1.4.181",
+  "com.typesafe.slick"         %% "slick"                % "2.1.0",
+  "com.jolbox"                 %  "bonecp"               % "0.8.0.RELEASE",
+  "org.apache.commons"         %  "commons-vfs2"         % "2.0" intransitive(),
+  // lucene 4.8+ needs Java 7: http://www.gossamer-threads.com/lists/lucene/general/225300
+  "org.apache.lucene"          %  "lucene-core"          % "4.7.2",
+  "org.apache.lucene"          %  "lucene-analyzers-common" % "4.7.2",
   "org.sonatype.tycho"         %  "org.eclipse.jdt.core" % "3.6.2.v_A76_R36x",
   "org.ow2.asm"                %  "asm-commons"          % "5.0.3",
   "org.ow2.asm"                %  "asm-util"             % "5.0.3",
-  "com.googlecode.json-simple" %  "json-simple"          % "1.1.1" intransitive(),
-  "org.scalatest"              %% "scalatest"            % "2.2.0" % "test",
-  "org.scalariform"            %% "scalariform"          % "0.1.4",
-  "org.scala-lang"             %  "scala-compiler"       % scalaVersion,
-  "org.scala-lang"             %  "scala-reflect"        % scalaVersion,
-  "com.typesafe.akka"          %% "akka-actor" 	         % "2.3.4",
-  "com.typesafe.akka"          %% "akka-slf4j"           % "2.3.4",
-  "com.typesafe.akka"          %% "akka-testkit"         % "2.3.4" % "test",
-  "ch.qos.logback"             %  "logback-classic"      % "1.0.13",
+  "com.danieltrinh"            %% "scalariform"          % "0.1.5",
+  "org.scala-lang"             %  "scala-compiler"       % scalaVersion.value,
+  "org.scala-lang"             %  "scala-reflect"        % scalaVersion.value,
+  "org.scala-lang"             %  "scalap"               % scalaVersion.value,
+  "com.typesafe.akka"          %% "akka-actor"           % "2.3.6",
+  "com.typesafe.akka"          %% "akka-slf4j"           % "2.3.6",
+  "com.typesafe.akka"          %% "akka-testkit"         % "2.3.6" % "test",
+  "commons-io"                 %  "commons-io"           % "2.4"   % "test",
+  "org.scalatest"              %% "scalatest"            % "2.2.2" % "test",
+  "org.scalamock"              %% "scalamock-scalatest-support" % "3.1.2" % "test",
+  "ch.qos.logback"             %  "logback-classic"      % "1.1.2",
   "org.slf4j"                  %  "jul-to-slf4j"         % "1.7.7",
-  "commons-io"                 % "commons-io"            % "2.4" % "test",
+  "org.slf4j"                  %  "jcl-over-slf4j"       % "1.7.7",
   "org.scala-refactoring"      %% "org.scala-refactoring.library" % "0.6.2"
-)}
+)
 
 // epic hack to get the tools.jar JDK dependency
 val JavaTools = List[Option[String]] (
@@ -55,9 +71,6 @@ val JavaTools = List[Option[String]] (
 
 internalDependencyClasspath in Compile += { Attributed.blank(JavaTools) }
 
-// 0.10 is busted
-addCompilerPlugin("org.brianmckenna" %% "wartremover" % "0.9")
-
 scalacOptions in Compile ++= Seq(
   "-encoding", "UTF-8", "-target:jvm-1.6", "-feature", "-deprecation",
   "-Xfatal-warnings",
@@ -75,23 +88,69 @@ javacOptions in doc ++= Seq("-source", "1.6")
 
 maxErrors := 1
 
+fork := true
+
+//tests should be isolated, but let's keep an eye on stability
+//parallelExecution in Test := false
+
+// passes locations of example jars to the tests
+def jars(cp: Classpath): String = {
+  for {
+    att <- cp
+    file = att.data
+    if file.isFile & file.getName.endsWith(".jar")
+  } yield file.getAbsolutePath
+}.mkString(",")
+
+// passes the location of ENSIME's class dirs to the tests
+def classDirs(cp: Classpath): String = {
+  for {
+    att <- cp
+    file = att.data
+    if file.isDirectory
+  } yield file.getAbsolutePath
+}.mkString(",")
+
+javaOptions ++= Seq("-XX:MaxPermSize=128m", "-Xmx1g", "-XX:+UseConcMarkSweepGC")
+
+javaOptions in Test ++= infoForTests.value
+
+javaOptions in Test += "-Dakka.actor.debug.receive=on"
+
+lazy val infoForTests = TaskKey[Seq[String]]("infoForTests", "for use in tests")
+
+// TODO: cache the results
+// http://stackoverflow.com/questions/25410484
+infoForTests := Seq(
+  "-Densime.compile.jars=" + jars((fullClasspath in Compile).value),
+  "-Densime.test.jars=" + jars((fullClasspath in Test).value),
+  "-Densime.compile.classDirs=" + classDirs((fullClasspath in Compile).value),
+  "-Densime.test.classDirs=" + classDirs((fullClasspath in Test).value),
+  "-Dscala.version=" + scalaVersion.value,
+  // sorry! this puts a source/javadoc dependency on running our tests
+  "-Densime.jars.sources=" + (updateClassifiers in Test).value.select(
+    artifact = artifactFilter(classifier = "sources")
+  ).mkString(",")
+)
+
+// full stacktraces in scalatest
+testOptions in Test += Tests.Argument("-oF")
+
 graphSettings
 
 scalariformSettings
 
-ScalastylePlugin.Settings
-
 instrumentSettings
 
 // let's bump this every time we get more tests
-ScoverageKeys.minimumCoverage := 41
+ScoverageKeys.minimumCoverage := 57
 
 // might be buggy
 ScoverageKeys.highlighting := true
 
 ScoverageKeys.failOnMinimumCoverage := true
 
-//coverallsSettings
+coverallsSettings
 
 licenses := Seq("BSD 3 Clause" -> url("http://opensource.org/licenses/BSD-3-Clause"))
 
