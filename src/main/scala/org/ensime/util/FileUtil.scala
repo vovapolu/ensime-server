@@ -1,12 +1,16 @@
 package org.ensime.util
 
 import java.io._
+import java.net.URI
 import java.nio.charset.Charset
 import java.security.MessageDigest
+import org.apache.commons.vfs2.FileObject
 import scala.collection.Seq
 import scala.collection.mutable
 import scala.tools.nsc.io.AbstractFile
 import scala.reflect.io.ZipArchive
+
+import pimpathon.file._
 
 // This routine copied from http://rosettacode.org/wiki/Walk_a_directory/Recursively#Scala
 
@@ -49,70 +53,73 @@ object FileEdit {
 /** A wrapper around file, allowing iteration either on direct children or on directory tree */
 class RichFile(file: File) {
 
-  def children = new Iterable[File] {
-    override def iterator = if (file.isDirectory) file.listFiles.iterator else Iterator.empty
-  }
+  def andTree: Iterable[File] = Seq(file) ++ file.children.flatMap(child => new RichFile(child).andTree)
 
-  def andTree: Iterable[File] = Seq(file) ++ children.flatMap(child => new RichFile(child).andTree)
+  def canon: File =
+    try file.getCanonicalFile
+    catch {
+      case e: Exception => file.getAbsoluteFile
+    }
 
+  def rebaseIfRelative(base: File): File =
+    if (file.isAbsolute) file
+    else base / file.getPath
 }
 
 /** implicitely enrich java.io.File with methods of RichFile */
 object RichFile {
-  implicit def toRichFile(file: File) = new RichFile(file)
+  implicit def toRichFile(file: File): RichFile = new RichFile(file)
+}
+
+class RichFileObject(fo: FileObject) {
+  // None if the fo is not an entry in an archive
+  def pathWithinArchive: Option[String] = {
+    val uri = fo.getName.getURI
+    if (uri.startsWith("jar") || uri.startsWith("zip"))
+      Some(fo.getName.getRoot.getRelativeName(fo.getName))
+    else None
+  }
+
+  // assumes it is a local file
+  def asLocalFile: File = {
+    require(fo.getName.getURI.startsWith("file"))
+    new File(new URI(fo.getName.getURI))
+  }
+}
+
+object RichFileObject {
+  implicit def toRichFileObject(fo: FileObject): RichFileObject = new RichFileObject(fo)
 }
 
 class CanonFile private (path: String) extends File(path)
 
 object CanonFile {
-  def apply(file: File) = {
+  def apply(file: File): CanonFile = {
     try {
       new CanonFile(file.getCanonicalPath)
     } catch {
       case e: Exception => new CanonFile(file.getAbsolutePath)
     }
   }
-  def apply(str: String) = {
-    try {
-      new CanonFile(new File(str).getCanonicalPath)
-    } catch {
-      case e: Exception => new CanonFile(str)
-    }
-  }
+
+  def apply(str: String): CanonFile = apply(new File(str))
 }
 
 object FileUtils {
 
-  def error[T](s: String): T = {
+  private def error[T](s: String): T = {
     throw new IOException(s)
   }
 
-  /** The maximum number of times a unique temporary filename is attempted to be created.*/
-  private val MaximumTries = 10
-  /** The producer of randomness for unique name generation.*/
-  private lazy val random = new java.util.Random
-  val temporaryDirectory = new File(System.getProperty("java.io.tmpdir"))
-
-  implicit def toRichFile(file: File) = new RichFile(file)
-
   implicit def toCanonFile(file: File): CanonFile = CanonFile(file)
 
+  import RichFile._
   def expandRecursively(rootDir: File, fileList: Iterable[File], isValid: (File => Boolean)): Set[CanonFile] = {
     (for (
       f <- fileList;
       files = if (f.isAbsolute) f.andTree else new File(rootDir, f.getPath).andTree;
       file <- files if isValid(file)
     ) yield { toCanonFile(file) }).toSet
-  }
-
-  def expand(rootDir: File, fileList: Iterable[File], isValid: (File => Boolean)): Set[CanonFile] = {
-    (for (
-      f <- fileList;
-      files = List(if (f.isAbsolute) f else new File(rootDir, f.getPath));
-      file <- files if isValid(file)
-    ) yield {
-      toCanonFile(file)
-    }).toSet
   }
 
   // NOTE: Taken from ZipArchive internals to replace deepIterator that will be removed 2.11
@@ -157,15 +164,15 @@ object FileUtils {
   def isValidSourceName(filename: String) = {
     filename.endsWith(".scala") || filename.endsWith(".java")
   }
+
   def isValidSourceFile(f: File): Boolean = {
     f.exists && !f.isHidden && isValidSourceName(f.getName)
   }
+
   def isValidSourceOrArchive(f: File): Boolean = {
     isValidSourceFile(f) || isValidArchive(f)
   }
-  def isJavaSourceFile(f: File): Boolean = {
-    f.exists && f.getName.endsWith(".java")
-  }
+
   def isScalaSourceFile(f: File): Boolean = {
     f.exists && f.getName.endsWith(".scala")
   }
@@ -183,20 +190,11 @@ object FileUtils {
       error(failBase)
   }
 
-  def wrapNull(a: Array[File]) =
-    {
-      if (a == null)
-        new Array[File](0)
-      else
-        a
-    }
-
-  def listFiles(filter: java.io.FileFilter)(dir: File): Array[File] = wrapNull(dir.listFiles(filter))
-  def listFiles(dir: File, filter: java.io.FileFilter): Array[File] = wrapNull(dir.listFiles(filter))
-  def listFiles(dir: File): Array[File] = wrapNull(dir.listFiles())
+  def listFiles(dir: File): Array[File] = Option(dir.listFiles()).getOrElse(new Array[File](0))
 
   def delete(files: Iterable[File]): Unit = files.foreach(delete)
-  def delete(file: File) {
+
+  def delete(file: File): Unit = {
     if (file.isDirectory) {
       delete(listFiles(file))
       file.delete
@@ -239,53 +237,6 @@ object FileUtils {
     hexifyBytes(hash.digest())
   }
 
-  /**
-   * Creates a temporary directory and provides its location to the given function.  The directory
-   * is deleted after the function returns.
-   */
-  def withTemporaryDirectory[T](action: File => T): T = {
-    val dir = createTemporaryDirectory.getCanonicalFile
-    try { action(dir) }
-    finally { delete(dir) }
-  }
-
-  def createTemporaryDirectory: File = createUniqueDirectory(temporaryDirectory)
-  def createUniqueDirectory(baseDirectory: File): File =
-    {
-      def create(tries: Int): File =
-        {
-          if (tries > MaximumTries)
-            error("Could not create temporary directory.")
-          else {
-            val randomName = "sbt_" + java.lang.Integer.toHexString(random.nextInt)
-            val f = new File(baseDirectory, randomName)
-
-            try { createDirectory(f); f }
-            catch { case e: Exception => create(tries + 1) }
-          }
-        }
-      create(0)
-    }
-  def withTemporaryFile[T](prefix: String, postfix: String)(action: File => T): T =
-    {
-      val file = File.createTempFile(prefix, postfix)
-      try { action(file) }
-      finally { file.delete() }
-    }
-
-  def readFileToByteArray(file: File): Array[Byte] = {
-    val length = file.length.toInt
-    val array = new Array[Byte](length)
-    val in = new FileInputStream(file)
-    var offset = 0
-    while (offset < length) {
-      var count = in.read(array, offset, length - offset)
-      offset += count
-    }
-    in.close()
-    array
-  }
-
   def readFile(file: File): Either[IOException, String] = {
     val cs = Charset.defaultCharset()
     try {
@@ -312,7 +263,7 @@ object FileUtils {
 
   def replaceFileContents(file: File, newContents: String): Either[Exception, Unit] = {
     try {
-      val writer = new FileWriter(file, false)
+      val writer = new FileWriter(file)
       try {
         writer.write(newContents)
         Right(())
@@ -331,11 +282,11 @@ object FileUtils {
     val result = new mutable.ListBuffer[FileEdit]
     val editsByFile = edits.groupBy(_.file)
     editsByFile.foreach {
-      case (file, edits) =>
+      case (file, fileEdits) =>
         readFile(file) match {
           case Right(contents) =>
             var dy = 0
-            for (ch <- edits) {
+            for (ch <- fileEdits) {
               ch match {
                 case ch: TextEdit =>
                   val original = contents.substring(ch.from, ch.to)
@@ -361,10 +312,10 @@ object FileUtils {
     try {
       val rewriteList = newFiles.map { ed => (ed.file, ed.text) } ++
         editsByFile.map {
-          case (file, changes) =>
+          case (file, fileChanges) =>
             readFile(file) match {
               case Right(contents) =>
-                val newContents = FileEdit.applyEdits(changes.toList, contents)
+                val newContents = FileEdit.applyEdits(fileChanges.toList, contents)
                 (file, newContents)
               case Left(e) => throw e
             }

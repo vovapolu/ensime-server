@@ -1,23 +1,96 @@
 package org.ensime.util
 
 import scala.collection.immutable.Map
-import scala.util.parsing.combinator._
-import scala.util.parsing.input
+
+object SExpExplorer {
+  def matchError(msg: String) = new MatchError(msg)
+  def apply(exp: SExp): SExpExplorer = {
+    exp match {
+      case l: SExpList =>
+        new SExpListExplorer(l)
+      case _ => throw matchError("Cannot convert type " + exp.getClass)
+    }
+  }
+}
+
+import SExpExplorer._
+
+abstract class SExpExplorer(val raw: SExp) {
+  def asList: SExpListExplorer = throw matchError("Not a list")
+  def asMap: SExpMapExplorer = throw matchError("Not a list/map")
+}
+
+class SExpListExplorer(list: SExpList) extends SExpExplorer(list) {
+  override def asMap = new SExpMapExplorer(list)
+  override def asList = this
+  def get(index: Int): SExpExplorer = SExpExplorer(list.iterator.toList(index))
+}
+
+class SExpMapExplorer(list: SExpList) extends SExpListExplorer(list) {
+  val map = list.toKeywordMap
+
+  def getString(name: String): String = getStringOpt(name).getOrElse(throw matchError("required key " + name + " not found"))
+
+  def getStringOpt(name: String): Option[String] = map.get(KeywordAtom(name)) match {
+    case Some(StringAtom(s)) => Some(s)
+    case Some(_) => throw matchError("Key " + name + " does not refer to a string element")
+    case None => None
+  }
+
+  def getStringListOpt(name: String): Option[List[String]] = getStringListOpt(KeywordAtom(name))
+  def getStringListOpt(name: KeywordAtom): Option[List[String]] = {
+    map.get(name) match {
+      case Some(SExpList(items: Iterable[_])) => Some(items.map {
+        case s: StringAtom => s.value
+        case _ =>
+          throw matchError("Expecting a list of string values at key: " + name)
+      }.toList)
+      case Some(NilAtom) => Some(List.empty)
+      case _ =>
+        None
+    }
+  }
+
+  def getStringList(name: String): List[String] = getStringList(KeywordAtom(name))
+  def getStringList(name: KeywordAtom): List[String] = getStringListOpt(name).getOrElse(
+    throw matchError("Expecting a list of string values at key: " + name))
+
+  def getList(name: String): List[SExpExplorer] = getList(KeywordAtom(name))
+  def getList(name: KeywordAtom): List[SExpExplorer] = {
+    map.get(name) match {
+      case Some(SExpList(items)) =>
+        items.map(SExpExplorer(_)).toList
+      case _ =>
+        throw matchError("Expecting a list of string values at key: " + name)
+    }
+  }
+}
 
 sealed trait SExp extends WireFormat {
-  def toReadableString(debug: Boolean = false): String = toString
-  override def toWireString: String = toReadableString(debug = false)
+  override def toWireString: String = toString
   def toScala: Any = toString
 }
+
+object SExpList {
+  def apply(): SExpList = SExpList(Nil)
+}
+trait Atom extends SExp
 
 case class SExpList(items: List[SExp]) extends SExp with Iterable[SExp] {
 
   override def iterator = items.iterator
 
+  override def toScala: Any = items.map(_.toScala)
   override def toString() = "(" + items.mkString(" ") + ")"
 
-  override def toReadableString(debug: Boolean) = {
-    "(" + items.map { _.toReadableString(debug) }.mkString(" ") + ")"
+  /**
+   * @return If list contents are all Strings, items converted to a List[String] else None
+   */
+  def toStringList: Option[List[String]] = {
+    Some(items.map {
+      case StringAtom(value) => value
+      case _ => return None
+    })
   }
 
   def toKeywordMap: Map[KeywordAtom, SExp] = {
@@ -26,127 +99,74 @@ case class SExpList(items: List[SExp]) extends SExp with Iterable[SExp] {
       case (key: KeywordAtom) :: (sexp: SExp) :: rest =>
         m += (key -> sexp)
       case _ =>
+        throw new IllegalArgumentException("SExp is not of correct form (keyword value)* to convert to map")
     }
     m
   }
 
-  def toSymbolMap: Map[scala.Symbol, Any] = {
-    var m = Map[scala.Symbol, Any]()
-    items.sliding(2, 2).foreach {
-      case SymbolAtom(key) :: (sexp: SExp) :: rest =>
-        m += (Symbol(key) -> sexp.toScala)
+  def toSymbolMap: Option[Map[scala.Symbol, Any]] = {
+    Some(items.sliding(2, 2).map {
+      case SymbolAtom(key) :: (sexp: Atom) :: Nil =>
+        Symbol(key) -> sexp.toScala
       case _ =>
-    }
-    m
+        return None
+    }.toMap)
   }
 }
 
 object BooleanAtom {
 
   def unapply(z: SExp): Option[Boolean] = z match {
-    case TruthAtom() => Some(true)
-    case NilAtom() => Some(false)
+    case TruthAtom => Some(true)
+    case NilAtom => Some(false)
     case _ => None
   }
 
 }
 
-abstract class BooleanAtom extends SExp {
+abstract class BooleanAtom extends Atom {
   def toBool: Boolean
   override def toScala = toBool
 }
 
-case class NilAtom() extends BooleanAtom {
+case object NilAtom extends BooleanAtom {
   override def toString = "nil"
   override def toBool: Boolean = false
 
 }
-case class TruthAtom() extends BooleanAtom {
+case object TruthAtom extends BooleanAtom {
   override def toString = "t"
   override def toBool: Boolean = true
   override def toScala: Boolean = true
 }
-case class StringAtom(value: String) extends SExp {
-  override def toString = value
-  override def toReadableString(debug: Boolean) = {
-    if (debug && value.length() > 500) {
-      escapeString(value.substring(0, 500) + "...")
-    } else {
-      escapeString(value)
-    }
-  }
+case class StringAtom(value: String) extends Atom {
+  override def toString = escapeString(value)
+  override def toScala = value
+
   def escapeString(s: String) = {
-    val printable = s.replace("\\", "\\\\").replace("\"", "\\\"")
+    val printable = s.flatMap {
+      case '\\' => List('\\', '\\')
+      case '"' => List('\\', '"')
+      case '\n' => List('\\', 'n')
+      case '\r' => List('\\', 'r')
+      case '\t' => List('\\', 't')
+      case x => List(x)
+    }
     "\"" + printable + "\""
   }
 }
-case class IntAtom(value: Int) extends SExp {
+case class IntAtom(value: Int) extends Atom {
   override def toString = String.valueOf(value)
   override def toScala = value
 }
-case class SymbolAtom(value: String) extends SExp {
+case class SymbolAtom(value: String) extends Atom {
   override def toString = value
 }
-case class KeywordAtom(value: String) extends SExp {
+case class KeywordAtom(value: String) extends Atom {
   override def toString = value
 }
 
-object StringParser extends RegexParsers {
-  override def skipWhitespace = false
-
-  def string = "\"" ~ rep(string_char) ~ "\"" ^^ {
-    case "\"" ~ l ~ "\"" => l.mkString
-  }
-  lazy val string_char = string_escaped_char | string_lone_backslash | string_normal_chars
-  lazy val string_escaped_char = """\\["\\]""".r ^^ { _.charAt(1) }
-  lazy val string_lone_backslash = "\\"
-  lazy val string_normal_chars = """[^"\\]+""".r ^^ { _.mkString }
-}
-
-object SExp extends RegexParsers {
-
-  // Parse strings using an auxiliary parser. This is because
-  // spaces inside strings shouldn't be skipped.
-  lazy val string = new Parser[StringAtom] {
-    def apply(in: Input) = {
-      val source = in.source
-      val offset = in.offset
-      val start = handleWhiteSpace(source, offset)
-      StringParser.string(in.drop(start - offset)) match {
-        case StringParser.Success(value, next) => Success(StringAtom(value), next)
-        case StringParser.Failure(errMsg, next) => Failure(errMsg, next)
-        case StringParser.Error(errMsg, next) => Error(errMsg, next)
-      }
-    }
-  }
-  lazy val sym = regex("[a-zA-Z][a-zA-Z0-9-:]*".r) ^^ { s =>
-    if (s == "nil") NilAtom()
-    else if (s == "t") TruthAtom()
-    else SymbolAtom(s)
-  }
-  lazy val keyword = regex(":[a-zA-Z][a-zA-Z0-9-:]*".r) ^^ KeywordAtom
-  lazy val number = regex("-?[0-9]+".r) ^^ { s => IntAtom(s.toInt) }
-  lazy val list = literal("(") ~> rep(expr) <~ literal(")") ^^ SExpList.apply
-  lazy val expr: Parser[SExp] = list | keyword | string | number | sym
-
-  def read(r: input.Reader[Char]): SExp = {
-    val result: ParseResult[SExp] = expr(r)
-
-    result match {
-      case Success(value, next) => value
-      case Failure(errMsg, next) =>
-        println(errMsg)
-        NilAtom()
-      case Error(errMsg, next) =>
-        println(errMsg)
-        NilAtom()
-    }
-  }
-
-  def read(s: String): SExp = {
-    SExp.read(new input.CharSequenceReader(s))
-  }
-
+object SExp {
   def apply(items: SExp*): SExpList = {
     SExpList(items.toList)
   }
@@ -162,7 +182,7 @@ object SExp extends RegexParsers {
   }
   def propList(items: Iterable[(String, SExp)]): SExpList = {
     val nonNil = items.filter {
-      case (s, NilAtom()) => false
+      case (s, NilAtom) => false
       case (s, SExpList(items)) if items.isEmpty => false
       case _ => true
     }
@@ -181,46 +201,19 @@ object SExp extends RegexParsers {
     IntAtom(value)
   }
 
-  implicit def longToSExp(value: Long): SExp = {
-    IntAtom(value.toInt)
-  }
-
   implicit def boolToSExp(value: Boolean): SExp = {
     if (value) {
-      TruthAtom()
+      TruthAtom
     } else {
-      NilAtom()
+      NilAtom
     }
   }
 
   implicit def symbolToSExp(value: Symbol): SExp = {
     if (value == 'nil) {
-      NilAtom()
+      NilAtom
     } else {
       SymbolAtom(value.toString().drop(1))
     }
   }
-
-  implicit def nilToSExpList(nil: NilAtom): SExp = {
-    SExpList(List())
-  }
-
-  implicit def toSExp(o: SExpable): SExp = {
-    o.toSExp()
-  }
-
-  implicit def toSExpable(o: SExp): SExpable = new SExpable {
-    override def toSExp() = o
-  }
-
-  implicit def listToSExpable(o: Iterable[SExpable]): SExpable =
-    new Iterable[SExpable] with SExpable {
-      override def iterator = o.iterator
-      override def toSExp() = SExp(o.map { _.toSExp() })
-    }
-
-}
-
-trait SExpable {
-  implicit def toSExp(): SExp
 }
