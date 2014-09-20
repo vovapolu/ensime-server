@@ -1,8 +1,8 @@
 package org.ensime.protocol
 
 import java.io._
+
 import akka.actor.ActorRef
-import org.ensime.server._
 import org.ensime.util._
 
 case class IncomingMessageEvent(obj: Any)
@@ -52,16 +52,15 @@ trait Protocol {
    * @param  reader  The stream from which to read the message.
    * @return         The message, in the intermediate format.
    */
-  def readMessage(reader: InputStream): WireFormat
+  def readMessage(reader: InputStreamReader): WireFormat
 
   /**
    * Write a message to the socket.
    *
    * @param  value  The message to write.
    * @param  writer The stream to which to write the message.
-   * @return        Void
    */
-  def writeMessage(value: WireFormat, writer: OutputStream)
+  def writeMessage(value: WireFormat, writer: OutputStream): Unit
 
   /**
    * Send a message in wire format to the client. Message
@@ -69,10 +68,10 @@ trait Protocol {
    * output socket.
    *
    * @param  o  The message to send.
-   * @return    Void
    */
-  def sendMessage(o: WireFormat) {
-    peer ! OutgoingMessageEvent(o)
+  def sendMessage(o: WireFormat): Unit = {
+    if (peer != null)
+      peer ! OutgoingMessageEvent(o)
   }
 
   /**
@@ -81,19 +80,16 @@ trait Protocol {
    * to the rpcTarget.
    *
    * @param  msg  The message we've received.
-   * @return        Void
    */
-  def handleIncomingMessage(msg: Any)
+  def handleIncomingMessage(msg: Any): Unit
 
   /**
    * Designate an actor that should receive outgoing
    * messages.
-   * TODO: Perhaps a channel would be more efficient?
    *
    * @param  peer  The Actor.
-   * @return        Void
    */
-  def setOutputActor(peer: ActorRef)
+  def setOutputActor(peer: ActorRef): Unit
   protected def peer: ActorRef
 
   /**
@@ -103,7 +99,7 @@ trait Protocol {
    * @param  target The RPCTarget instance.
    * @return        Void
    */
-  def setRPCTarget(target: RPCTarget)
+  def setRPCTarget(target: RPCTarget): Unit
 
   /**
    * Send a simple RPC Return with a 'true' value.
@@ -111,26 +107,23 @@ trait Protocol {
    * other return value is required.
    *
    * @param  callId The id of the RPC call.
-   * @return        Void
    */
-  def sendRPCAckOK(callId: Int)
+  def sendRPCAckOK(callId: Int): Unit
 
   /**
    * Send an RPC Return with the given value.
    *
    * @param  value  The value to return.
    * @param  callId The id of the RPC call.
-   * @return        Void
    */
-  def sendRPCReturn(value: WireFormat, callId: Int)
+  def sendRPCReturn(value: WireFormat, callId: Int): Unit
 
   /**
    * Send an event.
    *
-   * @param  value  The event value.
-   * @return        Void
+   * @param  event  The event value.
    */
-  def sendEvent(value: WireFormat)
+  def sendEvent(event: SwankEvent): Unit
 
   /**
    * Notify the client that the RPC call could not
@@ -139,9 +132,8 @@ trait Protocol {
    * @param  code  Integer code denoting error type.
    * @param  detail  A message describing the error.
    * @param  callId The id of the failed RPC call.
-   * @return        Void
    */
-  def sendRPCError(code: Int, detail: Option[String], callId: Int)
+  def sendRPCError(code: Int, detail: String, callId: Int): Unit
 
   /**
    * Notify the client that a message was received
@@ -149,8 +141,6 @@ trait Protocol {
    *
    * @param  code  Integer code denoting error type.
    * @param  detail  A message describing the problem.
-   * @return        Void
    */
-  def sendProtocolError(code: Int, detail: Option[String])
-
+  def sendProtocolError(code: Int, detail: String): Unit
 }

@@ -1,14 +1,24 @@
 language: scala
 jdk:
 - openjdk6
+#- openjdk7
+#- oraclejdk7
+#- oraclejdk8
 scala:
-- 2.9.2
-- 2.9.3
--script:
+- 2.10.4
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y openjdk-6-source
+install:
+- ./.travis-cache.sh
+script:
 - sbt ++$TRAVIS_SCALA_VERSION clean test
 - ./.check-diff.sh
+#- sbt ++$TRAVIS_SCALA_VERSION clean scoverage:test
 after_success:
-- sbt ++$TRAVIS_SCALA_VERSION clean publish
+# FIXME: blocked on https://github.com/scoverage/sbt-coveralls/issues/21
+#- sbt ++$TRAVIS_SCALA_VERSION coveralls
+- sbt ++$TRAVIS_SCALA_VERSION clean $(if [[ "$TRAVIS_PULL_REQUEST" == "false" && "$JAVA_HOME" == "$(jdk_switcher home openjdk6)" ]]; then echo "publish"; fi)
 env:
   global:
     # travis encrypt -r ensime/ensime-server SONATYPE_USERNAME=<USERNAME>

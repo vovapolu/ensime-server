@@ -14,7 +14,7 @@ trait Helpers { self: Global =>
       sym.tpe.members
     } else if (sym.isClass || sym.isPackageClass || sym.isPackageObjectClass) {
       sym.companionModule.tpe.members
-    } else { List() }
+    } else { List.empty }
     members.toList.filter { _.name.toString == "apply" }
   }
 
@@ -23,11 +23,11 @@ trait Helpers { self: Global =>
       sym.tpe.members
     } else if (sym.isModule || sym.isModuleClass || sym.isPackageObject) {
       sym.companionClass.tpe.members
-    } else { List() }
+    } else { List.empty }
     members.toList.filter { _.isConstructor }
   }
 
-  def isArrowType(tpe: Type) = {
+  def isArrowType(tpe: Type): Boolean = {
     tpe match {
       case _: MethodType => true
       case _: PolyType => true
@@ -35,7 +35,7 @@ trait Helpers { self: Global =>
     }
   }
 
-  def isNoParamArrowType(tpe: Type) = {
+  def isNoParamArrowType(tpe: Type): Boolean = {
     tpe match {
       case t: MethodType => t.paramss.flatten.isEmpty
       case t: PolyType => t.paramss.flatten.isEmpty
@@ -43,7 +43,7 @@ trait Helpers { self: Global =>
     }
   }
 
-  def typeOrArrowTypeResult(tpe: Type) = {
+  def typeOrArrowTypeResult(tpe: Type): Type = {
     tpe match {
       case t: MethodType => t.finalResultType
       case t: PolyType => t.finalResultType
@@ -57,7 +57,7 @@ trait Helpers { self: Global =>
         sect.map { p => (p.name.toString, typeShortNameWithArgs(p.tpe)) }
       },
         typeShortNameWithArgs(tpe.finalResultType))
-    } else CompletionSignature(List(), resultTypeName(tpe))
+    } else CompletionSignature(List.empty, resultTypeName(tpe))
   }
 
   /**
@@ -219,36 +219,4 @@ trait Helpers { self: Global =>
       S.Field
     else S.Nil
   }
-
-  def symbolSummary(sym: Symbol): Map[String, Any] = {
-    import scala.tools.nsc.symtab.Flags._
-    Map(
-      "name" -> sym.toString(),
-      "  isMethod" -> sym.isMethod,
-      "  isAbstractClass" -> sym.isAbstractClass,
-      "  isPackage" -> sym.isPackage,
-      "  isValue" -> sym.isValue,
-      "  isVariable" -> sym.isVariable,
-      "  isClass" -> sym.isClass,
-      "  isType" -> sym.isType,
-      "  isTrait" -> sym.isTrait,
-      "  isInterface" -> sym.isInterface,
-      "  isModule" -> sym.isModule,
-      "  isModuleClass" -> sym.isModuleClass,
-      "  isConstructor" -> sym.isConstructor,
-      "  hasAccessorFlag" -> sym.hasFlag(ACCESSOR),
-      "  hasLocalFlag" -> sym.hasFlag(LOCAL),
-      "  isCase" -> sym.isCase,
-      "  isCaseAccessor" -> sym.isCaseAccessor,
-      "  isValueParameter" -> sym.isValueParameter,
-      "  isTypeParameter" -> sym.isTypeParameter,
-      "  isSynthetic" -> sym.isSynthetic,
-      "  isMutable" -> sym.isMutable,
-      "  isFinal" -> sym.isFinal,
-      "  isGetter" -> sym.isGetter,
-      "  isSetter" -> sym.isSetter,
-      "  hasTraitFlag" -> sym.hasFlag(TRAIT)
-    )
-  }
-
 }

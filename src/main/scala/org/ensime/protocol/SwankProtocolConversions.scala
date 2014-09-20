@@ -1,14 +1,16 @@
 package org.ensime.protocol
 
-import org.ensime.config.{ ReplConfig, ProjectConfig }
-import org.ensime.indexer.MethodBytecode
+import java.io.File
+import org.ensime.config._
 import org.ensime.model._
-import org.ensime.protocol.SExpConversion._
 import org.ensime.server._
 import org.ensime.util._
 import org.ensime.util.SExp._
 
-import scala.reflect.internal.util.{ RangePosition, Position }
+import scala.reflect.internal.util.RangePosition
+
+// bit of a rubbish class
+class ReplConfig(val classpath: Set[File])
 
 class SwankProtocolConversions extends ProtocolConversions {
 
@@ -131,6 +133,7 @@ class SwankProtocolConversions extends ProtocolConversions {
   override def toWF(pos: SourcePosition): SExp = {
     SExp(
       key(":file"), pos.file.getAbsolutePath,
+      key(":offset"), pos.offset, // we should deprecate this
       key(":line"), pos.line)
   }
 
@@ -142,99 +145,111 @@ class SwankProtocolConversions extends ProtocolConversions {
       key(":version"), info.protocolVersion)
   }
 
-  override def toWF(evt: SendBackgroundMessageEvent): SExp = {
-    SExp(key(":background-message"), evt.code,
-      evt.detail.map(strToSExp).getOrElse(NilAtom()))
+  def toWF(evt: SwankEvent): SExp = {
+    evt match {
+      case g: GeneralSwankEvent =>
+        toWF(g)
+      case d: DebugEvent =>
+        toWF(d)
+    }
   }
 
-  /**
-   * Doc Event:
-   *   :compiler-ready
-   * Summary:
-   *   Signal that the compiler has finished its initial compilation and the server
-   *   is ready to accept RPC calls.
-   * Structure:
-   *   (:compiler-ready)
-   */
-  def toWF(evt: AnalyzerReadyEvent): SExp = {
-    SExp(key(":compiler-ready"))
+  def toWF(evt: GeneralSwankEvent): SExp = {
+    evt match {
+      /**
+       * Doc Event:
+       *   :compiler-ready
+       * Summary:
+       *   Signal that the compiler has finished its initial compilation and the server
+       *   is ready to accept RPC calls.
+       * Structure:
+       *   (:compiler-ready)
+       */
+      case AnalyzerReadyEvent =>
+        SExp(key(":compiler-ready"))
+      /**
+       * Doc Event:
+       *   :full-typecheck-finished
+       * Summary:
+       *   Signal that the compiler has finished compilation of the entire project.
+       * Structure:
+       *   (:full-typecheck-finished)
+       */
+      case FullTypeCheckCompleteEvent =>
+        SExp(key(":full-typecheck-finished"))
+      /**
+       * * Doc Event:
+       *   :indexer-ready
+       * Summary:
+       *   Signal that the indexer has finished indexing the classpath.
+       * Structure:
+       *   (:indexer-ready)
+       */
+      case IndexerReadyEvent =>
+        SExp(key(":indexer-ready"))
+      /**
+       * Doc Event:
+       *   :scala-notes
+       * Summary:
+       *   Notify client when Scala compiler generates errors,warnings or other notes.
+       * Structure:
+       *   (:scala-notes
+       *   notes //List of Note
+       *   )
+       */
+      case NewScalaNotesEvent(noteList) =>
+        SExp(key(":scala-notes"), toWF(noteList))
+      /**
+       * Doc Event:
+       *   :java-notes
+       * Summary:
+       *   Notify client when Java compiler generates errors,warnings or other notes.
+       * Structure:
+       *   (:java-notes
+       *   notes //List of Note
+       *   )
+       */
+      case NewJavaNotesEvent(noteList) =>
+        SExp(key(":java-notes"), toWF(noteList))
+      /**
+       *  Doc Event:
+       *   :clear-all-scala-notes
+       * Summary:
+       *   Notify client when Scala notes have become invalidated. Editor should consider
+       *   all Scala related notes to be stale at this point.
+       * Structure:
+       *   (:clear-all-scala-notes)
+       */
+      case ClearAllScalaNotesEvent =>
+        SExp(key(":clear-all-scala-notes"))
+      /**
+       * Doc Event:
+       *   :clear-all-java-notes
+       * Summary:
+       *   Notify client when Java notes have become invalidated. Editor should consider
+       *   all Java related notes to be stale at this point.
+       * Structure:
+       *   (:clear-all-java-notes)
+       */
+      case ClearAllJavaNotesEvent =>
+        SExp(key(":clear-all-java-notes"))
+      /**
+       * Doc Event:
+       *   :background-message
+       * Summary:
+       *   A background notification from the server for the client.
+       * Structure:
+       *   (:background-message
+       *      code // Int
+       *      message // String message or nil
+       *   )
+       */
+      case SendBackgroundMessageEvent(code, detail) =>
+        SExp(key(":background-message"), code, detail.map(strToSExp).getOrElse(NilAtom))
+    }
   }
 
-  /**
-   * Doc Event:
-   *   :full-typecheck-finished
-   * Summary:
-   *   Signal that the compiler has finished compilation of the entire project.
-   * Structure:
-   *   (:full-typecheck-finished)
-   */
-  def toWF(evt: FullTypeCheckCompleteEvent): SExp = {
-    SExp(key(":full-typecheck-finished"))
-  }
-
-  /**
-   * Doc Event:
-   *   :indexer-ready
-   * Summary:
-   *   Signal that the indexer has finished indexing the classpath.
-   * Structure:
-   *   (:indexer-ready)
-   */
-  def toWF(evt: IndexerReadyEvent): SExp = {
-    SExp(key(":indexer-ready"))
-  }
-
-  /**
-   * Doc Event:
-   *   :scala-notes
-   * Summary:
-   *   Notify client when Scala compiler generates errors,warnings or other notes.
-   * Structure:
-   *   (:scala-notes
-   *   notes //List of Note
-   *   )
-   */
-  //-----------------------
-  /**
-   * Doc Event:
-   *   :java-notes
-   * Summary:
-   *   Notify client when Java compiler generates errors,warnings or other notes.
-   * Structure:
-   *   (:java-notes
-   *   notes //List of Note
-   *   )
-   */
-  override def toWF(evt: NewNotesEvent): SExp = {
-    if (evt.lang == 'scala) SExp(key(":scala-notes"), toWF(evt.notelist))
-    else SExp(key(":java-notes"), toWF(evt.notelist))
-  }
-
-  /**
-   * Doc Event:
-   *   :clear-all-scala-notes
-   * Summary:
-   *   Notify client when Scala notes have become invalidated. Editor should consider
-   *   all Scala related notes to be stale at this point.
-   * Structure:
-   *   (:clear-all-scala-notes)
-   */
-  //-----------------------
-  /**
-   * Doc Event:
-   *   :clear-all-java-notes
-   * Summary:
-   *   Notify client when Java notes have become invalidated. Editor should consider
-   *   all Java related notes to be stale at this point.
-   * Structure:
-   *   (:clear-all-java-notes)
-   */
-  override def toWF(evt: ClearAllNotesEvent): SExp = {
-    if (evt.lang == 'scala) SExp(key(":clear-all-scala-notes"))
-    else SExp(key(":clear-all-java-notes"))
-  }
-
-  override def toWF(evt: DebugEvent): SExp = {
+  def toWF(evt: DebugEvent): SExp = {
     evt match {
       /**
        * Doc Event:
@@ -401,9 +416,7 @@ class SwankProtocolConversions extends ProtocolConversions {
         SExp(key(":debug-event"),
           SExp(key(":type"), 'threadDeath,
             key(":thread-id"), threadId.toString))
-      case _ => SExp(key(":debug-event"))
     }
-
   }
 
   def toWF(bp: Breakpoint): SExp = {
@@ -418,27 +431,25 @@ class SwankProtocolConversions extends ProtocolConversions {
       key(":pending"), SExpList(bps.pending.map { toWF }))
   }
 
-  override def toWF(config: ProjectConfig): SExp = {
-    SExp(
-      key(":project-name"), config.name.map(StringAtom).getOrElse('nil),
-      key(":source-roots"), SExp(
-        (config.sourceRoots ++ config.referenceSourceRoots).map {
-          f => StringAtom(f.getPath)
-        }))
-  }
+  override def toWF(config: EnsimeConfig): SExp = SExp(
+    key(":project-name"), StringAtom(config.name),
+    key(":source-roots"), SExp(
+      config.modules.values.flatMap {
+        _.sourceRoots.map { r => StringAtom(r.getAbsolutePath) }
+      }
+    )
+  )
 
   override def toWF(config: ReplConfig): SExp = {
-    SExp.propList((":classpath", strToSExp(config.classpath)))
+    SExp.propList((":classpath", strToSExp(config.classpath.mkString("\"", File.pathSeparator, "\""))))
   }
 
   override def toWF(value: Boolean): SExp = {
-    if (value) TruthAtom()
-    else NilAtom()
+    if (value) TruthAtom
+    else NilAtom
   }
 
-  override def toWF(value: Null): SExp = {
-    NilAtom()
-  }
+  override val wfNull: SExp = NilAtom
 
   override def toWF(value: String): SExp = {
     StringAtom(value)
@@ -502,7 +513,8 @@ class SwankProtocolConversions extends ProtocolConversions {
       (":name", value.name),
       (":local-name", value.localName),
       (":type", toWF(value.tpe)),
-      (":decl-pos", value.declPos),
+      // not entirely clear why "decl-pos" instead of "pos"
+      (":decl-pos", value.declPos.map(toWF).getOrElse('nil)),
       (":is-callable", value.isCallable),
       (":owner-type-id", value.ownerTypeId.map(intToSExp).getOrElse('nil)))
   }
@@ -514,27 +526,11 @@ class SwankProtocolConversions extends ProtocolConversions {
       (":end", value.end))
   }
 
-  def toWF(value: Position): SExp = {
-    posToSExp(value)
-  }
-
-  def toWF(value: RangePosition): SExp = {
-    posToSExp(value)
-  }
-
-  def toWF(value: NamedTypeMemberInfoLight): SExp = {
-    SExp.propList(
-      (":name", value.name),
-      (":type-sig", value.tpeSig),
-      (":type-id", value.tpeId),
-      (":is-callable", value.isCallable))
-  }
-
   override def toWF(value: NamedTypeMemberInfo): SExp = {
     SExp.propList(
       (":name", value.name),
       (":type", toWF(value.tpe)),
-      (":pos", value.pos),
+      (":pos", value.pos.map(toWF).getOrElse('nil)),
       (":decl-as", value.declaredAs))
   }
 
@@ -543,7 +539,6 @@ class SwankProtocolConversions extends ProtocolConversions {
       case value: PackageInfo => toWF(value)
       case value: TypeInfo => toWF(value)
       case value: NamedTypeMemberInfo => toWF(value)
-      case value: NamedTypeMemberInfoLight => toWF(value)
       case unknownValue => throw new IllegalStateException("Unknown EntityInfo: " + unknownValue)
     }
   }
@@ -564,7 +559,7 @@ class SwankProtocolConversions extends ProtocolConversions {
           (":decl-as", value.declaredAs),
           (":type-args", SExp(value.args.map(toWF))),
           (":members", SExp(value.members.map(toWF))),
-          (":pos", value.pos),
+          (":pos", value.pos.map(toWF).getOrElse('nil)),
           (":outer-type-id", value.outerTypeId.map(intToSExp).getOrElse('nil)))
       case unknownValue => throw new IllegalStateException("Unknown TypeInfo: " + unknownValue)
     }
@@ -605,7 +600,8 @@ class SwankProtocolConversions extends ProtocolConversions {
       (":companion-id", value.companionId match {
         case Some(id) => id
         case None => 'nil
-      }), (":interfaces", SExp(value.supers.map(toWF))))
+      }),
+      (":interfaces", SExp(value.supers.map(toWF))))
   }
 
   def toWF(value: RefactorFailure): SExp = {
@@ -639,13 +635,8 @@ class SwankProtocolConversions extends ProtocolConversions {
     SExpList(value.symLists.map { l => SExpList(l.map(toWF).toList) }.toList)
   }
 
-  private def toWF(pos: Option[(String, Int)]): SExp = {
-    pos match {
-      case Some((f, o)) => SExp.propList((":file", f), (":offset", o))
-      case _ => 'nil
-    }
-  }
-
+  // FIXME: client expects offset, but we typically have line
+  //        infer for now and look at changing the protocol
   def toWF(value: SymbolSearchResult): SExp = {
     value match {
       case value: TypeSearchResult =>
@@ -653,15 +644,24 @@ class SwankProtocolConversions extends ProtocolConversions {
           (":name", value.name),
           (":local-name", value.localName),
           (":decl-as", value.declaredAs),
-          (":pos", toWF(value.pos)))
+          (":pos", value.pos.map(toWF).getOrElse('nil)))
       case value: MethodSearchResult =>
         SExp.propList(
           (":name", value.name),
           (":local-name", value.localName),
           (":decl-as", value.declaredAs),
-          (":pos", toWF(value.pos)),
+          (":pos", value.pos.map(toWF).getOrElse('nil)),
           (":owner-name", value.owner))
     }
+  }
+
+  def toWF(p: RangePosition): SExp = {
+    // assumes a real file. see discussion around SourcePosition
+    SExp.propList(
+      (":file", p.source.path),
+      (":offset", p.point),
+      (":start", p.start),
+      (":end", p.end))
   }
 
   def toWF(value: Undo): SExp = {
@@ -688,7 +688,7 @@ class SwankProtocolConversions extends ProtocolConversions {
 
   def toWF(vmStatus: DebugVmStatus): SExp = {
     vmStatus match {
-      case DebugVmSuccess() => SExp(
+      case DebugVmSuccess => SExp(
         key(":status"), "success")
       case DebugVmError(code, details) => SExp(
         key(":status"), "error",
