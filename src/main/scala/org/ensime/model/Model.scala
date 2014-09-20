@@ -261,7 +261,7 @@ trait ModelBuilders { self: RichPresentationCompiler =>
       // val name = genASM.jsymbol(sym).fullName
       val name = sym.fullName
       val hit = search.findUnique(name)
-      logger.debug(s"search: $name = $hit")
+      logger.debug("search: " + name + " = " + hit)
       hit.flatMap(SourcePosition.fromFqnSymbol(_)(config))
     }
 

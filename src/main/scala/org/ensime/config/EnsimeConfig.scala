@@ -17,7 +17,7 @@ case class EnsimeConfig(
     referenceSourceJars: List[File],
     formattingPrefs: FormattingPreferences = FormattingPreferences()) {
   (root :: cacheDir :: referenceSourceJars).foreach { f =>
-    require(f.exists, s"$f is required but does not exist")
+    require(f.exists, f + " is required but does not exist")
   }
 
   def sourceFiles: Set[File] = for {
@@ -31,13 +31,18 @@ case class EnsimeConfig(
     m: EnsimeModule => m.compileJars ++ m.testJars ++ m.debugJars :+ m.target :+ m.testTarget
   }
 
-  val javaLib = file(Properties.jdkHome) / "jre/lib/rt.jar"
+  val javaLib: Option[File] = {
+    val javaHome = file(System.getProperty("java.home"))
+    val alt1 = javaHome / "jre/lib/rt.jar"
+    val alt2 = javaHome / "lib/rt.jar"
+    List(alt1, alt2).filter(_.exists).headOption
+  }
 
   def allJars: Set[File] = {
     modules.values.flatMap { m =>
       m.compileJars ::: m.testJars
     }.toSet
-  } + javaLib
+  } ++ javaLib.toIterable
 
 }
 
@@ -53,7 +58,7 @@ case class EnsimeModule(
     referenceSourcesJars: List[File]) {
   (target :: testTarget :: compileJars ::: debugJars :::
     testJars ::: sourceRoots ::: referenceSourcesJars) foreach { f =>
-      require(f.exists, s"$f is required by $name but does not exist")
+      require(f.exists, f + " is required by " + name + " but does not exist")
     }
 
   def dependencies(implicit config: EnsimeConfig): List[EnsimeModule] =
@@ -72,7 +77,8 @@ object EnsimeConfig extends SLF4JLogging {
     //       the file/directory does not exist, so we force create all
     //       directories, which is - admitedly - a weird side-effect.
 
-    implicit class RichSExp(m: SExpMapExplorer) {
+    implicit def RichSExpPimp(m: SExpMapExplorer) = new RichSExp(m)
+    class RichSExp(m: SExpMapExplorer) {
       def asDir(name: String): File =
         file(m.getString(name)).rebaseIfRelative(root).tap(_.mkdirs()).canon
 

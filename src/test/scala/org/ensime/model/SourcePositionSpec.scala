@@ -29,28 +29,28 @@ class SourcePositionSpec extends FunSpec with Matchers {
     it("should resolve FqnSymbols for local files with no line number") {
       lookup(r.getName.getURI) match {
         case Some(SourcePosition(name, 0, _)) if name.getPath == f.getPath =>
-        case o => fail(s"not resolved $o")
+        case o => fail("not resolved " + o)
       }
     }
 
     it("should resolve FqnSymbols for local with a line number") {
       lookup(r.getName.getURI, Some(100)) match {
         case Some(SourcePosition(name, 100, _)) if name.getPath == f.getPath =>
-        case o => fail(s"not resolved $o")
+        case o => fail("not resolved " + o)
       }
     }
 
     it("should resolve FqnSymbols for archive entries with no line number") {
       lookup(jarentry) match {
         case Some(SourcePosition(name, 0, _)) if name.isFile =>
-        case o => fail(s"not resolved $o")
+        case o => fail("not resolved " + o)
       }
     }
 
     it("should resolve FqnSymbols for archive entries with a line number") {
       lookup(jarentry, Some(100)) match {
         case Some(SourcePosition(name, 100, _)) if name.isFile =>
-        case o => fail(s"not resolved $o")
+        case o => fail("not resolved " + o)
       }
     }
   }

@@ -65,7 +65,7 @@ object ClassName {
   // strips array reification
   def fromDescriptor(desc: String): ClassName =
     DescriptorParser.parseType(desc).
-      getOrThrow(s"$desc is not a descriptor") match {
+      getOrThrow(desc + " is not a descriptor") match {
         case c: ClassName => c
         case a: ArrayDescriptor => a.reifier
       }

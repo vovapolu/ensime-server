@@ -26,7 +26,8 @@ object DescriptorParser extends Parser {
   def parse(desc: String): Option[Descriptor] =
     TopParser.get.run(desc).result
 
-  private implicit class RulePimp(val rule: Rule0) {
+  private implicit def RichRulePimp(rule: Rule0): RichRule = new RichRule(rule)
+  private class RichRule(val rule: Rule0) {
     def save: Rule1[String] = { rule ~> (_.toString) }
     def as[T](t: T): Rule1[T] = { rule ~> (_ => t) }
   }

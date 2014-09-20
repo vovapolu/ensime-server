@@ -16,8 +16,8 @@ import org.ensime.util._
 import org.scalatest.Assertions
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.backport.Await
+import scala.concurrent.backport.duration._
 import scala.io.Source
 import scala.reflect.io.{ File => SFile, Path }
 
@@ -67,9 +67,9 @@ object IntgUtil extends Assertions with SLF4JLogging {
         case RPCRequest(req) =>
           val rpcId = nextRPCid
           nextRPCid += 1
-          val msg = s"""(:swank-rpc ${req.toWireString} $rpcId)"""
+          val msg = """(:swank-rpc """ + req.toWireString + " " + rpcId + ")"
           project ! IncomingMessageEvent(SExpParser.read(msg))
-          rpcExpectations += (rpcId -> sender())
+          rpcExpectations += (rpcId -> sender)
         // this is the message from the server
         case OutgoingMessageEvent(obj) =>
           log.info("Received message from server: ")
@@ -218,13 +218,13 @@ object IntgUtil extends Assertions with SLF4JLogging {
 
       // drop the last brace in the ensime file and add some extra config
       val configStr = ensimeFileContents.trim.dropRight(1) +
-        s"""
+        """
          | :active-subproject "simple"
          |)
          """.stripMargin
 
-      val initMsg = s"""(swank:init-project
-                        | ($configStr)
+      val initMsg = """(swank:init-project
+                        | (""".stripMargin + configStr + """)
                         | )""".stripMargin
 
       val sourceRoot = projectBase / "/src/main/scala"

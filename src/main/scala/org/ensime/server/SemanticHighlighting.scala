@@ -151,14 +151,12 @@ class SemanticHighlighting(val global: RichPresentationCompiler) extends Compile
     p: RangePosition,
     tpes: List[scala.Symbol]): SymbolDesignations = {
     val tpeSet = Set.empty[scala.Symbol] ++ tpes
-    val typed: Response[global.Tree] = new Response[global.Tree]
-    global.askLoadedTyped(p.source, keepLoaded = true, typed)
-    typed.get.left.toOption match {
-      case Some(tree) =>
+    global.askLoadedTyped(p.source) match {
+      case Left(tree) =>
         val traverser = new SymDesigsTraverser(p, tpeSet)
         traverser.traverse(tree)
         SymbolDesignations(p.source.file.path, traverser.syms.toList)
-      case None => SymbolDesignations("", List.empty)
+      case _ => SymbolDesignations("", List.empty)
     }
   }
 

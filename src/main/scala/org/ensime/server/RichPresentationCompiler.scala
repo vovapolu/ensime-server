@@ -83,7 +83,7 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
     x.get
   }
 
-  def askLoadedTyped(f: SourceFile) {
+  def askLoadedTyped(f: SourceFile): Either[Tree, Throwable] = {
     val x = new Response[Tree]()
     askLoadedTyped(f, x)
     x.get

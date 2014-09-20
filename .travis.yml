@@ -5,7 +5,8 @@ jdk:
 #- oraclejdk7
 #- oraclejdk8
 scala:
-- 2.10.4
+  - 2.9.2
+  - 2.9.3
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y openjdk-6-source
@@ -14,10 +15,7 @@ install:
 script:
 - sbt ++$TRAVIS_SCALA_VERSION clean test
 - ./.check-diff.sh
-#- sbt ++$TRAVIS_SCALA_VERSION clean scoverage:test
 after_success:
-# FIXME: blocked on https://github.com/scoverage/sbt-coveralls/issues/21
-#- sbt ++$TRAVIS_SCALA_VERSION coveralls
 - sbt ++$TRAVIS_SCALA_VERSION clean $(if [[ "$TRAVIS_PULL_REQUEST" == "false" && "$JAVA_HOME" == "$(jdk_switcher home openjdk6)" ]]; then echo "publish"; fi)
 env:
   global:

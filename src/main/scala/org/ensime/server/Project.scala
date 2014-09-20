@@ -67,11 +67,11 @@ class Project(
   private val search = new SearchService(config, resolver)
   private val classfileWatcher = new ClassfileWatcher(config, search :: Nil)
 
-  import concurrent.ExecutionContext.Implicits.global
+  import concurrent.backport.ExecutionContext.Implicits.global
   search.refresh().onSuccess {
-    case (inserts, deletes) =>
+    case (deletes, inserts) =>
       actor ! AsyncEvent(IndexerReadyEvent)
-      log.debug(s"indexed $inserts and removed $deletes")
+      log.debug("indexed " + inserts + " and removed " + deletes)
   }
 
   protected val indexer: ActorRef = actorSystem.actorOf(Props(
@@ -101,7 +101,7 @@ class Project(
     // buffer until the client connects
     private var asyncs: List[AsyncEvent] = Nil
 
-    private val waiting: Receive = {
+    private def waiting: Receive = {
       case ClientConnectedEvent =>
         asyncs foreach {
           case AsyncEvent(value) =>
@@ -114,7 +114,7 @@ class Project(
         asyncs ::= e
     }
 
-    private val connected: Receive = {
+    private def connected: Receive = {
       case IncomingMessageEvent(msg: WireFormat) =>
         protocol.handleIncomingMessage(msg)
       case AddUndo(sum, changes) =>

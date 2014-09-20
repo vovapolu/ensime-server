@@ -68,6 +68,8 @@ package scala {
     package object io {
       type File = scala.tools.nsc.io.File
       val File = scala.tools.nsc.io.File
+      type Path = scala.tools.nsc.io.Path
+      val Path = scala.tools.nsc.io.Path
       type AbstractFile = scala.tools.nsc.io.AbstractFile
       val AbstractFile = scala.tools.nsc.io.AbstractFile
       type ZipArchive = scala.tools.nsc.io.ZipArchive

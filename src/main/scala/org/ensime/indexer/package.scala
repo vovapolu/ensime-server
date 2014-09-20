@@ -8,7 +8,7 @@ package object indexer {
 
   private[indexer] implicit def toFileObject(f: File): FileObject = vfile(f)
 
-  private[indexer] def vfile(name: String) = vfs.resolveFile(name)
+  private[indexer] def vfilename(name: String) = vfs.resolveFile(name)
   private[indexer] def vfile(file: File) = vfs.toFileObject(file)
   private[indexer] def vres(path: String) = vfs.resolveFile("res:" + path)
   private[indexer] def vjar(jar: File) = vfs.resolveFile("jar:" + jar.getAbsolutePath)

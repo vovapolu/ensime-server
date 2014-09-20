@@ -162,14 +162,27 @@ class SemanticHighlightingSpec extends FunSpec with Matchers {
           """,
           List('object)
         )
-        assert(sds === List(
+
+        // TODO "c" should be a varField
+        assert(sds == List(
+          // 2.9.2
           ('object, "C"),
           ('object, "A"),
           ('object, "B"),
           ('object, "D"),
-          // TODO two problems there: "c" should be a varField ; E should be highlighted.
-          ('object, "c")
-        ))
+          ('object, "D"),
+          ('object, "c"),
+          ('object, "E")
+        ) || sds == List(
+            // 2.9.3
+            ('object, "C"),
+            ('object, "A"),
+            ('object, "B"),
+            ('object, "D"),
+            ('object, "c")
+          ),
+          sds.toString
+        )
       }
     }
 

@@ -41,11 +41,13 @@ package object lucene {
     def id: String
   }
 
-  implicit class RichEntity[T <: Entity](e: T) {
+  implicit def RichEntityPimp[T <: Entity](e: T) = new RichEntity(e)
+  class RichEntity[T <: Entity](e: T) {
     def toDocument(implicit p: DocumentProvider[T]) = p.toDocument(e)
   }
 
-  implicit class RichDocument(d: Document) {
+  implicit def RichDocumentPimp(d: Document) = new RichDocument(d)
+  class RichDocument(d: Document) {
     def toEntity[T](implicit p: DocumentRecovery[T]) = p.toEntity(d)
   }
 

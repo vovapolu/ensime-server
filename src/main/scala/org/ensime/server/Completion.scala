@@ -55,7 +55,7 @@ trait CompletionControl {
     def makeTypeSearchCompletions(prefix: String): List[CompletionInfo] = {
       val req = TypeCompletionsReq(prefix, maxResults)
 
-      import scala.concurrent.ExecutionContext.Implicits.{ global => exe }
+      import scala.concurrent.backport.ExecutionContext.Implicits.{ global => exe }
 
       val askRes = Patterns.ask(indexer, req, Timeout(1000.milliseconds))
       val optFut = askRes.map(Some(_)).recover { case _ => None }

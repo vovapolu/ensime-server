@@ -103,7 +103,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
         val info = cc.askInspectTypeAt(new OffsetPosition(file, 37))
         val supers = info.map(_.supers).getOrElse(List())
         val supersNames = supers.map(_.tpe.name).toList
-        assert(supersNames.toSet === Set("pipo", "bidon", "Object", "Product", "Serializable", "Any"))
+
+        assert(supersNames.toSet === Set("ScalaObject", "pipo", "bidon", "Object", "Product", "Serializable", "Any"))
       }
     }
   }

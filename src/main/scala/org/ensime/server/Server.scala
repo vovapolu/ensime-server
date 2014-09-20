@@ -26,7 +26,7 @@ object Server {
 
     val ensimeFile = new File(ensimeFileStr)
     if (!ensimeFile.exists() || !ensimeFile.isFile)
-      throw new RuntimeException(s".ensime file ($ensimeFile) not found")
+      throw new RuntimeException(".ensime file (" + ensimeFile + ") not found")
 
     val cacheDirStr = propOrNone("ensime.cachedir").getOrElse(
       throw new RuntimeException("ensime.cachedir must be set"))
@@ -103,7 +103,9 @@ class Server(config: EnsimeConfig, host: String, requestedPort: Int) {
             try {
               val socket = listener.accept()
               log.info("Got connection, creating handler...")
-              actorSystem.actorOf(Props(classOf[SocketHandler], socket, protocol, project))
+              actorSystem.actorOf(Props(
+                new SocketHandler(socket, protocol, project)
+              ))
             } catch {
               case e: IOException =>
                 log.error("ENSIME Server: ", e)

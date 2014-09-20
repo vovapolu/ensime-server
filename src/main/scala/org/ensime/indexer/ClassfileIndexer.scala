@@ -18,8 +18,8 @@ trait ClassfileIndexer {
    */
   def indexClassfile(file: FileObject): (RawClassfile, Set[FullyQualifiedName]) = {
     val name = file.getName
-    require(file.exists(), s"$name does not exist")
-    require(name.getBaseName.endsWith(".class"), s"$name is not a class file")
+    require(file.exists(), name + " does not exist")
+    require(name.getBaseName.endsWith(".class"), name + " is not a class file")
 
     val in = file.getContent.getInputStream
     val raw = try {
@@ -49,7 +49,7 @@ trait ClassfileIndexer {
       version: Int, access: Int, name: String, signature: String,
       superName: String, interfaces: Array[String]): Unit = {
 
-      val bits = BitSet.fromBitMaskNoCopy(Array(access << 1))
+      val bits = new BitSet.BitSet1(access << 1)
       clazz = RawClassfile(
         ClassName.fromInternal(name),
         Option(signature),

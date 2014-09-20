@@ -8,9 +8,8 @@ import akka.event.slf4j.SLF4JLogging
 import org.ensime.config._
 import org.ensime.util.FileUtils._
 import org.ensime.test.TestUtil._
-import org.scalatest.Sequential
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.backport.Await
+import scala.concurrent.backport.duration.Duration
 import scala.util.Properties
 import pimpathon.file._
 import pimpathon.any._
@@ -82,14 +81,14 @@ class SearchServiceSpec extends FunSpec with Matchers with SLF4JLogging {
   describe("class searching") {
     def search(expect: String, query: String) = {
       val max = 10
-      val info = s"'$query' expected '$expect')"
+      val info = query + " expected " + expect
       service.searchClasses(query, max) tap { results =>
-        assert(results.size <= max, s"${results.size} $info")
+        assert(results.size <= max, results.size + " " + info)
         assert(results.nonEmpty, info)
         // when we improve the search quality, we could
         // make this really look only at #1
         val got = results.map(_.fqn)
-        assert(got contains expect, s"$info got '$got'")
+        assert(got contains expect, info + " got " + got)
       }
     }
     def searches(expect: String, queries: String*) =
@@ -107,7 +106,7 @@ class SearchServiceSpec extends FunSpec with Matchers with SLF4JLogging {
       searches(
         "org.scalatest.FunSuite",
         "FunSuite", "funsuite", "funsu",
-        "o s Fun"
+        "o s FunSu"
       )
     }
 
@@ -129,14 +128,14 @@ class SearchServiceSpec extends FunSpec with Matchers with SLF4JLogging {
   describe("class, field and method searching") {
     def search(expect: String, query: String) = {
       val max = 10
-      val info = s"'$query' expected '$expect')"
+      val info = query + " expected " + expect
       service.searchClassesFieldsMethods(query, max) tap { results =>
-        assert(results.size <= max, s"${results.size} $info")
+        assert(results.size <= max, results.size + " " + info)
         assert(results.nonEmpty, info)
         // when we improve the search quality, we could
         // make this really look only at #1
         val got = results.map(_.fqn)
-        assert(got contains expect, s"$info got '$got'")
+        assert(got contains expect, info + " got " + got)
       }
     }
     def searches(expect: String, queries: String*) =

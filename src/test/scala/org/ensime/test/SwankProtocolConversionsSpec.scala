@@ -219,15 +219,15 @@ class SwankProtocolConversionsSpec extends FunSpec with Matchers {
       assert(toWF(new TypeInspectInfo(typeInfo, Some(1), List(interfaceInfo))).toWireString === """(:type (:name "type1" :type-id 7 :full-name "FOO.type1" :decl-as type1 :outer-type-id 8) :info-type typeInspect :companion-id 1 :interfaces ((:type (:name "type1" :type-id 7 :full-name "FOO.type1" :decl-as type1 :outer-type-id 8) :via-view "DEF")))""")
 
       // toWF(value: SymbolSearchResults)
-      assert(toWF(new SymbolSearchResults(List(methodSearchRes, typeSearchRes))).toWireString === s"""((:name "abc" :local-name "a" :decl-as abcd :pos (:file $abd_str :offset 27 :line 10) :owner-name "ownerStr") (:name "abc" :local-name "a" :decl-as abcd :pos (:file $abd_str :offset 27 :line 10)))""")
+      assert(toWF(new SymbolSearchResults(List(methodSearchRes, typeSearchRes))).toWireString === """((:name "abc" :local-name "a" :decl-as abcd :pos (:file """ + abd_str + """ :offset 27 :line 10) :owner-name "ownerStr") (:name "abc" :local-name "a" :decl-as abcd :pos (:file """ + abd_str + """ :offset 27 :line 10)))""")
 
       // toWF(value: ImportSuggestions)
       assert(toWF(new ImportSuggestions(List(List(methodSearchRes, typeSearchRes)))).toWireString ===
-        s"""(((:name "abc" :local-name "a" :decl-as abcd :pos (:file $abd_str :offset 27 :line 10) :owner-name "ownerStr") (:name "abc" :local-name "a" :decl-as abcd :pos (:file $abd_str :offset 27 :line 10))))""")
+        """(((:name "abc" :local-name "a" :decl-as abcd :pos (:file """ + abd_str + """ :offset 27 :line 10) :owner-name "ownerStr") (:name "abc" :local-name "a" :decl-as abcd :pos (:file """ + abd_str + """ :offset 27 :line 10))))""")
 
       // toWF(value: SymbolSearchResult)
-      assert(toWF(methodSearchRes).toWireString === s"""(:name "abc" :local-name "a" :decl-as abcd :pos (:file $abd_str :offset 27 :line 10) :owner-name "ownerStr")""")
-      assert(toWF(typeSearchRes).toWireString === s"""(:name "abc" :local-name "a" :decl-as abcd :pos (:file $abd_str :offset 27 :line 10))""")
+      assert(toWF(methodSearchRes).toWireString === """(:name "abc" :local-name "a" :decl-as abcd :pos (:file """ + abd_str + """ :offset 27 :line 10) :owner-name "ownerStr")""")
+      assert(toWF(typeSearchRes).toWireString === """(:name "abc" :local-name "a" :decl-as abcd :pos (:file """ + abd_str + """ :offset 27 :line 10))""")
 
       assert(toWF(new RangePosition(batchSourceFile, 70, 75, 90)).toWireString === """(:file """ + batchSourceFile_str + """ :offset 75 :start 70 :end 90)""")
 

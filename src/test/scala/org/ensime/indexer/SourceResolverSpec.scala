@@ -8,9 +8,8 @@ import akka.event.slf4j.SLF4JLogging
 import org.ensime.config._
 import org.ensime.util.FileUtils._
 import org.ensime.test.TestUtil._
-import org.scalatest.Sequential
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.backport.Await
+import scala.concurrent.backport.duration.Duration
 import scala.util.Properties
 import pimpathon.file._
 import pimpathon.any._

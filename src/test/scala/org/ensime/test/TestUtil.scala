@@ -29,9 +29,10 @@ object TestUtil {
   val scalaVersion = propOrEmpty("scala.version")
   val sourceJars = parseTestProp("ensime.jars.sources").toList
   val javaSource = {
-    val f = file(Properties.jdkHome) / "src.zip"
-    if (f.exists) Some(f)
-    else None
+    val javaHome = file(System.getProperty("java.home"))
+    val alt1 = javaHome / "src.zip"
+    val alt2 = javaHome.getParentFile / "src.zip"
+    List(alt1, alt2).filter(_.exists).headOption
   }
   val scalaLib = compileJars.find(_.getName.contains("scala-library")).get
 

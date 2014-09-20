@@ -2,8 +2,6 @@ import sbt._
 import java.io._
 import java.util.concurrent.atomic.AtomicReference
 import net.virtualvoid.sbt.graph.Plugin.graphSettings
-import scoverage.ScoverageSbtPlugin.instrumentSettings
-import org.scoverage.coveralls.CoverallsPlugin.coverallsSettings
 
 // NOTE: the following skips the slower tests
 // test-only * -- -l SlowTest
@@ -17,13 +15,20 @@ scalaVersion := "2.9.2"
 
 version := "0.9.10-SNAPSHOT"
 
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+
+resolvers += "Akka Repo" at "http://repo.akka.io/repository"
+
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies ++= Seq(
   "com.github.stacycurl"       %% "pimpathon-core"       % "1.0.0",
-  "org.parboiled"              %% "parboiled-scala"      % "1.1.6",
+  // https://github.com/sirthias/parboiled/issues/79
+  "org.parboiled"              %% "parboiled-scala"      % {if (scalaVersion.value == "2.9.2") "1.1.4" else "1.1.6"},
   "com.h2database"             %  "h2"                   % "1.4.181",
-  "com.typesafe.slick"         %% "slick"                % "2.1.0",
+  // https://github.com/slick/slick/issues/991
+  //"org.scalaquery"             %% "scalaquery"           % "0.9.5",
+  "org.scalaquery"             %  "scalaquery_2.9.0"     % "0.9.4",
   "com.jolbox"                 %  "bonecp"               % "0.8.0.RELEASE",
   "org.apache.commons"         %  "commons-vfs2"         % "2.0" intransitive(),
   // lucene 4.8+ needs Java 7: http://www.gossamer-threads.com/lists/lucene/general/225300
@@ -34,14 +39,13 @@ libraryDependencies ++= Seq(
   "org.ow2.asm"                %  "asm-util"             % "5.0.3",
   "com.danieltrinh"            %% "scalariform"          % "0.1.5",
   "org.scala-lang"             %  "scala-compiler"       % scalaVersion.value,
-  "org.scala-lang"             %  "scala-reflect"        % scalaVersion.value,
   "org.scala-lang"             %  "scalap"               % scalaVersion.value,
-  "com.typesafe.akka"          %% "akka-actor"           % "2.3.6",
-  "com.typesafe.akka"          %% "akka-slf4j"           % "2.3.6",
-  "com.typesafe.akka"          %% "akka-testkit"         % "2.3.6" % "test",
+  "com.typesafe.akka"          %  "akka-actor"           % "2.0.5",
+  "com.typesafe.akka"          %  "akka-slf4j"           % "2.0.5",
+  "com.typesafe.akka"          %  "akka-testkit"         % "2.0.5" % "test",
   "commons-io"                 %  "commons-io"           % "2.4"   % "test",
-  "org.scalatest"              %% "scalatest"            % "2.2.2" % "test",
-  "org.scalamock"              %% "scalamock-scalatest-support" % "3.1.RC1" % "test",
+  "org.scalatest"              %% "scalatest"            % "1.9.2" % "test",
+//  "org.scalamock"              %% "scalamock-scalatest-support" % "2.4" % "test",
   "ch.qos.logback"             %  "logback-classic"      % "1.1.2",
   "org.slf4j"                  %  "jul-to-slf4j"         % "1.7.7",
   "org.slf4j"                  %  "jcl-over-slf4j"       % "1.7.7",
@@ -86,6 +90,12 @@ javacOptions in doc ++= Seq("-source", "1.6")
 maxErrors := 1
 
 fork := true
+
+// FIXME: https://github.com/paulbutcher/scalamock-sbt-plugin/issues/2
+// following the advice in http://paulbutcher.com/2011/11/06/scalamock-step-by-step/
+// autoCompilerPlugins := true
+// addCompilerPlugin("org.scalamock" %% "scalamock-compiler-plugin" % "2.4")
+// ScalaMockPlugin.generateMocksSettings
 
 //tests should be isolated, but let's keep an eye on stability
 //parallelExecution in Test := false
@@ -136,18 +146,6 @@ testOptions in Test += Tests.Argument("-oF")
 graphSettings
 
 scalariformSettings
-
-instrumentSettings
-
-// let's bump this every time we get more tests
-ScoverageKeys.minimumCoverage := 57
-
-// might be buggy
-ScoverageKeys.highlighting := true
-
-ScoverageKeys.failOnMinimumCoverage := true
-
-coverallsSettings
 
 licenses := Seq("BSD 3 Clause" -> url("http://opensource.org/licenses/BSD-3-Clause"))
 
