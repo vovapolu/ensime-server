@@ -2,30 +2,24 @@ package org.ensime.server
 
 import java.io.File
 import akka.actor.{ Actor, ActorRef, Props, ActorSystem }
-import org.ensime.config.ProjectConfig
-
-import org.ensime.model.PatchOp
-import org.ensime.model.SourceFileInfo
-import org.ensime.model.OffsetRange
+import org.ensime.config._
+import org.ensime.indexer._
+import org.ensime.model._
 import org.ensime.protocol._
 import org.ensime.util._
 import org.slf4j.LoggerFactory
 import scala.collection.mutable
 
 case class RPCResultEvent(value: WireFormat, callId: Int)
-case class RPCErrorEvent(code: Int, detail: Option[String], callId: Int)
+case class RPCErrorEvent(code: Int, detail: String, callId: Int)
 case class RPCRequestEvent(req: Any, callId: Int)
-case class AsyncEvent(evt: WireFormat)
 
-case class ClearAllNotesEvent(lang: scala.Symbol)
-case class NewNotesEvent(lang: scala.Symbol, notelist: NoteList)
-case class SendBackgroundMessageEvent(code: Int, detail: Option[String])
-case class AnalyzerReadyEvent()
-case class AnalyzerShutdownEvent()
-case class IndexerReadyEvent()
+case class AsyncEvent(evt: SwankEvent)
+
+case object AnalyzerShutdownEvent
 
 case class ReloadFilesReq(files: List[SourceFileInfo])
-case class ReloadAllReq()
+case object ReloadAllReq
 case class PatchSourceReq(file: File, edits: List[PatchOp])
 case class RemoveFileReq(file: File)
 case class CompletionsReq(file: File, point: Int, maxResults: Int, caseSens: Boolean, reload: Boolean)
@@ -49,73 +43,88 @@ case class AddUndo(summary: String, changes: List[FileEdit])
 case class Undo(id: Int, summary: String, changes: List[FileEdit])
 case class UndoResult(id: Int, touched: Iterable[File])
 
-class Project(val protocol: Protocol, actorSystem: ActorSystem) extends ProjectRPCTarget {
+case object ClientConnectedEvent
+
+class Project(
+    val config: EnsimeConfig,
+    val protocol: Protocol,
+    actorSystem: ActorSystem) extends ProjectRPCTarget {
   val log = LoggerFactory.getLogger(this.getClass)
 
-  private val actor = actorSystem.actorOf(Props(new ProjectActor()), "project")
+  protected val actor = actorSystem.actorOf(Props(new ProjectActor()), "project")
 
   def !(msg: AnyRef) {
     actor ! msg
   }
-  // TODO This is lethal - Project is both an actor and a threaded callback target
+
   protocol.setRPCTarget(this)
 
-  protected var config: ProjectConfig = ProjectConfig.nullConfig
-
   protected var analyzer: Option[ActorRef] = None
-  protected var indexer: Option[ActorRef] = None
+
+  private val resolver = new SourceResolver(config)
+  // TODO: add PresCompiler to the source watcher
+  private val sourceWatcher = new SourceWatcher(config, resolver :: Nil)
+  private val search = new SearchService(config, resolver)
+  private val classfileWatcher = new ClassfileWatcher(config, search :: Nil)
+
+  import concurrent.backport.ExecutionContext.Implicits.global
+  search.refresh().onSuccess {
+    case (deletes, inserts) =>
+      actor ! AsyncEvent(IndexerReadyEvent)
+      log.debug("indexed " + inserts + " and removed " + deletes)
+  }
+
+  protected val indexer: ActorRef = actorSystem.actorOf(Props(
+    new Indexer(config, search, this, protocol.conversions)), "indexer")
+
   protected var debugger: Option[ActorRef] = None
 
   def getAnalyzer: ActorRef = {
     analyzer.getOrElse(throw new RuntimeException("Analyzer unavailable."))
   }
-  def getIndexer: ActorRef = {
-    indexer.getOrElse(throw new RuntimeException("Indexer unavailable."))
-  }
+  def getIndexer: ActorRef = indexer
 
   private var undoCounter = 0
   private val undos: mutable.LinkedHashMap[Int, Undo] = new mutable.LinkedHashMap[Int, Undo]
 
-  def sendRPCError(code: Int, detail: Option[String], callId: Int) {
+  def sendRPCError(code: Int, detail: String, callId: Int) {
     actor ! RPCErrorEvent(code, detail, callId)
-  }
-  def sendRPCError(detail: String, callId: Int) {
-    sendRPCError(ProtocolConst.ErrExceptionInRPC, Some(detail), callId)
   }
 
   def bgMessage(msg: String) {
-    actor ! AsyncEvent(protocol.conversions.toWF(SendBackgroundMessageEvent(
-      ProtocolConst.MsgMisc,
-      Some(msg))))
+    actor ! AsyncEvent(SendBackgroundMessageEvent(ProtocolConst.MsgMisc, Some(msg)))
   }
 
   class ProjectActor extends Actor {
-    override def receive = {
-      case x: Any =>
-        try {
-          process(x)
-        } catch {
-          case e: Exception =>
-            log.error("Error at Project message loop: ", e)
-        }
+    override def receive = waiting orElse connected
 
+    // buffer until the client connects
+    private var asyncs: List[AsyncEvent] = Nil
+
+    private def waiting: Receive = {
+      case ClientConnectedEvent =>
+        asyncs foreach {
+          case AsyncEvent(value) =>
+            protocol.sendEvent(value)
+        }
+        asyncs = Nil
+        context.become(connected, true)
+
+      case e: AsyncEvent =>
+        asyncs ::= e
     }
 
-    log.info("Project waiting for init...")
-
-    def process(msg: Any): Unit = {
-      msg match {
-        case IncomingMessageEvent(msg: WireFormat) =>
-          protocol.handleIncomingMessage(msg)
-        case AddUndo(sum, changes) =>
-          addUndo(sum, changes)
-        case RPCResultEvent(value, callId) =>
-          protocol.sendRPCReturn(value, callId)
-        case AsyncEvent(value) =>
-          protocol.sendEvent(value)
-        case RPCErrorEvent(code, detail, callId) =>
-          protocol.sendRPCError(code, detail, callId)
-      }
+    private def connected: Receive = {
+      case IncomingMessageEvent(msg: WireFormat) =>
+        protocol.handleIncomingMessage(msg)
+      case AddUndo(sum, changes) =>
+        addUndo(sum, changes)
+      case RPCResultEvent(value, callId) =>
+        protocol.sendRPCReturn(value, callId)
+      case AsyncEvent(value) =>
+        protocol.sendEvent(value)
+      case RPCErrorEvent(code, detail, callId) =>
+        protocol.sendRPCError(code, detail, callId)
     }
   }
 
@@ -137,9 +146,7 @@ class Project(val protocol: Protocol, actorSystem: ActorSystem) extends ProjectR
         undos.remove(u.id)
         FileUtils.writeChanges(u.changes) match {
           case Right(touched) =>
-            for (ea <- analyzer) {
-              ea ! ReloadFilesReq(touched.toList.map { SourceFileInfo(_) })
-            }
+            analyzer.foreach(ea => ea ! ReloadFilesReq(touched.toList.map { SourceFileInfo(_) }))
             Right(UndoResult(undoId, touched))
           case Left(e) => Left(e.getMessage)
         }
@@ -147,63 +154,38 @@ class Project(val protocol: Protocol, actorSystem: ActorSystem) extends ProjectR
     }
   }
 
-  protected def initProject(conf: ProjectConfig) {
-    config = conf
-    restartIndexer()
-    restartCompiler()
+  def initProject() {
+    startCompiler()
     shutdownDebugger()
     undos.clear()
     undoCounter = 0
   }
 
-  protected def restartIndexer() {
-    for (ea <- indexer) {
-      ea ! IndexerShutdownReq()
-    }
-    val newIndexer = actorSystem.actorOf(Props(new Indexer(this, protocol.conversions, config)), "indexer")
-    log.info("Initing Indexer...")
-    if (!config.disableIndexOnStartup) {
-      newIndexer ! RebuildStaticIndexReq()
-    }
-    indexer = Some(newIndexer)
+  protected def startCompiler() {
+    val newAnalyzer = actorSystem.actorOf(Props(
+      new Analyzer(this, indexer, search, protocol.conversions, config)
+    ), "analyzer")
+    analyzer = Some(newAnalyzer)
   }
 
-  protected def restartCompiler() {
-    for (ea <- analyzer) {
-      ea ! AnalyzerShutdownEvent()
-    }
-    indexer match {
-      case Some(indexer) =>
-        val newAnalyzer = actorSystem.actorOf(Props(new Analyzer(this, indexer, protocol.conversions, config)), "analyzer")
-        analyzer = Some(newAnalyzer)
-      case None =>
-        throw new RuntimeException("Indexer must be started before analyzer.")
-    }
-  }
-
-  protected def getOrStartDebugger(): ActorRef = {
-    ((debugger, indexer) match {
-      case (Some(b), _) => Some(b)
-      case (None, Some(indexer)) =>
+  protected def acquireDebugger(): ActorRef = {
+    (debugger, indexer) match {
+      case (Some(b), _) => b
+      case (None, indexer) =>
         val b = actorSystem.actorOf(Props(new DebugManager(this, indexer, protocol.conversions, config)))
         debugger = Some(b)
-        Some(b)
-      case _ => None
-    }).getOrElse(throw new RuntimeException("Indexer must be started before debug manager."))
+        b
+    }
   }
 
   protected def shutdownDebugger() {
-    for (d <- debugger) {
-      d ! DebuggerShutdownEvent
-    }
+    debugger.foreach(_ ! DebuggerShutdownEvent)
     debugger = None
   }
 
   protected def shutdownServer() {
-    System.out.println("Server is exiting...")
-    System.out.flush()
+    log.info("Server is exiting...")
     System.exit(0)
   }
-
 }
 

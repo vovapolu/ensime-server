@@ -1,6 +1,10 @@
 import sbt._
 import java.io._
+import java.util.concurrent.atomic.AtomicReference
 import net.virtualvoid.sbt.graph.Plugin.graphSettings
+
+// NOTE: the following skips the slower tests
+// test-only * -- -l SlowTest
 
 organization := "org.ensime"
 
@@ -11,26 +15,42 @@ scalaVersion := "2.9.2"
 
 version := "0.9.10-SNAPSHOT"
 
-// needed for akka 2.0.x
-resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-libraryDependencies <<= scalaVersion { scalaVersion => Seq(
-  "org.apache.lucene"          %  "lucene-core"          % "3.5.0",
+resolvers += "Akka Repo" at "http://repo.akka.io/repository"
+
+resolvers += Resolver.sonatypeRepo("snapshots")
+
+libraryDependencies ++= Seq(
+  "com.github.stacycurl"       %% "pimpathon-core"       % "1.0.0",
+  // https://github.com/sirthias/parboiled/issues/79
+  "org.parboiled"              %% "parboiled-scala"      % {if (scalaVersion.value == "2.9.2") "1.1.4" else "1.1.6"},
+  "com.h2database"             %  "h2"                   % "1.4.181",
+  // https://github.com/slick/slick/issues/991
+  //"org.scalaquery"             %% "scalaquery"           % "0.9.5",
+  "org.scalaquery"             %  "scalaquery_2.9.0"     % "0.9.4",
+  "com.jolbox"                 %  "bonecp"               % "0.8.0.RELEASE",
+  "org.apache.commons"         %  "commons-vfs2"         % "2.0" intransitive(),
+  // lucene 4.8+ needs Java 7: http://www.gossamer-threads.com/lists/lucene/general/225300
+  "org.apache.lucene"          %  "lucene-core"          % "4.7.2",
+  "org.apache.lucene"          %  "lucene-analyzers-common" % "4.7.2",
   "org.sonatype.tycho"         %  "org.eclipse.jdt.core" % "3.6.2.v_A76_R36x",
   "org.ow2.asm"                %  "asm-commons"          % "5.0.3",
   "org.ow2.asm"                %  "asm-util"             % "5.0.3",
-  "com.googlecode.json-simple" %  "json-simple"          % "1.1.1" intransitive(),
-  "org.scalatest"              %% "scalatest"            % "1.9.2" % "test",
-  "org.scalariform"            %% "scalariform"          % "0.1.4",
-  "org.scala-lang"             %  "scala-compiler"       % scalaVersion,
-  "com.typesafe.akka"          %  "akka-actor" 	         % "2.0.5",
+  "com.danieltrinh"            %% "scalariform"          % "0.1.5",
+  "org.scala-lang"             %  "scala-compiler"       % scalaVersion.value,
+  "org.scala-lang"             %  "scalap"               % scalaVersion.value,
+  "com.typesafe.akka"          %  "akka-actor"           % "2.0.5",
   "com.typesafe.akka"          %  "akka-slf4j"           % "2.0.5",
   "com.typesafe.akka"          %  "akka-testkit"         % "2.0.5" % "test",
-  "ch.qos.logback"             %  "logback-classic"      % "1.0.13",
+  "commons-io"                 %  "commons-io"           % "2.4"   % "test",
+  "org.scalatest"              %% "scalatest"            % "1.9.2" % "test",
+//  "org.scalamock"              %% "scalamock-scalatest-support" % "2.4" % "test",
+  "ch.qos.logback"             %  "logback-classic"      % "1.1.2",
   "org.slf4j"                  %  "jul-to-slf4j"         % "1.7.7",
-  "commons-io"                 % "commons-io"            % "2.4" % "test",
+  "org.slf4j"                  %  "jcl-over-slf4j"       % "1.7.7",
   "org.scala-refactoring"      %% "org.scala-refactoring.library" % "0.6.2"
-)}
+)
 
 // epic hack to get the tools.jar JDK dependency
 val JavaTools = List[Option[String]] (
@@ -56,8 +76,6 @@ val JavaTools = List[Option[String]] (
 
 internalDependencyClasspath in Compile += { Attributed.blank(JavaTools) }
 
-compileOrder := CompileOrder.JavaThenScala
-
 scalacOptions in Compile ++= Seq(
   "-encoding", "UTF-8", "-unchecked", "-deprecation", "-Xfatal-warnings"
 )
@@ -70,6 +88,60 @@ javacOptions in (Compile, compile) ++= Seq (
 javacOptions in doc ++= Seq("-source", "1.6")
 
 maxErrors := 1
+
+fork := true
+
+// FIXME: https://github.com/paulbutcher/scalamock-sbt-plugin/issues/2
+// following the advice in http://paulbutcher.com/2011/11/06/scalamock-step-by-step/
+// autoCompilerPlugins := true
+// addCompilerPlugin("org.scalamock" %% "scalamock-compiler-plugin" % "2.4")
+// ScalaMockPlugin.generateMocksSettings
+
+//tests should be isolated, but let's keep an eye on stability
+//parallelExecution in Test := false
+
+// passes locations of example jars to the tests
+def jars(cp: Classpath): String = {
+  for {
+    att <- cp
+    file = att.data
+    if file.isFile & file.getName.endsWith(".jar")
+  } yield file.getAbsolutePath
+}.mkString(",")
+
+// passes the location of ENSIME's class dirs to the tests
+def classDirs(cp: Classpath): String = {
+  for {
+    att <- cp
+    file = att.data
+    if file.isDirectory
+  } yield file.getAbsolutePath
+}.mkString(",")
+
+javaOptions ++= Seq("-XX:MaxPermSize=128m", "-Xmx1g", "-XX:+UseConcMarkSweepGC")
+
+javaOptions in Test ++= infoForTests.value
+
+javaOptions in Test += "-Dakka.actor.debug.receive=on"
+
+lazy val infoForTests = TaskKey[Seq[String]]("infoForTests", "for use in tests")
+
+// TODO: cache the results
+// http://stackoverflow.com/questions/25410484
+infoForTests := Seq(
+  "-Densime.compile.jars=" + jars((fullClasspath in Compile).value),
+  "-Densime.test.jars=" + jars((fullClasspath in Test).value),
+  "-Densime.compile.classDirs=" + classDirs((fullClasspath in Compile).value),
+  "-Densime.test.classDirs=" + classDirs((fullClasspath in Test).value),
+  "-Dscala.version=" + scalaVersion.value,
+  // sorry! this puts a source/javadoc dependency on running our tests
+  "-Densime.jars.sources=" + (updateClassifiers in Test).value.select(
+    artifact = artifactFilter(classifier = "sources")
+  ).mkString(",")
+)
+
+// full stacktraces in scalatest
+testOptions in Test += Tests.Argument("-oF")
 
 graphSettings
 
