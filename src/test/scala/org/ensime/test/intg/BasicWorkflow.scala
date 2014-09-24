@@ -24,6 +24,9 @@ class BasicWorkflow extends FunSpec with Matchers {
         interactor.expectAsync(30 seconds, "(:clear-all-scala-notes)")
         interactor.expectAsync(30 seconds, "(:full-typecheck-finished)")
 
+        // WTF? this doesn't happen in 2.10 and 2.11
+        interactor.expectAsync(30 seconds, "(:full-typecheck-finished)")
+
         // semantic highlighting
         val symbolDesignationsRes = interactor.sendRPCString(20 seconds, """(swank:symbol-designations """ + fooFile + """ -1 299 (var val varField valField functionCall operator param class trait object package))""")
         assert(
@@ -100,8 +103,9 @@ class BasicWorkflow extends FunSpec with Matchers {
         // offset was 1846
 
         // C-c C-v p Inspect source of current package
-        interactor.expectRPC(30 seconds, """(swank:inspect-package-by-path "org.example")""",
-          """(:ok (:name "example" :info-type package :full-name "org.example" :members ((:name "Foo$" :type-id 131 :full-name "org.example.Foo$" :decl-as object :pos (:file """ + fooFile + """ :offset 28 :line 3)))))""")
+        val insPacByPathRes = interactor.sendRPCString(30 seconds, """(swank:inspect-package-by-path "org.example")""")
+
+        assert(insPacByPathRes.contains("org.example.Foo"))
       }
     }
   }

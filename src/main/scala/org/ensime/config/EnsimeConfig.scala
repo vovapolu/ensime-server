@@ -27,7 +27,7 @@ case class EnsimeConfig(
     if file.isFile & file.getName.endsWith(".scala")
   } yield file
 
-  def classpath: Set[File] = modules.values.toSet.flatMap {
+  def runtimeClasspath: Set[File] = modules.values.toSet.flatMap {
     m: EnsimeModule => m.compileJars ++ m.testJars ++ m.debugJars :+ m.target :+ m.testTarget
   }
 
@@ -36,6 +36,10 @@ case class EnsimeConfig(
     val alt1 = javaHome / "jre/lib/rt.jar"
     val alt2 = javaHome / "lib/rt.jar"
     List(alt1, alt2).filter(_.exists).headOption
+  }
+
+  def compileClasspath: Set[File] = modules.values.toSet.flatMap {
+    m: EnsimeModule => m.compileJars ++ m.testJars :+ m.target :+ m.testTarget
   }
 
   def allJars: Set[File] = {
@@ -66,9 +70,7 @@ case class EnsimeModule(
 }
 
 object EnsimeConfig extends SLF4JLogging {
-  def parse(root: File, cacheDir: File, configExp: SExp): EnsimeConfig = {
-    require(root.isAbsolute, "root must be absolute: $root")
-    require(cacheDir.isAbsolute, "cacheDir must be absolute: $cacheDir")
+  def parse(configExp: SExp): EnsimeConfig = {
     import RichFile._
     import pimpathon.any._
 
@@ -76,6 +78,9 @@ object EnsimeConfig extends SLF4JLogging {
     //       configuration files. But canon may fail to resolve if
     //       the file/directory does not exist, so we force create all
     //       directories, which is - admitedly - a weird side-effect.
+    val rootMap = SExpExplorer(configExp).asMap
+    val root = file(rootMap.getString(":root-dir")).canon
+    require(root.isDirectory, ":root-dir must exist")
 
     implicit def RichSExpPimp(m: SExpMapExplorer) = new RichSExp(m)
     class RichSExp(m: SExpMapExplorer) {
@@ -92,7 +97,7 @@ object EnsimeConfig extends SLF4JLogging {
         }
     }
 
-    val rootMap = SExpExplorer(configExp).asMap
+    val cacheDir = rootMap.asDir(":cache-dir")
     val name = rootMap.getString(":name")
     val scalaVersion = rootMap.getString(":scala-version")
     val compilerArgs = rootMap.getStringListOpt(":compiler-args").getOrElse(Nil)
