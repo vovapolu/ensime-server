@@ -49,7 +49,8 @@ object TestUtil {
     sources: Boolean = false,
     testSources: Boolean = false,
     classes: Boolean = false,
-    testClasses: Boolean = false): EnsimeConfig = {
+    testClasses: Boolean = false,
+    jars: Boolean = true): EnsimeConfig = {
     val base = tmp.canon
     require(base.isDirectory())
 
@@ -69,17 +70,18 @@ object TestUtil {
         copyDirectory(file(testSourcePath), testSourcesDir)
 
       EnsimeModule(
-        "single", classesDir, testClassesDir, Nil,
-        compileJars, Nil, testJars,
+        "single", classesDir :: Nil, testClassesDir :: Nil, Nil,
+        if (jars) compileJars else List(scalaLib), Nil,
+        if (jars) testJars else Nil,
         mainSourcesDir :: testSourcesDir :: Nil,
-        sourceJars
+        if (jars) sourceJars else Nil
       )
     }
 
     if (classes)
-      copyDirectory(compileClassDirs, module.target)
+      copyDirectory(compileClassDirs, module.targets.head)
     if (testClasses)
-      copyDirectory(testClassDirs, module.testTarget)
+      copyDirectory(testClassDirs, module.testTargets.head)
 
     val cacheDir = base / ".ensime_cache"
     cacheDir.mkdirs()

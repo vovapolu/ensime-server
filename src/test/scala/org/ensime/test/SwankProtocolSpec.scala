@@ -220,6 +220,12 @@ class SwankProtocolSpec extends FunSpec with ShouldMatchers with BeforeAndAfterA
       }
     }
 
+    it("should understand swank:member-by-name") {
+      test("""(swank:member-by-name "org.example.A" "x" t)""") { (t, m, id) =>
+        (t.rpcMemberByName _).expects("org.example.A", "x", true, id)
+      }
+    }
+
     it("should understand swank:type-by-id") {
       test("""(swank:type-by-id 1381)""") { (t, m, id) =>
         (t.rpcTypeById _).expects(1381, id)
@@ -271,6 +277,12 @@ class SwankProtocolSpec extends FunSpec with ShouldMatchers with BeforeAndAfterA
     it("should understand swank:inspect-type-by-id") {
       test("""(swank:inspect-type-by-id 232)""") { (t, m, id) =>
         (t.rpcInspectTypeById _).expects(232, id)
+      }
+    }
+
+    it("should understand swank:inspect-type-by-name") {
+      test("""(swank:inspect-type-by-name "abc.d")""") { (t, m, id) =>
+        (t.rpcInspectTypeByName _).expects("abc.d", id)
       }
     }
 
