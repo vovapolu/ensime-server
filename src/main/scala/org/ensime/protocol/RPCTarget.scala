@@ -44,8 +44,11 @@ trait RPCTarget {
   def rpcInspectTypeAtPoint(f: String, range: OffsetRange, callId: Int)
 
   def rpcInspectTypeById(id: Int, callId: Int)
+  def rpcInspectTypeByName(name: String, callId: Int)
 
   def rpcSymbolAtPoint(f: String, point: Int, callId: Int)
+
+  def rpcMemberByName(typeFullName: String, memberName: String, memberIsType: Boolean, callId: Int)
 
   def rpcTypeById(id: Int, callId: Int)
 

@@ -32,11 +32,10 @@ class Analyzer(
   settings.verbose.value = presCompLog.isDebugEnabled
   settings.usejavacp.value = false
 
-  // HACK: should really get scala-library from our classpath
-  //       and give the option to disable the scala-library (e.g. when working
-  //       on the standard library!)
-  val scalaLib = config.allJars.find(_.getName.contains("scala-library")).get
-  settings.bootclasspath.value = scalaLib.getAbsolutePath
+  config.allJars.find(_.getName.contains("scala-library")) match {
+    case Some(scalaLib) => settings.bootclasspath.value = scalaLib.getAbsolutePath
+    case None => log.warning("scala-library.jar was not present")
+  }
   settings.classpath.value = config.compileClasspath.mkString(File.pathSeparator)
 
   settings.processArguments(config.compilerArgs, processAll = false)
@@ -65,15 +64,10 @@ class Analyzer(
 
   private val reporter = new PresentationReporter(reportHandler)
 
-  protected val scalaCompiler: RichCompilerControl = new RichPresentationCompiler(
-    config, settings, reporter, self, indexer, search
-  )
-
+  protected var scalaCompiler: RichCompilerControl = makeScalaCompiler()
   protected var initTime: Long = 0
   private var awaitingInitialCompile = true
   private var allFilesLoaded = false
-
-  import scalaCompiler._
 
   override def preStart(): Unit = {
     project.bgMessage("Initializing Analyzer. Please wait...")
@@ -84,6 +78,7 @@ class Analyzer(
     Future {
       reporter.disable()
       scalaCompiler.askNotifyWhenReady()
+      if (config.sourceMode) scalaCompiler.askReloadAllFiles()
     }
   }
 
@@ -97,6 +92,24 @@ class Analyzer(
       }
   }
 
+  protected def makeScalaCompiler() = new RichPresentationCompiler(
+    config, settings, reporter, self, indexer, search)
+
+  protected def restartCompiler(keepLoaded: Boolean): Unit = {
+    val files = scalaCompiler.loadedFiles
+    presCompLog.warn("Shut down old PC")
+    scalaCompiler.askShutdown()
+    presCompLog.warn("Starting new PC")
+    scalaCompiler = makeScalaCompiler()
+    if (keepLoaded) {
+      presCompLog.warn("Reloading files")
+      scalaCompiler.askReloadFiles(files)
+    }
+    scalaCompiler.askNotifyWhenReady()
+    project ! AsyncEvent(CompilerRestartedEvent)
+    presCompLog.warn("Started")
+  }
+
   def process(msg: Any): Unit = {
     msg match {
       case AnalyzerShutdownEvent =>
@@ -104,12 +117,10 @@ class Analyzer(
         scalaCompiler.askShutdown()
         context.stop(self)
 
-      case ReloadExistingFilesEvent => if (!allFilesLoaded) {
-        scalaCompiler.askInvalidateTargets()
-        scalaCompiler.askRemoveAllDeleted()
-        scalaCompiler.askReloadExistingFiles()
+      case ReloadExistingFilesEvent => if (allFilesLoaded) {
+        presCompLog.warn("Skipping reload, in all-files mode")
       } else {
-        presCompLog.warn("Skipping, in all-files mode")
+        restartCompiler(true)
       }
 
       case FullTypeCheckCompleteEvent =>
@@ -131,7 +142,7 @@ class Analyzer(
 
             req match {
               case RemoveFileReq(file: File) =>
-                askRemoveDeleted(file)
+                scalaCompiler.askRemoveDeleted(file)
                 project ! RPCResultEvent(toWF(value = true), callId)
 
               case ReloadAllReq =>
@@ -142,13 +153,21 @@ class Analyzer(
                 project ! RPCResultEvent(toWF(value = true), callId)
 
               case UnloadAllReq =>
-                allFilesLoaded = false
-                scalaCompiler.askInvalidateTargets()
-                scalaCompiler.askRemoveAllDeleted()
-                scalaCompiler.askUnloadAllFiles()
+                if (config.sourceMode) {
+                  log.info("in source mode, will reload all files")
+                  scalaCompiler.askRemoveAllDeleted()
+                  restartCompiler(true)
+                } else {
+                  allFilesLoaded = false
+                  restartCompiler(false)
+                }
                 project ! RPCResultEvent(toWF(value = true), callId)
 
               case ReloadFilesReq(files) =>
+                files foreach { file =>
+                  require(file.file.exists, file + " does not exist")
+                }
+
                 val (javas, scalas) = files.filter(_.file.exists).partition(
                   _.file.getName.endsWith(".java"))
 
@@ -216,6 +235,13 @@ class Analyzer(
                 }
                 project ! RPCResultEvent(result, callId)
 
+              case InspectTypeByNameReq(name: String) =>
+                val result = scalaCompiler.askInspectTypeByName(name) match {
+                  case Some(info) => toWF(info)
+                  case None => wfNull
+                }
+                project ! RPCResultEvent(result, callId)
+
               case SymbolAtPointReq(file: File, point: Int) =>
                 val p = pos(file, point)
                 val result = scalaCompiler.askSymbolInfoAt(p) match {
@@ -241,6 +267,13 @@ class Analyzer(
 
               case TypeByIdReq(id: Int) =>
                 val result = scalaCompiler.askTypeInfoById(id) match {
+                  case Some(info) => toWF(info)
+                  case None => wfNull
+                }
+                project ! RPCResultEvent(result, callId)
+
+              case MemberByNameReq(typeName: String, memberName: String, memberIsType: Boolean) =>
+                val result = scalaCompiler.askMemberInfoByName(typeName, memberName, memberIsType) match {
                   case Some(info) => toWF(info)
                   case None => wfNull
                 }

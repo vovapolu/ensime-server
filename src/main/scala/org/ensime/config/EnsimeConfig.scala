@@ -15,7 +15,8 @@ case class EnsimeConfig(
     compilerArgs: List[String],
     modules: Map[String, EnsimeModule],
     referenceSourceJars: List[File],
-    formattingPrefs: FormattingPreferences = FormattingPreferences()) {
+    formattingPrefs: FormattingPreferences = FormattingPreferences(),
+    sourceMode: Boolean = false) {
   (root :: cacheDir :: referenceSourceJars).foreach { f =>
     require(f.exists, f + " is required but does not exist")
   }
@@ -27,9 +28,8 @@ case class EnsimeConfig(
     if file.isFile & file.getName.endsWith(".scala")
   } yield file
 
-  def runtimeClasspath: Set[File] = modules.values.toSet.flatMap {
-    m: EnsimeModule => m.compileJars ++ m.testJars ++ m.debugJars :+ m.target :+ m.testTarget
-  }
+  def runtimeClasspath: Set[File] =
+    compileClasspath ++ modules.values.flatMap(_.debugJars) ++ targetClasspath
 
   val javaLib: Option[File] = {
     val javaHome = file(System.getProperty("java.home"))
@@ -39,7 +39,11 @@ case class EnsimeConfig(
   }
 
   def compileClasspath: Set[File] = modules.values.toSet.flatMap {
-    m: EnsimeModule => m.compileJars ++ m.testJars :+ m.target :+ m.testTarget
+    m: EnsimeModule => m.compileJars ++ m.testJars
+  } ++ (if (sourceMode) List.empty else targetClasspath)
+
+  def targetClasspath: Set[File] = modules.values.toSet.flatMap {
+    m: EnsimeModule => m.targets ++ m.testTargets
   }
 
   def allJars: Set[File] = {
@@ -52,15 +56,15 @@ case class EnsimeConfig(
 
 case class EnsimeModule(
     name: String,
-    target: File,
-    testTarget: File,
+    targets: List[File],
+    testTargets: List[File],
     dependsOnNames: List[String],
     compileJars: List[File],
     debugJars: List[File],
     testJars: List[File],
     sourceRoots: List[File],
     referenceSourcesJars: List[File]) {
-  (target :: testTarget :: compileJars ::: debugJars :::
+  (targets ::: testTargets ::: compileJars ::: debugJars :::
     testJars ::: sourceRoots ::: referenceSourcesJars) foreach { f =>
       require(f.exists, f + " is required by " + name + " but does not exist")
     }
@@ -84,8 +88,12 @@ object EnsimeConfig extends SLF4JLogging {
 
     implicit def RichSExpPimp(m: SExpMapExplorer) = new RichSExp(m)
     class RichSExp(m: SExpMapExplorer) {
-      def asDir(name: String): File =
-        file(m.getString(name)).rebaseIfRelative(root).tap(_.mkdirs()).canon
+      def asDirOpt(name: String): Option[File] =
+        m.getStringOpt(name).map { f =>
+          file(f).rebaseIfRelative(root).tap(_.mkdirs()).canon
+        }
+
+      def asDir(name: String): File = asDirOpt(name).get
 
       def asDirs(name: String): List[File] =
         m.getStringListOpt(name).getOrElse(Nil).map { n =>
@@ -105,9 +113,15 @@ object EnsimeConfig extends SLF4JLogging {
     val subProjectsSExps = rootMap.getList(":subprojects").map(_.asMap)
     val subModules = subProjectsSExps.map { entry =>
       val moduleName = entry.getString(":name")
-      val target = entry.asDir(":target")
-      val testTarget = entry.asDir(":test-target")
-      val dependentModuleNames = entry.getStringList(":depends-on-modules")
+      val targets = entry.asDirOpt(":target") match {
+        case Some(target) => target :: Nil
+        case None => entry.asDirs(":targets")
+      }
+      val testTargets = entry.asDirOpt(":test-target") match {
+        case Some(target) => target :: Nil
+        case None => entry.asDirs(":test-targets")
+      }
+      val dependentModuleNames = entry.getStringListOpt(":depends-on-modules").getOrElse(Nil)
       val compileDeps = entry.asFiles(":compile-deps")
       val debugDeps = entry.asFiles(":runtime-deps")
       val testDeps = entry.asFiles(":test-deps")
@@ -115,7 +129,7 @@ object EnsimeConfig extends SLF4JLogging {
       val referenceSourceJars = entry.asFiles(":reference-source-roots")
 
       moduleName -> EnsimeModule(
-        moduleName, target, testTarget, dependentModuleNames,
+        moduleName, targets, testTargets, dependentModuleNames,
         compileDeps, debugDeps, testDeps, sourceRoots, referenceSourceJars
       )
     }.toMap
@@ -174,10 +188,11 @@ object EnsimeConfig extends SLF4JLogging {
       }
     }
 
+    val sourceMode = rootMap.getBooleanOpt(":source-mode").getOrElse(false)
     EnsimeConfig(
       root.tap(_.mkdirs()).canon, cacheDir.tap(_.mkdirs()).canon,
       name, scalaVersion, compilerArgs, subModules,
-      referenceSourceJars, formattingPrefs
+      referenceSourceJars, formattingPrefs, sourceMode
     )
   }
 }
