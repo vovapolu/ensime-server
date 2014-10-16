@@ -16,7 +16,7 @@ scalaVersion := "2.10.4"
 
 version := "0.9.10-SNAPSHOT"
 
-resolvers += Resolver.sonatypeRepo("snapshots")
+//resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies ++= Seq(
   "com.github.stacycurl"       %% "pimpathon-core"       % "1.0.0",
@@ -28,7 +28,6 @@ libraryDependencies ++= Seq(
   // lucene 4.8+ needs Java 7: http://www.gossamer-threads.com/lists/lucene/general/225300
   "org.apache.lucene"          %  "lucene-core"          % "4.7.2",
   "org.apache.lucene"          %  "lucene-analyzers-common" % "4.7.2",
-  "org.sonatype.tycho"         %  "org.eclipse.jdt.core" % "3.6.2.v_A76_R36x",
   "org.ow2.asm"                %  "asm-commons"          % "5.0.3",
   "org.ow2.asm"                %  "asm-util"             % "5.0.3",
   "com.danieltrinh"            %% "scalariform"          % "0.1.5",
@@ -132,6 +131,9 @@ infoForTests := Seq(
     artifact = artifactFilter(classifier = "sources")
   ).mkString(",")
 )
+
+// adds our example projects to the test compile
+unmanagedSourceDirectories in Test += baseDirectory.value / "src/example-simple"
 
 // full stacktraces in scalatest
 testOptions in Test += Tests.Argument("-oF")

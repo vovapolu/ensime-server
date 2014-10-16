@@ -917,6 +917,27 @@ class SwankProtocol extends Protocol {
 
       /**
        * Doc RPC:
+       *   swank:member-by-name
+       * Summary:
+       *   Request description of a member of a given type
+       * Arguments:
+       *   String: Type full-name as return by swank:typeInfo
+       *   String: Member name
+       *   Boolean: true if the member is a trait or class, flase otherwise
+       * Return:
+       *   A SymbolInfo
+       * Example call:
+       *   (:swank-rpc (swank:member-by-name "com.example.Class", "x", nil) 42)
+       * Example return:
+       *   (:return (:ok (:name "x" :local-name "x" :type (:name "String" :type-id 25
+       *   :full-name "java.lang.String" :decl-as class) :decl-pos
+       *   (:file "SwankProtocol.scala" :offset 36404))) 42)
+       */
+      case ("swank:member-by-name", StringAtom(typeFullName) :: StringAtom(memberName) :: BooleanAtom(memberIsType) :: Nil) =>
+        rpcTarget.rpcMemberByName(typeFullName, memberName, memberIsType, callId)
+
+      /**
+       * Doc RPC:
        *   swank:type-by-id
        * Summary:
        *   Request description of the type with given type id.
@@ -1031,6 +1052,25 @@ class SwankProtocol extends Protocol {
        */
       case ("swank:inspect-type-by-id", IntAtom(id) :: Nil) =>
         rpcTarget.rpcInspectTypeById(id, callId)
+
+      /**
+       * Doc RPC:
+       *   swank:inspect-type-by-name
+       * Summary:
+       *   Lookup detailed type description by its full name
+       * Arguments:
+       *   String: Type full-name as return by swank:typeInfo
+       * Return:
+       *   A TypeInspectInfo
+       * Example call:
+       *   (:swank-rpc (swank:inspect-type-by-name "abc.d") 42)
+       * Example return:
+       *   (:return (:ok (:type (:name "SExpList$" :type-id 1469 :full-name
+       *   "abc.d" :decl-as class :pos
+       *   (:file "SExp.scala" :offset 1877))......)) 42)
+       */
+      case ("swank:inspect-type-by-name", StringAtom(name) :: Nil) =>
+        rpcTarget.rpcInspectTypeByName(name, callId)
 
       /**
        * Doc RPC:

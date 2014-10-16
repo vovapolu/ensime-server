@@ -43,13 +43,18 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
     askOption(symbolAt(p).map(SymbolInfo(_))).getOrElse(None)
 
   def askTypeInfoAt(p: Position): Option[TypeInfo] =
-    askOption(typeAt(p).map(TypeInfo(_))).getOrElse(None)
+    askOption(typeAt(p).map(TypeInfo(_, PosNeededYes))).getOrElse(None)
 
   def askTypeInfoById(id: Int): Option[TypeInfo] =
-    askOption(typeById(id).map(TypeInfo(_))).getOrElse(None)
+    askOption(typeById(id).map(TypeInfo(_, PosNeededYes))).getOrElse(None)
+
+  def askMemberInfoByName(typeName: String, memberName: String, memberIsType: Boolean): Option[SymbolInfo] = {
+    val name = typeName + "$" + memberName + (if (memberIsType) "" else "$")
+    askOption(symbolByName(name).map(SymbolInfo(_))).getOrElse(None)
+  }
 
   def askTypeInfoByName(name: String): Option[TypeInfo] =
-    askOption(typeByName(name).map(TypeInfo(_))).getOrElse(None)
+    askOption(typeByName(name).map(TypeInfo(_, PosNeededYes))).getOrElse(None)
 
   def askTypeInfoByNameAt(name: String, p: Position): Option[TypeInfo] = {
     val nameSegs = name.split("\\.")
@@ -89,11 +94,11 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
     x.get
   }
 
-  def askInvalidateTargets(): Unit = {
-    config.modules.values.foreach(m => {
-      askOption(invalidatePackage(m.target))
-      askOption(invalidatePackage(m.testTarget))
-    })
+  def askInvalidateTargets(): Unit = for {
+    m <- config.modules.values
+    dir <- (m.targets ++ m.testTargets)
+  } {
+    askOption(invalidatePackage(dir))
   }
 
   def askUnloadAllFiles(): Unit = askOption(unloadAllFiles())
@@ -112,15 +117,19 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
     askReloadFiles(all)
   }
 
-  def askReloadExistingFiles() = {
-    askReloadFiles(activeUnits.map(_.source))
-  }
+  def loadedFiles: List[SourceFile] = activeUnits.map(_.source)
+
+  def askReloadExistingFiles() =
+    askReloadFiles(loadedFiles)
 
   def askInspectTypeById(id: Int): Option[TypeInspectInfo] =
     askOption(typeById(id).map(inspectType)).getOrElse(None)
 
   def askInspectTypeAt(p: Position): Option[TypeInspectInfo] =
     askOption(inspectTypeAt(p)).getOrElse(None)
+
+  def askInspectTypeByName(name: String): Option[TypeInspectInfo] =
+    askOption(typeByName(name).map(inspectType)).getOrElse(None)
 
   def askCompletePackageMember(path: String, prefix: String): List[CompletionInfo] =
     askOption(completePackageMember(path, prefix)).getOrElse(List.empty)
@@ -136,8 +145,7 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
 
   def askSymbolDesignationsInRegion(p: RangePosition, tpes: List[scala.Symbol]): SymbolDesignations =
     askOption(
-      new SemanticHighlighting(this).symbolDesignationsInRegion(p, tpes)).getOrElse(SymbolDesignations("", List.empty)
-      )
+      new SemanticHighlighting(this).symbolDesignationsInRegion(p, tpes)).getOrElse(SymbolDesignations("", List.empty))
 
   def askClearTypeCache() = clearTypeCache()
 
@@ -271,7 +279,7 @@ class RichPresentationCompiler(
   protected def inspectType(tpe: Type): TypeInspectInfo = {
     val parents = tpe.parents
     new TypeInspectInfo(
-      TypeInfo(tpe),
+      TypeInfo(tpe, PosNeededAvail),
       companionTypeOf(tpe).map(cacheType),
       prepareSortedInterfaceInfo(typePublicMembers(tpe.asInstanceOf[Type]), parents))
   }
@@ -282,7 +290,7 @@ class RichPresentationCompiler(
       val parents = tpe.parents
       val preparedMembers = prepareSortedInterfaceInfo(members, parents)
       new TypeInspectInfo(
-        TypeInfo(tpe),
+        TypeInfo(tpe, PosNeededAvail),
         companionTypeOf(tpe).map(cacheType),
         preparedMembers
       )
@@ -325,11 +333,7 @@ class RichPresentationCompiler(
 
   protected def symbolByName(name: String): Option[Symbol] = {
     try {
-      val sym = if (name.endsWith("$")) {
-        rootMirror.getModuleByName(newTermName(name.substring(0, name.length - 1)))
-      } else {
-        rootMirror.getClassByName(newTypeName(name))
-      }
+      val sym = symbolFromString(name)
       sym match {
         case NoSymbol => None
         case sym: Symbol => Some(sym)
