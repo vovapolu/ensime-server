@@ -24,6 +24,7 @@ class DatabaseService(dir: File) extends SLF4JLogging {
     val ds = new BoneCPDataSource()
     ds.setDriverClass(driver)
     ds.setJdbcUrl(url)
+    ds.setStatementsCacheSize(50)
     Database.forDataSource(ds)
   }
 
@@ -161,8 +162,7 @@ object DatabaseService {
       internal: Option[String], // for fields
       source: Option[String], // VFS
       line: Option[Int],
-      offset: Option[Int] // to be deprecated
-      // future features:
+      offset: Option[Int] = None // future features:
       //    type: ??? --- better than descriptor/internal
       ) {
     // this is just as a helper until we can use more sensible
