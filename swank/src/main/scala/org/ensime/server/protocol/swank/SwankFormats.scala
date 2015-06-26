@@ -202,7 +202,7 @@ object SwankProtocolResponse {
   implicit val PackageHint = TypeHint[PackageInfo](SexpSymbol("package"))
   implicit val TypeInfoHint = TypeHint[TypeInfo](SexpSymbol("type"))
   implicit val ArrowTypeHint = TypeHint[ArrowTypeInfo](SexpSymbol("t"))
-  implicit val BasicTypeHint = TypeHint[BasicTypeInfo](SexpSymbol("nil"))
+  implicit val BasicTypeHint = TypeHint[BasicTypeInfo](SexpSymbol("nil")) // can't be SexpNil because it's not a Symbol
   implicit val DebugVmSuccessHint = TypeHint[DebugVmSuccess](SexpSymbol("success"))
   implicit val DebugVmErrorHint = TypeHint[DebugVmError](SexpSymbol("error"))
   implicit val MethodSearchResultHint = TypeHint[MethodSearchResult](SexpSymbol("method"))
@@ -245,6 +245,11 @@ object SwankProtocolResponse {
   implicit val RefactorResultFormat = SexpFormat[RefactorResult]
   implicit val DebugVmErrorFormat = SexpFormat[DebugVmError]
   implicit val EmptySourcePositionFormat = SexpFormat[EmptySourcePosition]
+
+  implicit object ERangePositionsFormat extends SexpFormat[ERangePositions] {
+    def read(s: Sexp): ERangePositions = ???
+    def write(rs: ERangePositions): Sexp = rs.positions.toSexp
+  }
 
   implicit object DebugValueFormat extends TraitFormatAlt[DebugValue] {
     override val key = SexpSymbol(":val-type")
@@ -498,51 +503,70 @@ object SwankProtocolResponse {
     }
   }
 
-  // WORKAROUND not having a sealed family for RPC responses
-  def unhappyFamily(msg: Any): Sexp = msg match {
-    // we need an Ensime wrapper for these primitive response types
-    case b: Boolean => b.toSexp
-    case s: String => s.toSexp
-    case list: List[_] if list.forall(_.isInstanceOf[ERangePosition]) =>
-      list.asInstanceOf[List[ERangePosition]].toSexp
+  implicit object RpcResponseFormat extends SexpFormat[RpcResponse] {
+    def read(sexp: Sexp): RpcResponse = ???
+    def write(r: RpcResponse): Sexp = r match {
+      case VoidResponse => false.toSexp
+      case TrueResponse => true.toSexp
+      case FalseResponse => false.toSexp
+      case value: StringResponse => value.text.toSexp
 
-    case VoidResponse => false.toSexp
+      case value: ConnectionInfo => value.toSexp
 
-    case value: ConnectionInfo => value.toSexp
+      case value: NamedTypeMemberInfo => value.toSexp
+      case value: TypeInfo => value.toSexp
+      case value: EntityInfo => value.toSexp
+      case value: SymbolSearchResult => value.toSexp
+      case value: DebugVmStatus => value.toSexp
 
-    case value: NamedTypeMemberInfo => value.toSexp
-    case value: TypeInfo => value.toSexp
-    case value: EntityInfo => value.toSexp
-    case value: SymbolSearchResult => value.toSexp
-    case value: DebugVmStatus => value.toSexp
+      case value: SourcePosition => value.toSexp
+      case value: DebugLocation => value.toSexp
+      case value: DebugValue => value.toSexp
+      case value: DebugClassField => value.toSexp
+      case value: DebugStackLocal => value.toSexp
+      case value: DebugStackFrame => value.toSexp
+      case value: DebugBacktrace => value.toSexp
+      case value: Breakpoint => value.toSexp
+      case value: BreakpointList => value.toSexp
+      case value: Note => value.toSexp
+      case value: CompletionInfo => value.toSexp
+      case value: CompletionInfoList => value.toSexp
+      case value: SymbolInfo => value.toSexp
+      case value: CallCompletionInfo => value.toSexp
+      case value: InterfaceInfo => value.toSexp
+      case value: TypeInspectInfo => value.toSexp
+      case value: SymbolSearchResults => value.toSexp
+      case value: ImportSuggestions => value.toSexp
+      case value: ERangePositions => value.toSexp
+      case value: FileRange => value.toSexp
+      case value: SymbolDesignations => value.toSexp
+      case value: RefactorFailure => value.toSexp
+      case value: RefactorEffect => value.toSexp
+      case value: RefactorResult => value.toSexp
+      case value: ImplicitInfos => value.toSexp
 
-    case value: SourcePosition => value.toSexp
-    case value: DebugLocation => value.toSexp
-    case value: DebugValue => value.toSexp
-    case value: DebugClassField => value.toSexp
-    case value: DebugStackLocal => value.toSexp
-    case value: DebugStackFrame => value.toSexp
-    case value: DebugBacktrace => value.toSexp
-    case value: Breakpoint => value.toSexp
-    case value: BreakpointList => value.toSexp
-    case value: Note => value.toSexp
-    case value: CompletionInfo => value.toSexp
-    case value: CompletionInfoList => value.toSexp
-    case value: SymbolInfo => value.toSexp
-    case value: CallCompletionInfo => value.toSexp
-    case value: InterfaceInfo => value.toSexp
-    case value: TypeInspectInfo => value.toSexp
-    case value: SymbolSearchResults => value.toSexp
-    case value: ImportSuggestions => value.toSexp
-    case value: ERangePosition => value.toSexp
-    case value: FileRange => value.toSexp
-    case value: SymbolDesignations => value.toSexp
-    case value: RefactorFailure => value.toSexp
-    case value: RefactorEffect => value.toSexp
-    case value: RefactorResult => value.toSexp
-    case value: ImplicitInfos => value.toSexp
+      case error: EnsimeServerError =>
+        throw new IllegalArgumentException(
+          s"for legacy reasons, RpcError should be marshalled as an EnsimeServerMessage: $error"
+        )
+    }
+  }
 
-    case _ => throw new IllegalArgumentException(s"$msg is not a valid SWANK response")
+  object EnsimeServerMessageFormat extends SexpFormat[EnsimeServerMessage] {
+    def read(sexp: Sexp): EnsimeServerMessage = ???
+    def write(o: EnsimeServerMessage): Sexp = o match {
+      case event: EnsimeEvent => event.toSexp
+      case RpcResponseEnvelope(callId, EnsimeServerError(detail)) => SexpList(
+        SexpSymbol(":return"),
+        SexpList(SexpSymbol(":abort"), SexpNumber(666), SexpString(detail)),
+        SexpNumber(callId)
+      )
+      case resp: RpcResponseEnvelope => SexpList(
+        SexpSymbol(":return"),
+        SexpList(SexpSymbol(":ok"), resp.payload.toSexp),
+        SexpNumber(resp.callId)
+      )
+    }
   }
 
 }
@@ -825,7 +849,7 @@ object SwankProtocolRequest {
     }
   }
 
-  implicit object RpcRequestEnvelopeFormat extends SexpFormat[RpcRequestEnvelope] {
+  object RpcRequestEnvelopeFormat extends SexpFormat[RpcRequestEnvelope] {
     def write(env: RpcRequestEnvelope): Sexp = ???
     def read(sexp: Sexp): RpcRequestEnvelope = sexp match {
       case SexpList(SexpSymbol(":swank-rpc") :: form :: SexpNumber(callIdBI) :: Nil) =>
@@ -838,8 +862,14 @@ object SwankProtocolRequest {
             // should return an rpc abort rather than :reader-error as emacs tends to bork.
             throw new SwankRPCFormatException(s"Invalid rpc request ${form.compactPrint}", callId, ex)
         }
+
       case _ => deserializationError(sexp)
     }
   }
 
+}
+
+object SwankFormats {
+  implicit val RpcRequestEnvelopeFormat = SwankProtocolRequest.RpcRequestEnvelopeFormat
+  implicit val EnsimeServerMessageFormat = SwankProtocolResponse.EnsimeServerMessageFormat
 }

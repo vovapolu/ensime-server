@@ -146,6 +146,8 @@ class FamilyFormatsSpec extends FlatSpec with Matchers
   import examples._
   import ExamplesFormats._
 
+  def roundtrip[T: JsonFormat](value: T, via: String): Unit = roundtrip(value, Some(via))
+
   "FamilyFormats" should "support case objects" in {
     roundtrip(Baz, "{}")
   }

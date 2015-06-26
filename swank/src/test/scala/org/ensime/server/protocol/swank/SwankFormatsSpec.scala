@@ -10,27 +10,38 @@ import org.ensime.util._
 import pimpathon.file._
 
 class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
-  import SwankProtocolRequest.RpcRequestFormat
-  import SwankProtocolResponse.unhappyFamily
-  import SwankProtocolResponse.EnsimeEventFormat
-
+  import SwankFormats._
   import SwankTestData._
 
-  def marshal(value: Any, via: Option[String] = None): Unit = {
-    val sexp = value match {
-      case e: EnsimeEvent => e.toSexp
-      case other => unhappyFamily(other)
+  def marshal(value: RpcResponse, via: Option[String]): Unit = {
+    val sexp = (RpcResponseEnvelope(666, value): EnsimeServerMessage).toSexp match {
+      case SexpList(
+        SexpSymbol(":return") ::
+          SexpList(SexpSymbol(":ok") :: payload :: Nil) ::
+          SexpNumber(callId) :: Nil
+        ) if callId == 666 => payload
     }
-    val string = sexp.compactPrint
     via match {
-      case None => println(s"$value = $string")
-      case Some(expected) => string shouldBe expected
+      case None => println(s"$value = ${sexp.compactPrint}")
+      // using String form because SexpSymbol("nil") for BasicTypeHint is not commutative
+      case Some(expected) => sexp.compactPrint shouldBe expected
     }
   }
-  def marshal(value: Any, via: String): Unit = marshal(value, Some(via))
+  def marshal(value: RpcResponse, via: String): Unit = marshal(value, Some(via))
+
+  def marshal(value: EnsimeEvent, via: Option[String]): Unit = {
+    val sexp = (value: EnsimeServerMessage).toSexp
+    via match {
+      case None => println(s"$value = ${sexp.compactPrint}")
+      case Some(expected) => sexp.compactPrint shouldBe expected
+    }
+  }
+  def marshal(value: EnsimeEvent, via: String): Unit = marshal(value, Some(via))
 
   def unmarshal(from: String, to: RpcRequest): Unit = {
-    from.parseSexp.convertTo[RpcRequest] shouldBe to
+    val sexp = s"(:swank-rpc ${from} 666)"
+    //println(sexp + " => " + sexp.parseSexp)
+    sexp.parseSexp.convertTo[RpcRequestEnvelope].req shouldBe to
   }
 
   "SWANK Formats" should "unmarshal startup messages" in {
@@ -89,7 +100,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:doc-uri-at-point $file1_str (1 10)))""",
+      s"""(swank:doc-uri-at-point $file1_str (1 10))""",
       DocUriAtPointReq(file1, OffsetRange(1, 10)): RpcRequest
     )
 
@@ -566,8 +577,8 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
   it should "marshal ranges and semantic highlighting" in {
     marshal(
-      new ERangePosition(batchSourceFile, 75, 70, 90): ERangePosition,
-      """(:file """ + batchSourceFile_str + """ :offset 75 :start 70 :end 90)"""
+      ERangePositions(ERangePosition(batchSourceFile, 75, 70, 90) :: Nil),
+      """((:file """ + batchSourceFile_str + """ :offset 75 :start 70 :end 90))"""
     )
 
     marshal(
@@ -611,6 +622,29 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
       refactorResult: RefactorResult,
       s"""(:procedure-id 7 :refactor-type addImport :touched-files ($file3_str $file1_str) :status success)"""
     )
+  }
+
+  it should "marshal legacy raw response types" in {
+    marshal(
+      FalseResponse,
+      "nil"
+    )
+
+    marshal(
+      TrueResponse,
+      "t"
+    )
+
+    marshal(
+      StringResponse("wibble"),
+      """"wibble""""
+    )
+
+    marshal(
+      VoidResponse,
+      """nil"""
+    )
+
   }
 
 }

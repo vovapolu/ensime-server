@@ -1,6 +1,10 @@
 package org.ensime.fixture
 
+import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
+import java.util.concurrent.TimeUnit
 import org.scalatest._
+import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.testkit._
@@ -20,6 +24,8 @@ trait TestKitFixture {
     !this.isInstanceOf[TestKit],
     "IsolatedActorSystems are incompatible with TestKit. Instead, 'import sys._'"
   )
+
+  implicit protected val timeout: Timeout = ConfigFactory.load().getDuration("akka.test.default-timeout", TimeUnit.MILLISECONDS) milliseconds
 
   def withTestKit(testCode: TestKitFix => Any): Any
 }

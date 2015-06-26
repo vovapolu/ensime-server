@@ -2,38 +2,31 @@ package org.ensime.api
 
 import java.io.File
 
-// TODO: outgoing messages should be a sealed family
+sealed trait EnsimeServerMessage
 
 /**
- * There should be exactly one RpcResponse (or RpcError) in response
- * to an RpcRequest.
- *
- * Unfortunately there is no common family for the msg at this time.
- * See JerkFormats or SwankProtocol for a list of what is supported.
+ * There should be exactly one `RpcResponseEnvelope` in response to an
+ * `RpcRequestEnvelope`.
  */
-case class RpcResponse(callId: Int, msg: Any)
-
-/**
- * An error occurred when processing an RpcRequest. (In reality most
- * unexpected errors will be timeouts and the real cause will be in
- * the server log).
- */
-case class RpcError(
+case class RpcResponseEnvelope(
   callId: Int,
-  detail: String
-)
+  payload: RpcResponse
+) extends EnsimeServerMessage
 
 /**
  * A message that the server can send to the client at any time.
  */
-sealed trait EnsimeEvent
+sealed trait EnsimeEvent extends EnsimeServerMessage
 
 //////////////////////////////////////////////////////////////////////
 // Contents of the payload
 
+sealed trait RpcResponse
+case class EnsimeServerError(description: String) extends RpcResponse
+
 case object DebuggerShutdownEvent
 
-sealed abstract class DebugVmStatus
+sealed trait DebugVmStatus extends RpcResponse
 
 // must have redundant status: String to match legacy API
 case class DebugVmSuccess(
@@ -72,6 +65,16 @@ case object CompilerRestartedEvent extends GeneralSwankEvent
 
 /** The presentation compiler has invalidated all existing notes.  */
 case object ClearAllScalaNotesEvent extends GeneralSwankEvent
+
+case class Note(
+  file: String,
+  msg: String,
+  severity: NoteSeverity,
+  beg: Int,
+  end: Int,
+  line: Int,
+  col: Int
+) extends RpcResponse
 
 /** The presentation compiler is providing notes: e.g. errors, warnings. */
 case class NewScalaNotesEvent(
@@ -122,13 +125,13 @@ case class DebugOutputEvent(body: String) extends DebugEvent
 case object ReloadExistingFilesEvent
 case object AskReTypecheck
 
-case object VoidResponse
+case object VoidResponse extends RpcResponse
 
 case class RefactorFailure(
   procedureId: Int,
   reason: String,
   status: scala.Symbol = 'failure // redundant field
-)
+) extends RpcResponse
 
 trait RefactorProcedure {
   def procedureId: Int
@@ -140,14 +143,14 @@ case class RefactorEffect(
   refactorType: RefactorType,
   changes: Seq[FileEdit],
   status: scala.Symbol = 'success // redundant field
-) extends RefactorProcedure
+) extends RpcResponse with RefactorProcedure
 
 case class RefactorResult(
   procedureId: Int,
   refactorType: RefactorType,
   touchedFiles: Seq[File],
   status: scala.Symbol = 'success // redundant field
-) extends RefactorProcedure
+) extends RpcResponse with RefactorProcedure
 
 sealed abstract class RefactorDesc(val refactorType: RefactorType)
 
@@ -195,7 +198,7 @@ case class PatchReplace(
   text: String
 ) extends PatchOp
 
-sealed trait EntityInfo {
+sealed trait EntityInfo extends RpcResponse {
   def name: String
   def members: Iterable[EntityInfo]
 }
@@ -233,7 +236,7 @@ case object PosNeededNo extends PosNeeded
 case object PosNeededAvail extends PosNeeded
 case object PosNeededYes extends PosNeeded
 
-sealed trait SourcePosition
+sealed trait SourcePosition extends RpcResponse
 case class EmptySourcePosition() extends SourcePosition
 case class OffsetSourcePosition(file: File, offset: Int) extends SourcePosition
 case class LineSourcePosition(file: File, line: Int) extends SourcePosition
@@ -247,7 +250,7 @@ case class PackageInfo(
   require(members == members.sortBy(_.name), "members should be sorted by name")
 }
 
-sealed trait SymbolSearchResult {
+sealed trait SymbolSearchResult extends RpcResponse {
   def name: String
   def localName: String
   def declAs: DeclaredAs
@@ -270,13 +273,13 @@ case class MethodSearchResult(
 ) extends SymbolSearchResult
 
 // what is the point of these types?
-case class ImportSuggestions(symLists: List[List[SymbolSearchResult]])
-case class SymbolSearchResults(syms: List[SymbolSearchResult])
+case class ImportSuggestions(symLists: List[List[SymbolSearchResult]]) extends RpcResponse
+case class SymbolSearchResults(syms: List[SymbolSearchResult]) extends RpcResponse
 
 case class SymbolDesignations(
   file: File,
   syms: List[SymbolDesignation]
-)
+) extends RpcResponse
 
 case class SymbolDesignation(
   start: Int,
@@ -291,7 +294,7 @@ case class SymbolInfo(
     `type`: TypeInfo,
     isCallable: Boolean,
     ownerTypeId: Option[Int]
-) {
+) extends RpcResponse {
   def tpe = `type`
 }
 
@@ -321,15 +324,15 @@ case class CompletionInfo(
   isCallable: Boolean,
   relevance: Int,
   toInsert: Option[String]
-)
+) extends RpcResponse
 
 case class CompletionInfoList(
   prefix: String,
   completions: List[CompletionInfo]
-)
+) extends RpcResponse
 
-case class Breakpoint(file: File, line: Int)
-case class BreakpointList(active: List[Breakpoint], pending: List[Breakpoint])
+case class Breakpoint(file: File, line: Int) extends RpcResponse
+case class BreakpointList(active: List[Breakpoint], pending: List[Breakpoint]) extends RpcResponse
 
 case class OffsetRange(from: Int, to: Int)
 
@@ -366,7 +369,7 @@ object DebugObjectId {
   }
 }
 
-sealed trait DebugLocation
+sealed trait DebugLocation extends RpcResponse
 
 case class DebugObjectReference(objectId: DebugObjectId) extends DebugLocation
 
@@ -380,7 +383,7 @@ case class DebugArrayElement(objectId: DebugObjectId, index: Int) extends DebugL
 
 case class DebugObjectField(objectId: DebugObjectId, field: String) extends DebugLocation
 
-sealed trait DebugValue {
+sealed trait DebugValue extends RpcResponse {
   def typeName: String
 }
 
@@ -419,14 +422,14 @@ case class DebugClassField(
   name: String,
   typeName: String,
   summary: String
-)
+) extends RpcResponse
 
 case class DebugStackLocal(
   index: Int,
   name: String,
   summary: String,
   typeName: String
-)
+) extends RpcResponse
 
 case class DebugStackFrame(
   index: Int,
@@ -436,13 +439,13 @@ case class DebugStackFrame(
   methodName: String,
   pcLocation: LineSourcePosition,
   thisObjectId: DebugObjectId
-)
+) extends RpcResponse
 
 case class DebugBacktrace(
   frames: List[DebugStackFrame],
   threadId: DebugThreadId,
   threadName: String
-)
+) extends RpcResponse
 
 case class NamedTypeMemberInfo(
     name: String,
@@ -497,7 +500,7 @@ case class ArrowTypeInfo(
 case class CallCompletionInfo(
   resultType: TypeInfo,
   paramSections: Iterable[ParamSectionInfo]
-)
+) extends RpcResponse
 
 case class ParamSectionInfo(
   params: Iterable[(String, TypeInfo)],
@@ -507,7 +510,7 @@ case class ParamSectionInfo(
 case class InterfaceInfo(
     `type`: TypeInfo,
     viaView: Option[String]
-) {
+) extends RpcResponse {
   def tpe = `type`
 }
 
@@ -516,12 +519,15 @@ case class TypeInspectInfo(
     companionId: Option[Int],
     interfaces: Iterable[InterfaceInfo],
     infoType: scala.Symbol = 'typeInspect // redundant field in protocol
-) {
+) extends RpcResponse {
   def supers = interfaces
 }
 
 /** ERangePosition is a mirror of scala compiler internal RangePosition as a case class to */
 case class ERangePosition(file: String, offset: Int, start: Int, end: Int)
+case class ERangePositions(positions: List[ERangePosition]) extends RpcResponse
+
+case class FileRange(file: String, start: Int, end: Int) extends RpcResponse
 
 case class EnsimeImplementation(
   name: String
@@ -530,12 +536,9 @@ case class ConnectionInfo(
   pid: Option[Int] = None,
   implementation: EnsimeImplementation = EnsimeImplementation("ENSIME"),
   version: String = "0.8.17"
-)
+) extends RpcResponse
 
-sealed trait ImplicitInfo {
-  def start: Int
-  def end: Int
-}
+sealed trait ImplicitInfo
 
 case class ImplicitConversionInfo(
   start: Int,
@@ -551,4 +554,9 @@ case class ImplicitParamInfo(
   funIsImplicit: Boolean
 ) extends ImplicitInfo
 
-case class ImplicitInfos(infos: List[ImplicitInfo])
+case class ImplicitInfos(infos: List[ImplicitInfo]) extends RpcResponse
+
+sealed trait LegacyRawResponse extends RpcResponse
+case object FalseResponse extends LegacyRawResponse
+case object TrueResponse extends LegacyRawResponse
+case class StringResponse(text: String) extends LegacyRawResponse

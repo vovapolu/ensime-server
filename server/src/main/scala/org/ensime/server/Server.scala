@@ -10,11 +10,9 @@ import akka.event.LoggingReceive
 
 import com.google.common.base.Charsets
 import com.google.common.io.Files
-import org.ensime.Protocol
 import org.ensime.api._
 import org.ensime.config._
 import org.ensime.core._
-import org.ensime.jerk.JerkProtocol
 import org.ensime.server.protocol._
 import org.ensime.server.protocol.swank._
 import org.ensime.sexp.Sexp
@@ -178,7 +176,7 @@ class SocketHandler(
       } catch {
         case SwankRPCFormatException(msg, callId, cause) =>
           // specialist SWANK support
-          self ! RpcError(callId, msg)
+          self ! RpcResponseEnvelope(callId, EnsimeServerError(msg))
 
         case NonFatal(e) =>
           log.error(e, "Error in socket reader: ")
@@ -201,14 +199,19 @@ class SocketHandler(
   }
 
   def rpcResponses: Receive = {
-    case outgoing: RpcError => protocol.write(outgoing, out)
-    case outgoing: RpcResponse =>
+    case outgoing: RpcResponseEnvelope =>
       try {
         protocol.write(outgoing, out)
       } catch {
         case NonFatal(t) =>
           log.error(t, s"Problem serialising $outgoing")
-          protocol.write(RpcError(outgoing.callId, "Server error"), out)
+          protocol.write(
+            RpcResponseEnvelope(
+              outgoing.callId,
+              EnsimeServerError(s"Server error: ${t.getMessage}")
+            ),
+            out
+          )
       }
   }
 
@@ -245,7 +248,7 @@ class RequestHandler(
 
   def resolveDocSig: Receive = LoggingReceive.withLabel("resolveDocSig") {
     case None =>
-      self ! false
+      self ! FalseResponse
       context.unbecome()
     case Some(sig: DocSigPair) =>
       docs ! DocUriReq(sig)
@@ -255,20 +258,20 @@ class RequestHandler(
   // we can put all manner of timeout / monitoring logic in here
 
   def receive = LoggingReceive.withLabel("receive") {
-    case EnsimeServerError(msg) =>
-      server forward RpcError(envelope.callId, msg)
+    case err: EnsimeServerError =>
+      server forward RpcResponseEnvelope(envelope.callId, err)
       context stop self
 
     // legacy --- to deal with bad/Optional actor responses
-    case Some(response) =>
-      server forward RpcResponse(envelope.callId, response)
+    case Some(response: RpcResponse) =>
+      server forward RpcResponseEnvelope(envelope.callId, response)
       context stop self
     case None =>
-      server forward RpcResponse(envelope.callId, false)
+      server forward RpcResponseEnvelope(envelope.callId, FalseResponse)
       context stop self
 
-    case response =>
-      server forward RpcResponse(envelope.callId, response)
+    case response: RpcResponse =>
+      server forward RpcResponseEnvelope(envelope.callId, response)
       context stop self
   }
 

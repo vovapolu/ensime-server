@@ -3,6 +3,7 @@ package org.ensime.server
 import java.net.URLDecoder
 
 import akka.actor.{ ActorRef, Props }
+import akka.pattern.ask
 import akka.event.slf4j.SLF4JLogging
 import akka.pattern.Patterns
 import akka.util.Timeout
@@ -62,18 +63,14 @@ class DocServerSpec extends WordSpec with Matchers with SLF4JLogging
           ).exists(f.getName.startsWith)
         }
 
-        def getUri(serv: ActorRef, sig: DocSig): Uri = Uri(
-          Await.result(
-          Patterns.ask(serv, DocUriReq(DocSigPair(sig, sig)), Timeout(5.second)),
-          Duration.Inf
-        ).asInstanceOf[String]
-        )
+        def getUri(serv: ActorRef, sig: DocSig): Uri = {
+          val uri = (serv ? DocUriReq(DocSigPair(sig, sig))).mapTo[StringResponse]
+          Uri(Await.result(uri, timeout.duration).text)
+        }
 
         def getReponse(serv: ActorRef, path: Uri): HttpResponse = {
-          Await.result(
-            Patterns.ask(serv, HttpRequest(GET, path), Timeout(5.second)),
-            Duration.Inf
-          ).asInstanceOf[HttpResponse]
+          val response = (serv ? HttpRequest(GET, path)).mapTo[HttpResponse]
+          Await.result(response, timeout.duration)
         }
 
         def contentPath(uri: Uri): Uri = {
