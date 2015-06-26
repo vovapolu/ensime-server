@@ -36,7 +36,7 @@ script:
 # WORKAROUND https://github.com/Shippable/support/issues/1198
 env:
   global:
-    - SCALA_VERSION=2.11.6
+    - SCALA_VERSION=2.11.7
     - AKKA_TEST_TIMEFACTOR=10
     - EMACS=/opt/emacs-24.1/bin/emacs
     - COVERALLS_REPO_TOKEN=ZvySxEAk6j3KcqFbOqYnpgFL5payQgVUM

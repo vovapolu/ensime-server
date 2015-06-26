@@ -18,7 +18,7 @@ object EnsimeBuild extends Build with JdkResolver {
   // common
   lazy val basicSettings = Seq(
     organization := "org.ensime",
-    scalaVersion := "2.11.6",
+    scalaVersion := "2.11.7",
     version := "0.9.10-SNAPSHOT"
   )
   val isEmacs = sys.env.get("TERM") == Some("dumb")
