@@ -15,6 +15,7 @@ private object JerkConversions extends DefaultJsonProtocol with FamilyFormats {
   // wtf?? why is this needed, why does it even work? Miles??
   implicit val symbolFormat = SymbolJsonFormat
 
+  // move to somewhere more general
   implicit object FileFormat extends JsonFormat[File] {
     def read(j: JsValue): File = j match {
       case JsString(path) => file(path)

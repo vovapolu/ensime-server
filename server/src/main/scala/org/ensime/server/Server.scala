@@ -21,6 +21,11 @@ import scala.util.Properties._
 import scala.util._
 import scala.util.control.NonFatal
 
+import shapeless._
+import pimpathon.java.io._
+
+import Workarounds.shapeless422
+
 object Server {
   SLF4JBridgeHandler.removeHandlersForRootLogger()
   SLF4JBridgeHandler.install()
@@ -172,7 +177,7 @@ class SocketHandler(
       var finished = false
       override def run(): Unit = while (!finished && !socket.isClosed()) {
         try {
-          val envelope = protocol.read(in)
+          val envelope = Canonised(protocol.read(in))
           context.actorOf(RequestHandler(envelope, project, self, docs), s"${envelope.callId}")
         } catch {
           case SwankRPCFormatException(msg, callId, cause) =>
@@ -210,7 +215,7 @@ class SocketHandler(
   def rpcResponses: Receive = {
     case outgoing: RpcResponseEnvelope =>
       try {
-        protocol.write(outgoing, out)
+        protocol.write(Canonised(outgoing), out)
       } catch {
         case NonFatal(t) =>
           log.error(t, s"Problem serialising $outgoing")
@@ -246,7 +251,7 @@ class RequestHandler(
 ) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
-    log.debug(envelope.req.toString.take(100))
+    log.debug(envelope.req.toString)
     envelope.req match {
       // multi-phase queries
       case DocUriAtPointReq(_, _) | DocUriForSymbolReq(_, _, _) =>

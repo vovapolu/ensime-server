@@ -21,6 +21,8 @@ import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.util._
 import scala.tools.refactoring.analysis.GlobalIndexes
 
+import pimpathon.file._
+
 trait RichCompilerControl extends CompilerControl with RefactoringControl with CompletionControl with DocFinding {
   self: RichPresentationCompiler =>
 
@@ -175,14 +177,14 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
   def createSourceFile(path: String) = getSourceFile(path)
   def createSourceFile(file: AbstractFile) = getSourceFile(file)
   def createSourceFile(file: SourceFileInfo) = file match {
-    case SourceFileInfo(f, None, None) => getSourceFile(f.getCanonicalPath)
-    case SourceFileInfo(f, Some(contents), None) => new BatchSourceFile(AbstractFile.getFile(f.getCanonicalPath), contents)
+    case SourceFileInfo(f, None, None) => getSourceFile(f.canon.getPath)
+    case SourceFileInfo(f, Some(contents), None) => new BatchSourceFile(AbstractFile.getFile(f.canon.getPath), contents)
     case SourceFileInfo(f, None, Some(contentsIn)) =>
       val contents = FileUtils.readFile(contentsIn, charset) match {
         case Right(contentStr) => contentStr
         case Left(e) => throw e
       }
-      new BatchSourceFile(AbstractFile.getFile(f.getCanonicalPath), contents)
+      new BatchSourceFile(AbstractFile.getFile(f.canon), contents)
   }
   def findSourceFile(path: String): Option[SourceFile] = allSources.find(
     _.file.path == path

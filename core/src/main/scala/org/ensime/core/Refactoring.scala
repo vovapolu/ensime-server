@@ -18,6 +18,8 @@ import scalariform.formatter.ScalaFormatter
 import scalariform.parser.ScalaParserException
 import scalariform.utils.Range
 
+import pimpathon.file._
+
 abstract class RefactoringEnvironment(file: String, start: Int, end: Int) {
 
   val refactoring: MultiStageRefactoring with CompilerAccess
@@ -256,7 +258,7 @@ trait RefactoringImpl { self: RichPresentationCompiler =>
     logger.info("Applying changes: " + effect.changes)
     writeChanges(effect.changes, charset) match {
       case Right(touchedFiles) =>
-        val sortedTouchedFiles = touchedFiles.toList.sortBy(_.getCanonicalPath)
+        val sortedTouchedFiles = touchedFiles.toList.sortBy(_.canon.getPath)
         Right(new RefactorResult(procId, refactorType, sortedTouchedFiles))
       case Left(err) => Left(RefactorFailure(procId, err.toString))
     }
