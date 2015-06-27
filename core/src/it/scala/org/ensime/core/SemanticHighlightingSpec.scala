@@ -106,6 +106,43 @@ class SemanticHighlightingSpec extends WordSpec with Matchers
       ))
     }
 
+    "highlight deprecated symbols" in withPresCompiler { (config, cc) =>
+      val sds = getSymbolDesignations(
+        config, cc, """
+            package com.example
+            class Test {
+              @deprecated("bad trait", "1.0")
+              trait BadTrait
+              class BadSubclass extends BadTrait
+              @deprecated("bad class", "1.0")
+              class BadClass(val data: String)
+              @deprecated("bad object", "1.0")
+              object BadObject
+              @deprecated("bad method", "1.0")
+              def foo(x: String) = { x + " foo" }
+              @deprecated("bad val", "1.0")
+              val badVal = 42
+              @deprecated("bad var", "1.0")
+              var badVar = 42
+              val a = new BadClass("someData")
+              val b = BadObject
+              val c = foo("a")
+              val d = badVal
+              val e = badVar
+            }
+          """,
+        List(DeprecatedSymbol)
+      )
+      assert(sds == List(
+        (DeprecatedSymbol, "BadTrait"),
+        (DeprecatedSymbol, "BadClass"),
+        (DeprecatedSymbol, "BadObject"),
+        (DeprecatedSymbol, "foo"),
+        (DeprecatedSymbol, "badVal"),
+        (DeprecatedSymbol, "badVar")
+      ))
+    }
+
     "highlight imported names" in withPresCompiler { (config, cc) =>
       val sds = getSymbolDesignations(
         config, cc, """

@@ -50,36 +50,41 @@ class SemanticHighlighting(val global: RichPresentationCompiler) extends Compile
           add(TypeParamSymbol)
         } else if (sym.hasFlag(PARAM)) {
           add(ParamSymbol)
-        } else if (sym.hasFlag(ACCESSOR)) {
-          val under = sym.accessed
-          if (under.isVariable) {
-            add(VarFieldSymbol)
-          } else if (under.isValue) {
-            add(ValFieldSymbol)
+        } else {
+          if (sym.isDeprecated) {
+            add(DeprecatedSymbol)
+          }
+          if (sym.hasFlag(ACCESSOR)) {
+            val under = sym.accessed
+            if (under.isVariable) {
+              add(VarFieldSymbol)
+            } else if (under.isValue) {
+              add(ValFieldSymbol)
+            } else {
+              false
+            }
+          } else if (sym.isMethod) {
+            if (sym.nameString == "apply" || sym.nameString == "update") { true }
+            else if (sym.name.isOperatorName) {
+              add(OperatorFieldSymbol)
+            } else {
+              add(FunctionCallSymbol)
+            }
+          } else if (sym.isVariable && sym.isLocalToBlock) {
+            add(VarSymbol)
+          } else if (sym.isValue && sym.isLocalToBlock) {
+            add(ValSymbol)
+          } else if (sym.hasPackageFlag) {
+            add(PackageSymbol)
+          } else if (sym.isTrait) {
+            add(TraitSymbol)
+          } else if (sym.isClass) {
+            add(ClassSymbol)
+          } else if (sym.isModule) {
+            add(ObjectSymbol)
           } else {
             false
           }
-        } else if (sym.isMethod) {
-          if (sym.nameString == "apply" || sym.nameString == "update") { true }
-          else if (sym.name.isOperatorName) {
-            add(OperatorFieldSymbol)
-          } else {
-            add(FunctionCallSymbol)
-          }
-        } else if (sym.isVariable && sym.isLocalToBlock) {
-          add(VarSymbol)
-        } else if (sym.isValue && sym.isLocalToBlock) {
-          add(ValSymbol)
-        } else if (sym.hasPackageFlag) {
-          add(PackageSymbol)
-        } else if (sym.isTrait) {
-          add(TraitSymbol)
-        } else if (sym.isClass) {
-          add(ClassSymbol)
-        } else if (sym.isModule) {
-          add(ObjectSymbol)
-        } else {
-          false
         }
       }
 
