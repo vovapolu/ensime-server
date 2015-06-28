@@ -204,7 +204,7 @@ object SourceSymbol {
   val allSymbols: List[SourceSymbol] = List(
     ObjectSymbol, ClassSymbol, TraitSymbol, PackageSymbol, ConstructorSymbol, ImportedNameSymbol, TypeParamSymbol,
     ParamSymbol, VarFieldSymbol, ValFieldSymbol, OperatorFieldSymbol, VarSymbol, ValSymbol, FunctionCallSymbol,
-    ImplicitConversionSymbol, ImplicitParamsSymbol
+    ImplicitConversionSymbol, ImplicitParamsSymbol, DeprecatedSymbol
   )
 }
 
@@ -226,6 +226,7 @@ case object ValSymbol extends SourceSymbol
 case object FunctionCallSymbol extends SourceSymbol
 case object ImplicitConversionSymbol extends SourceSymbol
 case object ImplicitParamsSymbol extends SourceSymbol
+case object DeprecatedSymbol extends SourceSymbol
 
 sealed trait PosNeeded
 case object PosNeededNo extends PosNeeded
@@ -528,7 +529,7 @@ case class EnsimeImplementation(
 case class ConnectionInfo(
   pid: Option[Int] = None,
   implementation: EnsimeImplementation = EnsimeImplementation("ENSIME"),
-  version: String = "0.8.16"
+  version: String = "0.8.17"
 )
 
 sealed trait ImplicitInfo {

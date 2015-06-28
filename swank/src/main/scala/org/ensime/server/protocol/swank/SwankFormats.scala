@@ -84,7 +84,8 @@ object SwankProtocolCommon {
     "val" -> ValSymbol,
     "functionCall" -> FunctionCallSymbol,
     "implicitConversion" -> ImplicitConversionSymbol,
-    "implicitParams" -> ImplicitParamsSymbol
+    "implicitParams" -> ImplicitParamsSymbol,
+    "deprecated" -> DeprecatedSymbol
   )
   private val reverseSourceSymbolMap: Map[SourceSymbol, String] =
     sourceSymbolMap.map { case (name, symbol) => symbol -> name }
