@@ -92,13 +92,10 @@ class BasicWorkflow extends WordSpec with Matchers
             //-----------------------------------------------------------------------------------------------
             // public symbol search - scala.util.Random
             project ! PublicSymbolSearchReq(List("scala", "util", "Random"), 2)
-            val scalaSearchSymbol = expectMsgType[SymbolSearchResults]
-            scalaSearchSymbol match {
+            expectMsgPF() {
               case SymbolSearchResults(List(
                 TypeSearchResult("scala.util.Random", "Random", DeclaredAs.Class, Some(_)),
                 TypeSearchResult("scala.util.Random$", "Random$", DeclaredAs.Class, Some(_)))) =>
-              case _ =>
-                fail("Public symbol search does not match expectations, got: " + scalaSearchSymbol)
             }
 
             //-----------------------------------------------------------------------------------------------
@@ -139,11 +136,8 @@ class BasicWorkflow extends WordSpec with Matchers
             )
 
             project ! UsesOfSymbolAtPointReq(fooFile, 119) // point on testMethod
-            val useOfSymbolAtPoint = expectMsgType[List[ERangePosition]]
-            useOfSymbolAtPoint match {
-              case List(ERangePosition(`fooFilePath`, 114, 110, 172), ERangePosition(`fooFilePath`, 273, 269, 283)) =>
-              case _ =>
-                fail("rpcUsesOfSymAtPoint not match expectations, got: " + useOfSymbolAtPoint)
+            expectMsgPF() {
+              case ERangePositions(List(ERangePosition(`fooFilePath`, 114, 110, 172), ERangePosition(`fooFilePath`, 273, 269, 283))) =>
             }
 
             log.info("------------------------------------222-")
@@ -152,18 +146,13 @@ class BasicWorkflow extends WordSpec with Matchers
             // scala library classfiles, so offset/line comes out as zero unless
             // loaded by the pres compiler
             project ! SymbolAtPointReq(fooFile, 276)
-            val testMethodSymbolInfo = expectMsgType[Option[SymbolInfo]]
-            testMethodSymbolInfo match {
+            expectMsgPF() {
               case Some(SymbolInfo("testMethod", "testMethod", Some(OffsetSourcePosition(`fooFile`, 114)), ArrowTypeInfo("(i: Int, s: String)Int", 126, BasicTypeInfo("Int", 1, DeclaredAs.Class, "scala.Int", List(), List(), None, None), List(ParamSectionInfo(List((i, BasicTypeInfo("Int", 1, DeclaredAs.Class, "scala.Int", List(), List(), None, None)), (s, BasicTypeInfo("String", 39, DeclaredAs.Class, "java.lang.String", List(), List(), None, None))), false))), true, Some(_))) =>
-              case _ =>
-                fail("symbol at point (local test method), got: " + testMethodSymbolInfo)
             }
 
             // M-.  external symbol
             project ! SymbolAtPointReq(fooFile, 190)
-            val genericMethodSymbolAtPointRes = expectMsgType[Option[SymbolInfo]]
-            genericMethodSymbolAtPointRes match {
-
+            expectMsgPF() {
               case Some(SymbolInfo("apply", "apply", Some(_),
                 ArrowTypeInfo("[A, B](elems: (A, B)*)CC[A,B]", _,
                   BasicTypeInfo("CC", _, DeclaredAs.Nil, "scala.collection.generic.CC",
@@ -177,14 +166,11 @@ class BasicWorkflow extends WordSpec with Matchers
                         BasicTypeInfo("A", _, DeclaredAs.Nil, "scala.collection.generic.A", List(), List(), None, None),
                         BasicTypeInfo("B", _, DeclaredAs.Nil, "scala.collection.generic.B", List(), List(), None, None)
                         ), List(), None, None)), List(), None, None))), false))), true, Some(_))) =>
-              case _ =>
-                fail("symbol at point (local test method), got: " + genericMethodSymbolAtPointRes)
             }
 
             // C-c C-v p Inspect source of current package
             project ! InspectPackageByPathReq("org.example")
-            val insPacByPathResOpt = expectMsgType[Option[PackageInfo]]
-            insPacByPathResOpt match {
+            expectMsgPF() {
               case Some(PackageInfo("example", "org.example", List(
                 BasicTypeInfo("Bloo", _: Int, DeclaredAs.Class, "org.example.Bloo", List(), List(), Some(_), None),
                 BasicTypeInfo("Bloo$", _: Int, DeclaredAs.Object, "org.example.Bloo$", List(), List(), Some(_), None),
@@ -194,8 +180,6 @@ class BasicWorkflow extends WordSpec with Matchers
                 BasicTypeInfo("Foo$", _: Int, DeclaredAs.Object, "org.example.Foo$", List(), List(), Some(_), None),
                 BasicTypeInfo("package$", _: Int, DeclaredAs.Object, "org.example.package$", List(), List(), None, None),
                 BasicTypeInfo("package$", _: Int, DeclaredAs.Object, "org.example.package$", List(), List(), None, None)))) =>
-              case _ =>
-                fail("inspect package by path failed, got: " + insPacByPathResOpt)
             }
 
             // expand selection around 'val foo'

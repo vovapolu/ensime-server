@@ -18,8 +18,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.Try
 
-case class EnsimeServerError(description: String)
-
 /**
  * The Project actor simply forwards messages coming from the user to
  * the respective subcomponent.

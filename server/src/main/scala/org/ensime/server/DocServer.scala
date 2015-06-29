@@ -208,8 +208,8 @@ class DocServer(
 
     case DocUriReq(sig) =>
       resolveLocalUri(sig).orElse(resolveWellKnownUri(sig)) match {
-        case Some(hit) => sender() ! hit
-        case None => sender() ! false
+        case Some(hit) => sender() ! StringResponse(hit)
+        case None => sender() ! FalseResponse
       }
 
   }

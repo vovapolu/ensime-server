@@ -94,7 +94,7 @@ class DebugTest extends WordSpec with Matchers with Inside
               asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 32))
 
               project ! DebugContinueReq(DebugThreadId(1))
-              expectMsg(true)
+              expectMsg(TrueResponse)
 
               asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 11))
 
@@ -102,7 +102,7 @@ class DebugTest extends WordSpec with Matchers with Inside
               //              session.checkStackFrame(BP_TYPENAME, "simple1()V", 13)
 
               project ! DebugContinueReq(DebugThreadId(1))
-              expectMsg(true)
+              expectMsg(TrueResponse)
 
               asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 13))
 
@@ -114,7 +114,7 @@ class DebugTest extends WordSpec with Matchers with Inside
               //
               //              session.resumetoSuspension()
               project ! DebugContinueReq(DebugThreadId(1))
-              expectMsg(true)
+              expectMsg(TrueResponse)
               //              session.checkStackFrame(BP_TYPENAME, "simple1()V", 13)
               asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 13))
               //
@@ -131,18 +131,18 @@ class DebugTest extends WordSpec with Matchers with Inside
               //              session.resumetoSuspension()
               //              session.checkStackFrame(BP_TYPENAME, "simple1()V", 11)
               project ! DebugContinueReq(DebugThreadId(1))
-              expectMsg(true)
+              expectMsg(TrueResponse)
 
               asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 11))
               //
               //              session.resumetoSuspension()
               //              session.checkStackFrame(BP_TYPENAME, "simple1()V", 11)
               project ! DebugContinueReq(DebugThreadId(1))
-              expectMsg(true)
+              expectMsg(TrueResponse)
               asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 11))
               //
               project ! DebugContinueReq(DebugThreadId(1))
-              expectMsg(true)
+              expectMsg(TrueResponse)
 
               //asyncHelper.expectAsync(60 seconds, DebugVMDisconnectEvent)
               //              session.resumeToCompletion()
@@ -332,9 +332,9 @@ trait DebugTestUtils {
       // no way to await the stopped condition so we let the app run
       // its course on the main thread
       project ! DebugContinueReq(DebugThreadId(1))
-      expectMsg(true)
+      expectMsg(TrueResponse)
       project ! DebugStopReq
-      expectMsg(true)
+      expectMsg(TrueResponse)
 
       //asyncHelper.expectAsync(30 seconds, DebugVMDisconnectEvent)
     }

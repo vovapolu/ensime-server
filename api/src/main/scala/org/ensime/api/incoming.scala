@@ -69,7 +69,7 @@ case class TypecheckFilesReq(files: List[File]) extends RpcAnalyserRequest
 case class FormatSourceReq(files: List[File]) extends RpcAnalyserRequest
 
 /**
- * Responds with the formatted file as a `String`.
+ * Responds with the formatted file as a `StringResponse`.
  */
 case class FormatOneSourceReq(file: SourceFileInfo) extends RpcAnalyserRequest
 
@@ -95,7 +95,7 @@ case class ImportSuggestionsReq(
 ) extends RpcSearchRequest
 
 /**
- * Responds with `List[ERangePosition]`.
+ * Responds with `ERangePositions`.
  */
 case class UsesOfSymbolAtPointReq(
   file: File,
@@ -103,8 +103,8 @@ case class UsesOfSymbolAtPointReq(
 ) extends RpcAnalyserRequest // will probably become a search request
 
 /**
- * Responds with a `String` for the URL of the documentation if valid,
- * or `false`.
+ * Responds with a `StringResponse` for the URL of the documentation if valid,
+ * or `FalseResponse`.
  */
 case class DocUriAtPointReq(
   file: File,
@@ -112,8 +112,8 @@ case class DocUriAtPointReq(
 ) extends RpcAnalyserRequest
 
 /**
- * Responds with a `String` for the URL of the documentation if valid,
- * or `false`.
+ * Responds with a `StringResponse` for the URL of the documentation if valid,
+ * or `FalseResponse`.
  */
 case class DocUriForSymbolReq(
   typeFullName: String,
@@ -141,27 +141,27 @@ case class PackageMemberCompletionReq(
 ) extends RpcAnalyserRequest
 
 /**
- * Responds with `CallCompletionInfo` if valid, or `false`.
+ * Responds with `CallCompletionInfo` if valid, or `FalseResponse`.
  */
 case class CallCompletionReq(id: Int) extends RpcAnalyserRequest
 
 /**
- * Responds with `TypeInfo` if valid, or `false`.
+ * Responds with `TypeInfo` if valid, or `FalseResponse`.
  */
 case class TypeByIdReq(id: Int) extends RpcAnalyserRequest
 
 /**
- * Responds with `TypeInfo` if valid, or `false`.
+ * Responds with `TypeInfo` if valid, or `FalseResponse`.
  */
 case class TypeByNameReq(name: String) extends RpcAnalyserRequest
 
 /**
- * Responds with `TypeInfo` if valid, or `false`.
+ * Responds with `TypeInfo` if valid, or `FalseResponse`.
  */
 case class TypeByNameAtPointReq(name: String, file: File, range: OffsetRange) extends RpcAnalyserRequest
 
 /**
- * Responds with `TypeInfo` if valid, or `false`.
+ * Responds with `TypeInfo` if valid, or `FalseResponse`.
  */
 case class TypeAtPointReq(file: File, range: OffsetRange) extends RpcAnalyserRequest
 
@@ -170,7 +170,7 @@ case class TypeAtPointReq(file: File, range: OffsetRange) extends RpcAnalyserReq
  * position.
  *
  * Responds with a `TypeInspectInfo` if the range is a valid type or
- * `false`.
+ * `FalseResponse`.
  *
  * @param file source.
  * @param range in the file to inspect.
@@ -180,7 +180,7 @@ case class InspectTypeAtPointReq(file: File, range: OffsetRange) extends RpcAnal
 /**
  * Request detailed type description by `typeId`.
  *
- * Responds with a `TypeInspectInfo` if the id is valid, or `false`.
+ * Responds with a `TypeInspectInfo` if the id is valid, or `FalseResponse`.
  *
  * @param id of the type to inspect (returned by other calls).
  */
@@ -190,21 +190,21 @@ case class InspectTypeByIdReq(id: Int) extends RpcAnalyserRequest
  * Request detailed type description by fully qualified class name.
  *
  * Responds with a `TypeInspectInfo` if the FQN is valid, or
- * `false`.
+ * `FalseResponse`.
  *
  * @param name fully qualified type name to inspect
  */
 case class InspectTypeByNameReq(name: String) extends RpcAnalyserRequest
 
 /**
- * Responds with a `SymbolInfo` if valid, or `false`.
+ * Responds with a `SymbolInfo` if valid, or `FalseResponse`.
  */
 case class SymbolAtPointReq(file: File, point: Int) extends RpcAnalyserRequest
 
 /**
  * Request detailed symbol description by fully qualified symbol name.
  *
- * Responds with a `SymbolInfo` if valid, or `false`.
+ * Responds with a `SymbolInfo` if valid, or `FalseResponse`.
  *
  * @param typeFullName fully qualified name of a type, object or package.
  * @param memberName short name of a member symbol of the qualified symbol.
@@ -267,7 +267,7 @@ case class ExpandSelectionReq(file: File, start: Int, end: Int) extends RpcAnaly
 sealed trait RpcDebuggerRequest extends RpcRequest
 
 /**
- * Responds with a `Boolean`.
+ * Responds with a `FalseResponse` or a `TrueResponse`.
  */
 case object DebugActiveVmReq extends RpcDebuggerRequest
 
@@ -282,7 +282,7 @@ case class DebugStartReq(commandLine: String) extends RpcDebuggerRequest
 case class DebugAttachReq(hostname: String, port: String) extends RpcDebuggerRequest
 
 /**
- * Responds with a `Boolean`.
+ * Responds with a `FalseResponse` or a `TrueResponse`.
  */
 case object DebugStopReq extends RpcDebuggerRequest
 
@@ -307,47 +307,47 @@ case object DebugClearAllBreaksReq extends RpcDebuggerRequest
 case object DebugListBreakpointsReq extends RpcDebuggerRequest
 
 /**
- * Responds with a `Boolean`.
+ * Responds with a `FalseResponse` or a `TrueResponse`.
  */
 case object DebugRunReq extends RpcDebuggerRequest
 
 /**
- * Responds with a `Boolean`.
+ * Responds with a `FalseResponse` or a `TrueResponse`.
  */
 case class DebugContinueReq(threadId: DebugThreadId) extends RpcDebuggerRequest
 
 /**
- * Responds with a `Boolean`.
+ * Responds with a `FalseResponse` or a `TrueResponse`.
  */
 case class DebugStepReq(threadId: DebugThreadId) extends RpcDebuggerRequest
 
 /**
- * Responds with a `Boolean`.
+ * Responds with a `FalseResponse` or a `TrueResponse`.
  */
 case class DebugNextReq(threadId: DebugThreadId) extends RpcDebuggerRequest
 
 /**
- * Responds with a `Boolean`.
+ * Responds with a `FalseResponse` or a `TrueResponse`.
  */
 case class DebugStepOutReq(threadId: DebugThreadId) extends RpcDebuggerRequest
 
 /**
- * Responds with a `DebugLocation` if successful, or `false`.
+ * Responds with a `DebugLocation` if successful, or `FalseResponse`.
  */
 case class DebugLocateNameReq(threadId: DebugThreadId, name: String) extends RpcDebuggerRequest
 
 /**
- * Responds with a `DebugValue` if successful, or `false`.
+ * Responds with a `DebugValue` if successful, or `FalseResponse`.
  */
 case class DebugValueReq(loc: DebugLocation) extends RpcDebuggerRequest
 
 /**
- * Responds with a `String` if successful, or `false`.
+ * Responds with a `StringResponse` if successful, or `FalseResponse`.
  */
 case class DebugToStringReq(threadId: DebugThreadId, loc: DebugLocation) extends RpcDebuggerRequest
 
 /**
- * Responds with a `Boolean`.
+ * Responds with a `FalseResponse` or a `TrueResponse`.
  */
 case class DebugSetValueReq(loc: DebugLocation, newValue: String) extends RpcDebuggerRequest
 

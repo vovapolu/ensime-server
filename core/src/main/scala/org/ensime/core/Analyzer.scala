@@ -220,7 +220,8 @@ class Analyzer(
       sender ! info
     case UsesOfSymbolAtPointReq(file, point) =>
       val p = pos(file, point)
-      sender ! scalaCompiler.askUsesOfSymAtPoint(p).map(ERangePositionHelper.fromRangePosition)
+      val uses = scalaCompiler.askUsesOfSymAtPoint(p)
+      sender ! ERangePositions(uses.map(ERangePositionHelper.fromRangePosition))
     case PackageMemberCompletionReq(path: String, prefix: String) =>
       val members = scalaCompiler.askCompletePackageMember(path, prefix)
       sender ! members
@@ -282,7 +283,7 @@ class Analyzer(
       handleFormatFiles(files)
       sender ! VoidResponse
     case FormatOneSourceReq(fileInfo: SourceFileInfo) =>
-      sender ! handleFormatFile(fileInfo)
+      sender ! StringResponse(handleFormatFile(fileInfo))
 
   }
 

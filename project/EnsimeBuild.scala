@@ -18,7 +18,7 @@ object EnsimeBuild extends Build with JdkResolver {
   // common
   lazy val basicSettings = Seq(
     organization := "org.ensime",
-    scalaVersion := "2.11.6",
+    scalaVersion := "2.11.7",
     version := "0.9.10-SNAPSHOT"
   )
   val isEmacs = sys.env.get("TERM") == Some("dumb")
@@ -169,7 +169,9 @@ object EnsimeBuild extends Build with JdkResolver {
     sprayJsonShapeless % "test->test",
     api % "test->test" // for the test data
   ) settings (
-    libraryDependencies ++= testLibs(scalaVersion.value)
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
+    ) ++ testLibs(scalaVersion.value)
   )
 
   // the S-Exp protocol
@@ -178,7 +180,9 @@ object EnsimeBuild extends Build with JdkResolver {
     api % "test->test", // for the test data
     sexpress
   ) settings (
-    libraryDependencies ++= testLibs(scalaVersion.value)
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
+    ) ++ testLibs(scalaVersion.value)
   )
 
   lazy val testingEmpty = Project("testingEmpty", file("testing/empty"), settings = basicSettings).settings(

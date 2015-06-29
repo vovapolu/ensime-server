@@ -43,8 +43,6 @@ object DeleteFile {
   def apply(file: File, text: String): DeleteFile = new DeleteFile(file, 0, text.length - 1, text)
 }
 
-case class FileRange(file: String, start: Int, end: Int)
-
 sealed trait NoteSeverity
 case object NoteError extends NoteSeverity
 case object NoteWarn extends NoteSeverity
@@ -56,16 +54,6 @@ object NoteSeverity {
     case 0 => NoteInfo
   }
 }
-
-case class Note(
-  file: String,
-  msg: String,
-  severity: NoteSeverity,
-  beg: Int,
-  end: Int,
-  line: Int,
-  col: Int
-)
 
 sealed abstract class RefactorLocation(val symbol: Symbol)
 

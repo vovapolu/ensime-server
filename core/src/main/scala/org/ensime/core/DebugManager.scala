@@ -155,7 +155,7 @@ class DebugManager(
       action(vm)
     }.getOrElse {
       log.warning("Could not access debug VM.")
-      sender ! false
+      sender ! FalseResponse
     }
   }
 
@@ -165,11 +165,11 @@ class DebugManager(
         action(vm, thread)
       }).getOrElse {
         log.warning("Could not find thread: " + threadId)
-        sender ! false
+        sender ! FalseResponse
       }
     }.getOrElse {
       log.warning("Could not access debug VM")
-      sender ! false
+      sender ! FalseResponse
     }
   }
 
@@ -273,25 +273,25 @@ class DebugManager(
       }
     case DebugActiveVmReq =>
       handleRPCWithVM() { vm =>
-        sender ! true
+        sender ! TrueResponse
       }
 
     case DebugStopReq =>
       handleRPCWithVM() { vm =>
         vm.dispose()
-        sender ! true
+        sender ! TrueResponse
       }
 
     case DebugRunReq =>
       handleRPCWithVM() { vm =>
         vm.resume()
-        sender ! true
+        sender ! TrueResponse
       }
     case DebugContinueReq(threadId) =>
       handleRPCWithVMAndThread(threadId) {
         (vm, thread) =>
           vm.resume()
-          sender ! true
+          sender ! TrueResponse
       }
     case DebugSetBreakReq(file, line: Int) =>
       log.info(s"sender = ${sender()}")
@@ -320,7 +320,7 @@ class DebugManager(
             StepRequest.STEP_LINE,
             StepRequest.STEP_OVER
           )
-          sender ! true
+          sender ! TrueResponse
       }
 
     case DebugStepReq(threadId: DebugThreadId) =>
@@ -331,7 +331,7 @@ class DebugManager(
             StepRequest.STEP_LINE,
             StepRequest.STEP_INTO
           )
-          sender ! true
+          sender ! TrueResponse
       }
 
     case DebugStepOutReq(threadId: DebugThreadId) =>
@@ -342,7 +342,7 @@ class DebugManager(
             StepRequest.STEP_LINE,
             StepRequest.STEP_OUT
           )
-          sender ! true
+          sender ! TrueResponse
       }
 
     case DebugLocateNameReq(threadId: DebugThreadId, name: String) =>
@@ -375,7 +375,7 @@ class DebugManager(
           }
           case unknown =>
             log.error("Unsupported location type for debug-set-value.: " + unknown)
-            sender ! false
+            sender ! FalseResponse
         }
       }
   }
