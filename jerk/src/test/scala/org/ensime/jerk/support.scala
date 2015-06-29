@@ -1,4 +1,4 @@
-package org.ensime.json
+package org.ensime.jerk
 
 import org.scalatest._
 import spray.json._

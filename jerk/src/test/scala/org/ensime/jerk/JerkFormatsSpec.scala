@@ -7,7 +7,8 @@ import org.scalatest._
 import org.ensime.api._
 
 import spray.json._
-import org.ensime.json._
+
+import fommil.sjs._
 
 import pimpathon.file._
 

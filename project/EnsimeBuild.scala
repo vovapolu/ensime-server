@@ -39,6 +39,7 @@ object EnsimeBuild extends Build with JdkResolver {
   }.getOrElse(Nil)
 
   lazy val commonSettings = scalariformSettings ++ basicSettings ++ Seq(
+    resolvers += Resolver.sonatypeRepo("snapshots"),
     scalacOptions in Compile ++= Seq(
       // uncomment this to debug implicit resolution compilation problems
       //"-Xlog-implicits",
@@ -146,15 +147,6 @@ object EnsimeBuild extends Build with JdkResolver {
     ) ++ testLibs(scalaVersion.value)
   )
 
-  lazy val sprayJsonShapeless = Project("spray-json-shapeless", file("spray-json-shapeless"), settings = commonSettings) settings(
-    licenses := Seq("LGPL 3.0" -> url("http://www.gnu.org/licenses/lgpl-3.0.txt"))
-  ) settings (
-    libraryDependencies ++= Seq(
-      "io.spray" %% "spray-json" % "1.3.2",
-      shapeless
-    ) ++ logback ++ testLibs(scalaVersion.value)
-  )
-
   lazy val api = Project("api", file("api"), settings = commonSettings) settings (
     libraryDependencies ++= Seq(
       "org.scalariform" %% "scalariform" % "0.1.6" intransitive(),
@@ -165,11 +157,10 @@ object EnsimeBuild extends Build with JdkResolver {
   // the JSON protocol
   lazy val jerk = Project("jerk", file("jerk"), settings = commonSettings) dependsOn (
     api,
-    sprayJsonShapeless,
-    sprayJsonShapeless % "test->test",
     api % "test->test" // for the test data
   ) settings (
     libraryDependencies ++= Seq(
+      "com.github.fommil" %% "spray-json-shapeless" % "1.0.0-SNAPSHOT",
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
     ) ++ testLibs(scalaVersion.value)
   )
@@ -269,7 +260,7 @@ object EnsimeBuild extends Build with JdkResolver {
 
   // manual root project so we can exclude the testing projects from publication
   lazy val root = Project(id = "ensime", base = file("."), settings = commonSettings) aggregate (
-    api, sexpress, sprayJsonShapeless, jerk, swank, core, server
+    api, sexpress, jerk, swank, core, server
   ) dependsOn (server)
 }
 

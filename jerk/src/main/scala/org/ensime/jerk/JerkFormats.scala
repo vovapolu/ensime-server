@@ -4,7 +4,7 @@ import java.io.File
 import scala.util._
 
 import spray.json._
-import org.ensime.json._
+import fommil.sjs._
 import shapeless._
 
 import org.ensime.api._
