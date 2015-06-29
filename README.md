@@ -1,56 +1,34 @@
 # ENSIME
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ensime/ensime-server?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Bountysource](https://www.bountysource.com/badge/tracker?tracker_id=239449)](https://www.bountysource.com/trackers/239449-ensime?utm_source=239449&utm_medium=shield&utm_campaign=TRACKER_BADGE)
-[![Build Status](https://api.shippable.com/projects/5504572d5ab6cc13529ad106/badge?branchName=master)](https://app.shippable.com/projects/5504572d5ab6cc13529ad106)
-[![Stories in Ready](https://badge.waffle.io/ensime/ensime-server.png?label=Low+Hanging+Fruit)](https://waffle.io/ensime/ensime-server)
-[![Coverage Status](https://coveralls.io/repos/ensime/ensime-server/badge.png)](https://coveralls.io/r/ensime/ensime-server)
-[![Melpa Status](http://melpa.milkbox.net/packages/ensime-badge.svg)](http://melpa.milkbox.net/#/ensime)
 
-ENhanced Scala Interaction Mode for text Editors, especially [GNU Emacs](http://www.gnu.org/software/emacs/).
-
-ENSIME brings IDE-like features to your favourite text editor, such as:
+ENhanced Scala Interaction Mode for text Editors:
 
 - Show the `type` of the symbol under the cursor.
 - Contextual completion for `var`s, `val`s and `def`s.
+- Semantic highlighting with `implicit` expansion.
 - Add an import for the symbol under the cursor.
 - Fast classpath search (types and members).
 - Jump to source code or documentation.
-- Browse packages and type hierarchies.
-- Find all references to a symbol.
 - Refactorings (rename, organize imports, extract method).
-- REPL with stack trace highlighting.
 - Errors and warnings in your code: *red squigglies*.
-- Debugging
 
-and many more.
+ENSIME is a cross editor platform with the following components. If you'd like to start using ENSIME, pick a supported text editor and go to the relevant repository for further information on how to install, use and contribute to this project.
 
+* [ENSIME for Emacs](https://github.com/ensime/ensime-emacs)
+* [ENSIME for Sublime](https://github.com/ensime/ensime-sublime)
+* [ENSIME for Atom](https://github.com/ensime/ensime-atom)
+* ~~ENSIME for Vim~~ (needs some love, please contact us to help!)
 
-# Contributions
+# Contributing
 
-Ensime builds on the shoulders of giants, this includes contributors, users, bug reporters, many free and open source projects 
-and commercial entities.
+Ensime builds on the shoulders of giants, this includes contributors, users, bug reporters, many free and open source projects and commercial entities.
 
-This project is actively community maintained, and we are very pleased
-to see contributions from new members. Please see the
-[Contributing](CONTRIBUTING.md) file for information on how to help
-out.
+This project is actively community maintained, and we are very pleased to see contributions from new members. Please see the [Contributing](CONTRIBUTING.md) file for information on how to help out.
 
-# Quick Start
-
-See our [Quick Start Guide](http://github.com/ensime/ensime-server/wiki/Quick-Start-Guide) to learn how to install and start ENSIME.
-
-ENSIME is released on a continuous "rolling release" basis every time a pull request is merged. This dramatically speeds up the development cycle and you are advised to always update your ENSIME before reporting any issues.
-
-If you are still experiencing a problem with the latest version of ENSIME, before reporting an issue please:
-
-* check the [tickets flagged as FAQ](https://github.com/ensime/ensime-server/issues?labels=FAQ).
-* check the [most recently updated tickets](http://github.com/ensime/ensime-server/issues?direction=desc&sort=updated) (others are probably talking about it already with workarounds).
-* do a few keyword searches using the github search (top of the page) to see if anybody has reported this already.
-
+If you are reporting a bug or feature request, please use the issue tracker associated with your text editor.
 
 ------
 
-![YourKit Logo](https://www.yourkit.com/images/yklogo.png)
-supports Ensime by providing access to its awesome [YourKit Java Profiler](https://www.yourkit.com/java/profiler/index.jsp)
+![YourKit Logo](https://www.yourkit.com/images/yklogo.png) supports Ensime by providing access to its awesome [YourKit Java Profiler](https://www.yourkit.com/java/profiler/index.jsp)
 

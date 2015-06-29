@@ -23,7 +23,6 @@ Please help out by:
 * [Helping with the current Milestone](http://github.com/ensime/ensime-server/issues/milestones)
 * Sending an unsolicited pull request with a new feature
 * Joining the conversation on [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ensime/ensime-server?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-* (old school) starting a conversation on the [ENSIME Google Group](https://groups.google.com/forum/#!forum/ensime)
 * Telling your co-workers!
 
 We are using some great technologies to automate our build and testing process:
@@ -39,11 +38,6 @@ formatting as part of our build process. Pull requests will only be
 accepted if the build and tests are successful, coverage has not
 decreased, and the formatting style has not been changed (it is
 automated, so you don't need to think about it).
-
-If you want to try out your changes before submitting them as a PR,
-follow the
-[Manual Installation](https://github.com/ensime/ensime-server/wiki/Quick-Start-Guide#manual-installation)
-instructions.
 
 Pull requests will be reviewed and should not be merged by the person
 who created the request (except for trivial changes and hotfixes).
