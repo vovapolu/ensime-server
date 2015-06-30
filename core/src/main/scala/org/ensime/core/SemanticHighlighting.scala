@@ -51,7 +51,7 @@ class SemanticHighlighting(val global: RichPresentationCompiler) extends Compile
         } else if (sym.hasFlag(PARAM)) {
           add(ParamSymbol)
         } else {
-          if (sym.isDeprecated) {
+          if (sym.ownerChain.exists(_.isDeprecated)) {
             add(DeprecatedSymbol)
           }
           if (sym.hasFlag(ACCESSOR)) {

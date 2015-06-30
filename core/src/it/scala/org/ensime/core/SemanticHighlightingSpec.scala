@@ -130,6 +130,20 @@ class SemanticHighlightingSpec extends WordSpec with Matchers
               val d = badVal
               val e = badVar
             }
+            @deprecated("blah", "sometime")
+            class Baz { def boo() = {} }
+            class Foo extends Baz {
+              def bar(): Unit = {}
+            } 
+            @deprecated("bad", "someday")
+            object X {
+              new Foo().bar()
+              new Foo().boo()
+              object Y { def goo(): Unit = {} }
+            }
+            object Z {
+              X.Y.goo()
+            }            
           """,
         List(DeprecatedSymbol)
       )
@@ -139,7 +153,12 @@ class SemanticHighlightingSpec extends WordSpec with Matchers
         (DeprecatedSymbol, "BadObject"),
         (DeprecatedSymbol, "foo"),
         (DeprecatedSymbol, "badVal"),
-        (DeprecatedSymbol, "badVar")
+        (DeprecatedSymbol, "badVar"),
+        (DeprecatedSymbol, "Baz"),
+        (DeprecatedSymbol, "boo"),
+        (DeprecatedSymbol, "X"),
+        (DeprecatedSymbol, "Y"),
+        (DeprecatedSymbol, "goo")
       ))
     }
 
