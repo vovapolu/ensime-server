@@ -201,6 +201,7 @@ object EnsimeBuild extends Build with JdkResolver {
 
   lazy val core = Project("core", file("core")).dependsOn(
     api, sexpress,
+    api % "test->test", // for the interpolator
     // depend on "it" dependencies in "test" or sbt adds them to the release deps!
     // https://github.com/sbt/sbt/issues/1888
     testingEmpty % "test,it",

@@ -11,6 +11,8 @@ import scala.util.Properties
 
 class EnsimeConfigSpec extends FunSpec with Matchers {
 
+  import EscapingStringInterpolation._
+
   def test(dir: File, contents: String, testFn: (EnsimeConfig) => Unit): Unit = {
     testFn(EnsimeConfigProtocol.parse(contents))
   }

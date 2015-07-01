@@ -12,6 +12,8 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
   import SwankFormats._
   import SwankTestData._
 
+  import EscapingStringInterpolation._
+
   def marshal(value: RpcResponse, via: Option[String]): Unit = {
     val sexp = (RpcResponseEnvelope(666, value): EnsimeServerMessage).toSexp match {
       case SexpList(

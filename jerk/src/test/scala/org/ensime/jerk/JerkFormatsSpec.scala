@@ -16,6 +16,8 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     with SprayJsonTestSupport with EnsimeTestData {
   import JerkFormats._
 
+  import EscapingStringInterpolation._
+
   // workaround the fact that we have tests on the contents of the
   // envelope, but marshallers at the higher level (really the tests
   // should be updated).
