@@ -4,27 +4,22 @@ import java.io._
 import java.net.{ InetAddress, ServerSocket, Socket }
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.event.slf4j.SLF4JLogging
 import akka.actor._
 import akka.event.LoggingReceive
-
+import akka.event.slf4j.SLF4JLogging
 import com.google.common.base.Charsets
 import com.google.common.io.Files
 import org.ensime.api._
 import org.ensime.config._
 import org.ensime.core._
-import org.ensime.server.protocol._
 import org.ensime.server.protocol.swank._
-import org.ensime.sexp.Sexp
 import org.slf4j._
 import org.slf4j.bridge.SLF4JBridgeHandler
-
-import scala.concurrent.Future
-import scala.util._
-import Properties._
-import scala.util.control.NonFatal
-
 import pimpathon.java.io._
+
+import scala.util.Properties._
+import scala.util._
+import scala.util.control.NonFatal
 
 object Server {
   SLF4JBridgeHandler.removeHandlersForRootLogger()
@@ -80,6 +75,10 @@ class Server(
 
   implicit private val system = ActorSystem("ENSIME")
 
+  val broadcaster = system.actorOf(Broadcaster(), "broadcaster")
+  val project = system.actorOf(Project(broadcaster), "project")
+  // TODO: die if broadcaster/project stop
+
   // visible for testing
   val listener = new ServerSocket(requestedPort, 0, InetAddress.getByName(host))
 
@@ -94,15 +93,15 @@ class Server(
   def start(): Unit = {
     loop = new Thread {
       override def run(): Unit = {
-        try while (!hasShutdownFlag.get()) {
-          try {
+        try {
+          while (!hasShutdownFlag.get()) {
             val socket = listener.accept()
-            system.actorOf(SocketHandler(protocol, socket))
-          } catch {
-            case e: Exception =>
-              if (!hasShutdownFlag.get())
-                log.error("ENSIME Server socket listener error: ", e)
+            system.actorOf(SocketHandler(protocol, socket, broadcaster, project))
           }
+        } catch {
+          case e: Exception =>
+            if (!hasShutdownFlag.get())
+              log.error("ENSIME Server socket listener", e)
         } finally listener.close()
       }
     }
@@ -151,11 +150,11 @@ class Server(
 class SocketHandler(
     protocol: Protocol,
     socket: Socket,
+    broadcaster: ActorRef,
+    project: ActorRef,
     implicit val config: EnsimeConfig
 ) extends Actor with ActorLogging {
-  import context.system
 
-  private var project: ActorRef = _
   private var docs: ActorRef = _
 
   private var in: InputStream = _
@@ -163,24 +162,31 @@ class SocketHandler(
   private var loop: Thread = _
 
   override def preStart(): Unit = {
-    project = context.actorOf(Project(self), "project")
-    docs = context.actorOf(Props(new DocServer(config)), "docs")
+    broadcaster ! Broadcaster.Register
 
+    docs = context.actorOf(Props(new DocServer(config)), "docs")
     in = socket.getInputStream.buffered
     out = socket.getOutputStream.buffered
 
     loop = new Thread {
-      override def run(): Unit = while (!socket.isClosed()) try {
-        val envelope = protocol.read(in)
-        context.actorOf(RequestHandler(envelope, project, self, docs), s"${envelope.callId}")
-      } catch {
-        case SwankRPCFormatException(msg, callId, cause) =>
-          // specialist SWANK support
-          self ! RpcResponseEnvelope(callId, EnsimeServerError(msg))
+      var finished = false
+      override def run(): Unit = while (!finished && !socket.isClosed()) {
+        try {
+          val envelope = protocol.read(in)
+          context.actorOf(RequestHandler(envelope, project, self, docs), s"${envelope.callId}")
+        } catch {
+          case SwankRPCFormatException(msg, callId, cause) =>
+            // specialist SWANK support
+            self ! RpcResponseEnvelope(callId, EnsimeServerError(msg))
 
-        case NonFatal(e) =>
-          log.error(e, "Error in socket reader: ")
-        // otherwise ignore the message
+          case e: IOException =>
+            log.info("IOException seen - stopping reader")
+            context.stop(self)
+            finished = true
+          case NonFatal(e) =>
+            log.error(e, "Error in socket reader: ")
+          // otherwise ignore the message
+        }
       }
     }
     loop.setName("ENSIME Protocol Loop")
@@ -188,6 +194,9 @@ class SocketHandler(
   }
 
   override def postStop(): Unit = {
+    log.info("Closing socket")
+    broadcaster ! Broadcaster.Unregister
+
     Try(socket.close())
     Try(in.close())
     Try(out.close())
@@ -219,9 +228,11 @@ class SocketHandler(
 object SocketHandler {
   def apply(
     protocol: Protocol,
-    socket: Socket
+    socket: Socket,
+    broadcaster: ActorRef,
+    project: ActorRef
   )(implicit config: EnsimeConfig): Props =
-    Props(classOf[SocketHandler], protocol, socket, config)
+    Props(classOf[SocketHandler], protocol, socket, broadcaster, project, config)
 }
 
 /**
