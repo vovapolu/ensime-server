@@ -1,4 +1,6 @@
 image: ensime/ensime:latest
+docker:
+  tty: true
 
 script:
   - sbt ++$SCALA_VERSION gen-ensime &&
@@ -10,15 +12,13 @@ script:
       git --no-pager diff ;
       exit 1 ;
     fi &&
-    sbt ++$SCALA_VERSION test it:test
-
-# BLOCKED: https://github.com/drone/drone/issues/1048
-#    sbt ++$SCALA_VERSION publishLocal &&
-#    ensime-emacs/test/run_emacs_tests.sh &&
-#    if [ "$PULL_REQUEST" = "false" ] ; then
-#      sbt ++$SCALA_VERSION publish &&
-#      curl --data "build=true" -X POST https://registry.hub.docker.com/u/ensime/ensime/trigger/${DOCKER_TRIGGER_TOKEN}/ ;
-#    fi
+    sbt ++$SCALA_VERSION test it:test &&
+    sbt ++$SCALA_VERSION publishLocal &&
+    ensime-emacs/test/run_emacs_tests.sh &&
+    if [ "$PULL_REQUEST" = "false" ] ; then
+      sbt ++$SCALA_VERSION publish &&
+      curl --data "build=true" -X POST https://registry.hub.docker.com/u/ensime/ensime/trigger/${DOCKER_TRIGGER_TOKEN}/ ;
+    fi
 
 # BLOCKED https://github.com/scoverage/sbt-coveralls/pull/41
 #- sbt ++$SCALA_VERSION clean coverage test it:test &&
