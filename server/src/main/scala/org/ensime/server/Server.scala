@@ -24,8 +24,6 @@ import scala.util.control.NonFatal
 import shapeless._
 import pimpathon.java.io._
 
-import Workarounds.shapeless422
-
 object Server {
   SLF4JBridgeHandler.removeHandlersForRootLogger()
   SLF4JBridgeHandler.install()

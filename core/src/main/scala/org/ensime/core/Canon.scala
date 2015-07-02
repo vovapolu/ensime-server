@@ -16,12 +16,3 @@ object Canon extends Poly1 {
 object Canonised {
   def apply[T](t: T)(implicit everywhere: Everywhere[Canon.type, T]) = everywhere(t)
 }
-
-object Workarounds {
-  // https://github.com/milessabin/shapeless/issues/422
-  implicit def shapeless422[F <: Poly]: DataT.Aux[F, Symbol, Symbol] =
-    new DataT[F, Symbol] {
-      type Out = Symbol
-      def gmapT(t: Symbol) = t
-    }
-}

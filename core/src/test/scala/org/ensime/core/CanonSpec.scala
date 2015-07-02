@@ -6,7 +6,6 @@ import shapeless._
 import pimpathon.file._
 
 import org.ensime.api._
-import Workarounds.shapeless422
 
 // this test is mostly showing what Canon can do, we're testing
 // shapeless more than our specific Poly1.
