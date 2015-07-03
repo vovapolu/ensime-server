@@ -38,7 +38,7 @@ object DescriptorParser extends ParboiledParser[Descriptor] {
   } ~~> { (p, n) => ClassName(p, n) }
 
   private lazy val Package: Rule1[PackageName] = rule("Package") {
-    zeroOrMore(oneOrMore("a" - "z" | "A" - "Z" | "_" | "0" - "9").save ~ "/")
+    zeroOrMore(oneOrMore("a" - "z" | "A" - "Z" | "_" | "-" | "0" - "9").save ~ "/")
   } ~~> { PackageName.apply }
 
   private lazy val Name: Rule1[String] = rule("Name") {

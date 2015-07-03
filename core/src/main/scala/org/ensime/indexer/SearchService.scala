@@ -1,15 +1,13 @@
 package org.ensime.indexer
 
-import akka.actor._
 import java.sql.SQLException
 
+import akka.actor._
 import akka.event.slf4j.SLF4JLogging
 import org.apache.commons.vfs2._
+import org.ensime.api._
 import org.ensime.indexer.DatabaseService._
 import pimpathon.file._
-
-import org.ensime.api._
-import scala.collection.immutable.Queue
 
 //import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -108,10 +106,15 @@ class SearchService(
         }(workerEC)
 
         case jar => Future[Unit] {
-          log.debug(s"indexing $jar")
-          val check = FileCheck(jar)
-          val symbols = scan(vfs.vjar(jar)) flatMap (extractSymbols(jar, _))
-          persist(check, symbols)
+          try {
+            log.debug(s"indexing $jar")
+            val check = FileCheck(jar)
+            val symbols = scan(vfs.vjar(jar)) flatMap (extractSymbols(jar, _))
+            persist(check, symbols)
+          } catch {
+            case e: Exception =>
+              log.error(s"Failed to index $jar", e)
+          }
         }(workerEC)
       }
     }
@@ -229,6 +232,7 @@ case class FileUpdate(
 
 class IndexingQueueActor(searchService: SearchService) extends Actor with ActorLogging {
   import context.system
+
   import scala.concurrent.duration._
 
   case object Process
