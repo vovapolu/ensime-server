@@ -64,6 +64,10 @@ class DescriptorParserSpec extends FunSpec with Matchers with SLF4JLogging {
 
       // of course, SUN break their own rules for package names (capitals)
       assert(Try(parseType("Lcom/sun/tools/corba/se/idl/toJavaPortable/NameModifierImpl;")).isSuccess)
+
+      // hmmm, apache, what???? dashes in package names????
+      assert(Try(parseType("Lorg/spark-project/guava/annotations/VisibleForTesting;")).isSuccess)
+
     }
 
     it("should be invertible") {
