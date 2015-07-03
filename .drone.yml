@@ -1,6 +1,4 @@
 image: ensime/ensime:latest
-docker:
-  tty: true
 
 script:
   - sbt ++$SCALA_VERSION gen-ensime &&
@@ -24,14 +22,13 @@ script:
 #- sbt ++$SCALA_VERSION clean coverage test it:test &&
 #  sbt coverageAggregate coveralls
 
-# Reminder: set the following encrypted variables on one line:
+# Reminder: set the following encrypted variables
 #
 #   SONATYPE_USERNAME
 #   SONATYPE_PASSWORD
 #   DOCKER_TRIGGER_TOKEN
 #   COVERALLS_REPO_TOKEN
-#
-# WORKAROUND https://github.com/Shippable/support/issues/1198
 env:
   - SCALA_VERSION=2.11.7
-  - EMACS=/opt/emacs-24.1/bin/emacs
+  - EMACS=/opt/emacs-24.4/bin/emacs
+  - AKKA_TEST_TIMEFACTOR=10
