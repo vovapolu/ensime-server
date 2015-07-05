@@ -19,7 +19,7 @@ ENSIME is a cross editor platform with the following components. If you'd like t
 * [ENSIME for Emacs](https://github.com/ensime/ensime-emacs)
 * [ENSIME for Sublime](https://github.com/ensime/ensime-sublime)
 * [ENSIME for Atom](https://github.com/ensime/ensime-atom)
-* ~~ENSIME for Vim~~ (needs some love, please contact us to help!)
+* [ENSIME for Vim](https://github.com/ensime/ensime-vim)
 
 # Contributing
 
