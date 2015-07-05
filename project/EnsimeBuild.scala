@@ -19,7 +19,15 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val basicSettings = Seq(
     organization := "org.ensime",
     scalaVersion := "2.11.7",
-    version := "0.9.10-SNAPSHOT"
+    version := "0.9.10-SNAPSHOT",
+
+    dependencyOverrides ++= Set(
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.scala-lang.modules" %% "scala-xml" % "1.0.4",
+      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
+      "org.slf4j" % "slf4j-api" % "1.7.12",
+      "com.google.guava" % "guava" % "18.0"
+    )
   )
   val isEmacs = sys.env.get("TERM") == Some("dumb")
 
@@ -39,7 +47,7 @@ object EnsimeBuild extends Build with JdkResolver {
   }.getOrElse(Nil)
 
   lazy val commonSettings = scalariformSettings ++ basicSettings ++ Seq(
-    resolvers += Resolver.sonatypeRepo("snapshots"),
+    //resolvers += Resolver.sonatypeRepo("snapshots"),
     scalacOptions in Compile ++= Seq(
       // uncomment this to debug implicit resolution compilation problems
       //"-Xlog-implicits",
@@ -100,7 +108,7 @@ object EnsimeBuild extends Build with JdkResolver {
   ////////////////////////////////////////////////
   // common dependencies
   lazy val pimpathon = "com.github.stacycurl" %% "pimpathon-core" % "1.5.0"
-  lazy val shapeless = "com.chuusai" %% "shapeless" % "2.2.4-SNAPSHOT"
+  lazy val shapeless = "com.chuusai" %% "shapeless" % "2.2.4"
   lazy val logback = Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.3",
     "org.slf4j" % "jul-to-slf4j" % "1.7.12",
@@ -115,10 +123,7 @@ object EnsimeBuild extends Build with JdkResolver {
     "org.scalamock" %% "scalamock-scalatest-support" % "3.2.2" % config,
     "org.scalacheck" %% "scalacheck" % "1.12.1" % config,
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % config,
-    "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % config,
-    // workaround old deps coming from scalatest
-    "org.scala-lang" % "scala-reflect" % scalaV % config,
-    "org.scala-lang.modules" %% "scala-xml" % "1.0.4" % config
+    "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % config
   ) ++ logback.map(_ % config)
 
   def jars(cp: Classpath): String = {
@@ -160,7 +165,7 @@ object EnsimeBuild extends Build with JdkResolver {
     api % "test->test" // for the test data
   ) settings (
     libraryDependencies ++= Seq(
-      "com.github.fommil" %% "spray-json-shapeless" % "1.0.0-SNAPSHOT",
+      "com.github.fommil" %% "spray-json-shapeless" % "1.0.0",
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
     ) ++ testLibs(scalaVersion.value)
   )
