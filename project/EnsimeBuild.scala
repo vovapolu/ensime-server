@@ -143,8 +143,6 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val sexpress = Project("sexpress", file("sexpress"), settings = commonSettings) settings (
     licenses := Seq("LGPL 3.0" -> url("http://www.gnu.org/licenses/lgpl-3.0.txt")),
     libraryDependencies ++= Seq(
-      // losing scala-reflect dep would be good
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       shapeless,
       "org.parboiled" %% "parboiled-scala" % "1.1.7",
       pimpathon,
