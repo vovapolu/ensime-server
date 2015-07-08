@@ -5,13 +5,14 @@ import org.scalatest._
 
 import org.ensime.sexp._
 import org.ensime.api._
-import org.ensime.util._
 
 import pimpathon.file._
 
 class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
   import SwankFormats._
   import SwankTestData._
+
+  import EscapingStringInterpolation._
 
   def marshal(value: RpcResponse, via: Option[String]): Unit = {
     val sexp = (RpcResponseEnvelope(666, value): EnsimeServerMessage).toSexp match {
@@ -58,24 +59,24 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:import-suggestions $file1_str 1 ("foo" "bar") 10)""",
+      s"""(swank:import-suggestions "$file1" 1 ("foo" "bar") 10)""",
       ImportSuggestionsReq(file1, 1, List("foo", "bar"), 10): RpcRequest
     )
   }
 
   it should "unmarshal RpcAnalyserRequests" in {
     unmarshal(
-      s"""(swank:remove-file $file1_str)""",
+      s"""(swank:remove-file "$file1")""",
       RemoveFileReq(file1): RpcRequest
     )
 
     unmarshal(
-      s"""(swank:typecheck-file (:file $file1_str :contents "{/* code here */}" :contents-in $file2_str))""",
+      s"""(swank:typecheck-file (:file "$file1" :contents "{/* code here */}" :contents-in "$file2"))""",
       TypecheckFileReq(sourceFileInfo): RpcRequest
     )
 
     unmarshal(
-      s"""(swank:typecheck-files ($file1_str $file2_str))""",
+      s"""(swank:typecheck-files ("$file1" "$file2"))""",
       TypecheckFilesReq(List(file1, file2)): RpcRequest
     )
 
@@ -90,17 +91,17 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:format-source ($file1_str $file2_str))""",
+      s"""(swank:format-source ("$file1" "$file2"))""",
       FormatSourceReq(List(file1, file2)): RpcRequest
     )
 
     unmarshal(
-      s"""(swank:format-one-source (:file $file1_str :contents "{/* code here */}" :contents-in $file2_str))""",
+      s"""(swank:format-one-source (:file "$file1" :contents "{/* code here */}" :contents-in "$file2"))""",
       FormatOneSourceReq(sourceFileInfo): RpcRequest
     )
 
     unmarshal(
-      s"""(swank:doc-uri-at-point $file1_str (1 10))""",
+      s"""(swank:doc-uri-at-point "$file1" (1 10))""",
       DocUriAtPointReq(file1, OffsetRange(1, 10)): RpcRequest
     )
 
@@ -110,7 +111,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:completions (:file $file1_str :contents "{/* code here */}" :contents-in $file2_str) 10 100 t nil)""",
+      s"""(swank:completions (:file "$file1" :contents "{/* code here */}" :contents-in "$file2") 10 100 t nil)""",
       CompletionsReq(sourceFileInfo, 10, 100, true, false): RpcRequest
     )
 
@@ -125,7 +126,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:uses-of-symbol-at-point $file1_str 100)""",
+      s"""(swank:uses-of-symbol-at-point "$file1" 100)""",
       UsesOfSymbolAtPointReq(file1, 100): RpcRequest
     )
 
@@ -140,17 +141,17 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:type-by-name-at-point "foo.bar" $file1_str (1 10))""",
+      s"""(swank:type-by-name-at-point "foo.bar" "$file1" (1 10))""",
       TypeByNameAtPointReq("foo.bar", file1, OffsetRange(1, 10)): RpcRequest
     )
 
     unmarshal(
-      s"""(swank:type-at-point $file1_str (1 100))""",
+      s"""(swank:type-at-point "$file1" (1 100))""",
       TypeAtPointReq(file1, OffsetRange(1, 100)): RpcRequest
     )
 
     unmarshal(
-      s"""(swank:inspect-type-at-point $file1_str (1 100))""",
+      s"""(swank:inspect-type-at-point "$file1" (1 100))""",
       InspectTypeAtPointReq(file1, OffsetRange(1, 100)): RpcRequest
     )
 
@@ -165,7 +166,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:symbol-at-point $file1_str 101)""",
+      s"""(swank:symbol-at-point "$file1" 101)""",
       SymbolAtPointReq(file1, 101): RpcRequest
     )
 
@@ -180,7 +181,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:prepare-refactor 1 ignored (end 100 file $file1_str newName "bar" start 1) nil)""",
+      s"""(swank:prepare-refactor 1 ignored (end 100 file "$file1" newName "bar" start 1) nil)""",
       PrepareRefactorReq(1, 'ignored, RenameRefactorDesc("bar", file1, 1, 100), false): RpcRequest
     )
 
@@ -195,7 +196,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:symbol-designations $file1_str 1 100 (object val))""",
+      s"""(swank:symbol-designations "$file1" 1 100 (object val))""",
       SymbolDesignationsReq(
         file1, 1, 100,
         List(ObjectSymbol, ValSymbol)
@@ -203,12 +204,12 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:expand-selection $file1_str 100 200)""",
+      s"""(swank:expand-selection "$file1" 100 200)""",
       ExpandSelectionReq(file1, 100, 200): RpcRequest
     )
 
     unmarshal(
-      s"""(swank:implicit-info $file1_str (0 123))""",
+      s"""(swank:implicit-info "$file1" (0 123))""",
       ImplicitInfoReq(file1, OffsetRange(0, 123))
     )
 
@@ -236,12 +237,12 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      s"""(swank:debug-set-break $file1_str 13)""",
+      s"""(swank:debug-set-break "$file1" 13)""",
       DebugSetBreakReq(file1, 13): RpcRequest
     )
 
     unmarshal(
-      s"""(swank:debug-clear-break $file1_str 13)""",
+      s"""(swank:debug-clear-break "$file1" 13)""",
       DebugClearBreakReq(file1, 13): RpcRequest
     )
 
@@ -350,12 +351,12 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     marshal(
       DebugStepEvent(DebugThreadId(207), "threadNameStr", sourcePos1.file, sourcePos1.line): EnsimeEvent,
-      s"""(:debug-event (:type step :thread-id "207" :thread-name "threadNameStr" :file $file1_str :line 57))"""
+      s"""(:debug-event (:type step :thread-id "207" :thread-name "threadNameStr" :file "$file1" :line 57))"""
     )
 
     marshal(
       DebugBreakEvent(DebugThreadId(209), "threadNameStr", sourcePos1.file, sourcePos1.line): EnsimeEvent,
-      s"""(:debug-event (:type breakpoint :thread-id "209" :thread-name "threadNameStr" :file $file1_str :line 57))"""
+      s"""(:debug-event (:type breakpoint :thread-id "209" :thread-name "threadNameStr" :file "$file1" :line 57))"""
     )
 
     marshal(
@@ -368,7 +369,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
     marshal(
       DebugExceptionEvent(33L, dtid, "threadNameStr", Some(sourcePos1.file), Some(sourcePos1.line)): EnsimeEvent,
-      s"""(:debug-event (:type exception :exception 33 :thread-id "13" :thread-name "threadNameStr" :file $file1_str :line 57))"""
+      s"""(:debug-event (:type exception :exception 33 :thread-id "13" :thread-name "threadNameStr" :file "$file1" :line 57))"""
     )
     marshal(
       DebugExceptionEvent(33L, dtid, "threadNameStr", None, None): EnsimeEvent,
@@ -445,21 +446,21 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     marshal(
       debugStackFrame: DebugStackFrame,
-      s"""(:index 7 :locals ((:index 3 :name "name1" :summary "summary1" :type-name "type1") (:index 4 :name "name2" :summary "summary2" :type-name "type2")) :num-args 4 :class-name "class1" :method-name "method1" :pc-location (:file $file1_str :line 57) :this-object-id "7")"""
+      s"""(:index 7 :locals ((:index 3 :name "name1" :summary "summary1" :type-name "type1") (:index 4 :name "name2" :summary "summary2" :type-name "type2")) :num-args 4 :class-name "class1" :method-name "method1" :pc-location (:file "$file1" :line 57) :this-object-id "7")"""
     )
 
     marshal(
       DebugBacktrace(List(debugStackFrame), dtid, "thread1"): DebugBacktrace,
-      s"""(:frames ((:index 7 :locals ((:index 3 :name "name1" :summary "summary1" :type-name "type1") (:index 4 :name "name2" :summary "summary2" :type-name "type2")) :num-args 4 :class-name "class1" :method-name "method1" :pc-location (:file $file1_str :line 57) :this-object-id "7")) :thread-id "13" :thread-name "thread1")"""
+      s"""(:frames ((:index 7 :locals ((:index 3 :name "name1" :summary "summary1" :type-name "type1") (:index 4 :name "name2" :summary "summary2" :type-name "type2")) :num-args 4 :class-name "class1" :method-name "method1" :pc-location (:file "$file1" :line 57) :this-object-id "7")) :thread-id "13" :thread-name "thread1")"""
     )
 
     marshal(
       sourcePos1: SourcePosition,
-      s"""(:type line :file $file1_str :line 57)"""
+      s"""(:type line :file "$file1" :line 57)"""
     )
     marshal(
       sourcePos2: SourcePosition,
-      s"""(:type line :file $file1_str :line 59)"""
+      s"""(:type line :file "$file1" :line 59)"""
     )
     marshal(
       sourcePos3: SourcePosition,
@@ -467,17 +468,17 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
     marshal(
       sourcePos4: SourcePosition,
-      s"""(:type offset :file $file1_str :offset 456)"""
+      s"""(:type offset :file "$file1" :offset 456)"""
     )
 
     marshal(
       breakPoint1: Breakpoint,
-      s"""(:file $file1_str :line 57)"""
+      s"""(:file "$file1" :line 57)"""
     )
 
     marshal(
       BreakpointList(List(breakPoint1), List(breakPoint2)): BreakpointList,
-      s"""(:active ((:file $file1_str :line 57)) :pending ((:file $file1_str :line 59)))"""
+      s"""(:active ((:file "$file1" :line 57)) :pending ((:file "$file1" :line 59)))"""
     )
 
     marshal(
@@ -556,29 +557,29 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
   it should "marshal search related responses" in {
     marshal(
       new SymbolSearchResults(List(methodSearchRes, typeSearchRes)): SymbolSearchResults,
-      s"""((:type method :name "abc" :local-name "a" :decl-as method :pos (:type line :file $abd_str :line 10) :owner-name "ownerStr") (:type type :name "abc" :local-name "a" :decl-as trait :pos (:type line :file $abd_str :line 10)))"""
+      s"""((:type method :name "abc" :local-name "a" :decl-as method :pos (:type line :file "$abd" :line 10) :owner-name "ownerStr") (:type type :name "abc" :local-name "a" :decl-as trait :pos (:type line :file "$abd" :line 10)))"""
     )
 
     marshal(
       new ImportSuggestions(List(List(methodSearchRes, typeSearchRes))): ImportSuggestions,
-      s"""(((:type method :name "abc" :local-name "a" :decl-as method :pos (:type line :file $abd_str :line 10) :owner-name "ownerStr") (:type type :name "abc" :local-name "a" :decl-as trait :pos (:type line :file $abd_str :line 10))))"""
+      s"""(((:type method :name "abc" :local-name "a" :decl-as method :pos (:type line :file "$abd" :line 10) :owner-name "ownerStr") (:type type :name "abc" :local-name "a" :decl-as trait :pos (:type line :file "$abd" :line 10))))"""
     )
 
     marshal(
       methodSearchRes: SymbolSearchResult,
-      s"""(:type method :name "abc" :local-name "a" :decl-as method :pos (:type line :file $abd_str :line 10) :owner-name "ownerStr")"""
+      s"""(:type method :name "abc" :local-name "a" :decl-as method :pos (:type line :file "$abd" :line 10) :owner-name "ownerStr")"""
     )
 
     marshal(
       typeSearchRes: SymbolSearchResult,
-      s"""(:type type :name "abc" :local-name "a" :decl-as trait :pos (:type line :file $abd_str :line 10))"""
+      s"""(:type type :name "abc" :local-name "a" :decl-as trait :pos (:type line :file "$abd" :line 10))"""
     )
   }
 
   it should "marshal ranges and semantic highlighting" in {
     marshal(
       ERangePositions(ERangePosition(batchSourceFile, 75, 70, 90) :: Nil),
-      """((:file """ + batchSourceFile_str + """ :offset 75 :start 70 :end 90))"""
+      s"""((:file "$batchSourceFile" :offset 75 :start 70 :end 90))"""
     )
 
     marshal(
@@ -593,7 +594,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
         SymbolDesignation(11, 22, ClassSymbol)
       )
       ): SymbolDesignations,
-      s"""(:file ${fileToWireString(symFile)} :syms ((varField 7 9) (class 11 22)))"""
+      s"""(:file "$symFile" :syms ((varField 7 9) (class 11 22)))"""
     )
 
     marshal(
@@ -615,12 +616,12 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     marshal(
       refactorEffect: RefactorEffect,
-      s"""(:procedure-id 9 :refactor-type addImport :changes ((:type edit :file $file3_str :from 5 :to 7 :text "aaa")) :status success)"""
+      s"""(:procedure-id 9 :refactor-type addImport :changes ((:type edit :file "$file3" :from 5 :to 7 :text "aaa")) :status success)"""
     )
 
     marshal(
       refactorResult: RefactorResult,
-      s"""(:procedure-id 7 :refactor-type addImport :touched-files ($file3_str $file1_str) :status success)"""
+      s"""(:procedure-id 7 :refactor-type addImport :touched-files ("$file3" "$file1") :status success)"""
     )
   }
 

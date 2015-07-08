@@ -61,18 +61,3 @@ class StandardFormatsSpec extends FormatSpec with StandardFormats with BasicForm
     }
   }
 }
-
-class AltStandardFormatsSpec extends FormatSpec
-    with StandardFormats with CanonFileFormat {
-
-  describe("StandardFormats with CanonFileFormat") {
-    it("should support canonicalised Files") {
-      val file = new File("foo")
-      val canonised = canonise(file)
-      // non-canon files won't deserialise into exactly the same file
-      assert(file.toSexp === SexpString(canonised.getPath))
-      assertFormat(canonised, SexpString(canonised.getPath))
-    }
-  }
-
-}

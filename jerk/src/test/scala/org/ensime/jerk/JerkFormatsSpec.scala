@@ -7,13 +7,16 @@ import org.scalatest._
 import org.ensime.api._
 
 import spray.json._
-import org.ensime.json._
+
+import fommil.sjs._
 
 import pimpathon.file._
 
 class JerkFormatsSpec extends FlatSpec with Matchers
     with SprayJsonTestSupport with EnsimeTestData {
   import JerkFormats._
+
+  import EscapingStringInterpolation._
 
   // workaround the fact that we have tests on the contents of the
   // envelope, but marshallers at the higher level (really the tests
@@ -43,19 +46,6 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     via: String
   ): Unit = roundtrip(value: EnsimeServerMessage, Some(via))
 
-  def fileToWireString(file: File) = {
-    val canonStr = file.canon.getAbsolutePath
-    "\"" + canonStr.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-  }
-
-  val file1_str = fileToWireString(file1)
-  val file2_str = fileToWireString(file2)
-  val file3_str = fileToWireString(file3)
-  val file4_str = fileToWireString(file4)
-  val file5_str = fileToWireString(file5)
-  val abd_str = fileToWireString(abd)
-  val symFile_str = fileToWireString(symFile)
-
   "Jerk Formats" should "roundtrip startup messages" in {
     roundtrip(
       ConnectionInfoReq,
@@ -71,24 +61,24 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       ImportSuggestionsReq(file1, 1, List("foo", "bar"), 10),
-      s"""{"point":1,"maxResults":10,"names":["foo","bar"],"typehint":"ImportSuggestionsReq","file":$file1_str}"""
+      s"""{"point":1,"maxResults":10,"names":["foo","bar"],"typehint":"ImportSuggestionsReq","file":"$file1"}"""
     )
   }
 
   it should "unmarshal RpcAnalyserRequests" in {
     roundtrip(
       RemoveFileReq(file1),
-      s"""{"typehint":"RemoveFileReq","file":$file1_str}"""
+      s"""{"typehint":"RemoveFileReq","file":"$file1"}"""
     )
 
     roundtrip(
       TypecheckFileReq(sourceFileInfo),
-      s"""{"typehint":"TypecheckFileReq","fileInfo":{"file":$file1_str,"contents":"{/* code here */}","contentsIn":$file2_str}}"""
+      s"""{"typehint":"TypecheckFileReq","fileInfo":{"file":"$file1","contents":"{/* code here */}","contentsIn":"$file2"}}"""
     )
 
     roundtrip(
       TypecheckFilesReq(List(file1, file2)),
-      s"""{"typehint":"TypecheckFilesReq","files":[$file1_str,$file2_str]}"""
+      s"""{"typehint":"TypecheckFilesReq","files":["$file1","$file2"]}"""
     )
 
     roundtrip(
@@ -103,17 +93,17 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       FormatSourceReq(List(file1, file2)),
-      s"""{"typehint":"FormatSourceReq","files":[$file1_str,$file2_str]}"""
+      s"""{"typehint":"FormatSourceReq","files":["$file1","$file2"]}"""
     )
 
     roundtrip(
       FormatOneSourceReq(sourceFileInfo),
-      s"""{"typehint":"FormatOneSourceReq","file":{"file":$file1_str,"contents":"{/* code here */}","contentsIn":$file2_str}}"""
+      s"""{"typehint":"FormatOneSourceReq","file":{"file":"$file1","contents":"{/* code here */}","contentsIn":"$file2"}}"""
     )
 
     roundtrip(
       DocUriAtPointReq(file1, OffsetRange(1, 10)),
-      s"""{"typehint":"DocUriAtPointReq","file":$file1_str,"point":{"from":1,"to":10}}"""
+      s"""{"typehint":"DocUriAtPointReq","file":"$file1","point":{"from":1,"to":10}}"""
     )
 
     roundtrip(
@@ -123,7 +113,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       CompletionsReq(sourceFileInfo, 10, 100, true, false),
-      s"""{"point":10,"maxResults":100,"typehint":"CompletionsReq","caseSens":true,"fileInfo":{"file":$file1_str,"contents":"{/* code here */}","contentsIn":$file2_str},"reload":false}"""
+      s"""{"point":10,"maxResults":100,"typehint":"CompletionsReq","caseSens":true,"fileInfo":{"file":"$file1","contents":"{/* code here */}","contentsIn":"$file2"},"reload":false}"""
     )
 
     roundtrip(
@@ -138,7 +128,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       UsesOfSymbolAtPointReq(file1, 100),
-      s"""{"typehint":"UsesOfSymbolAtPointReq","file":$file1_str,"point":100}"""
+      s"""{"typehint":"UsesOfSymbolAtPointReq","file":"$file1","point":100}"""
     )
 
     roundtrip(
@@ -153,17 +143,17 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       TypeByNameAtPointReq("foo.bar", file1, OffsetRange(1, 10)),
-      s"""{"typehint":"TypeByNameAtPointReq","name":"foo.bar","file":$file1_str,"range":{"from":1,"to":10}}"""
+      s"""{"typehint":"TypeByNameAtPointReq","name":"foo.bar","file":"$file1","range":{"from":1,"to":10}}"""
     )
 
     roundtrip(
       TypeAtPointReq(file1, OffsetRange(1, 100)),
-      s"""{"typehint":"TypeAtPointReq","file":$file1_str,"range":{"from":1,"to":100}}"""
+      s"""{"typehint":"TypeAtPointReq","file":"$file1","range":{"from":1,"to":100}}"""
     )
 
     roundtrip(
       InspectTypeAtPointReq(file1, OffsetRange(1, 100)),
-      s"""{"typehint":"InspectTypeAtPointReq","file":$file1_str,"range":{"from":1,"to":100}}"""
+      s"""{"typehint":"InspectTypeAtPointReq","file":"$file1","range":{"from":1,"to":100}}"""
     )
 
     roundtrip(
@@ -178,7 +168,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       SymbolAtPointReq(file1, 101),
-      s"""{"typehint":"SymbolAtPointReq","file":$file1_str,"point":101}"""
+      s"""{"typehint":"SymbolAtPointReq","file":"$file1","point":101}"""
     )
 
     roundtrip(
@@ -193,7 +183,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       PrepareRefactorReq(1, 'ignored, RenameRefactorDesc("bar", file1, 1, 100), false),
-      s"""{"tpe":"ignored","procId":1,"params":{"newName":"bar","typehint":"RenameRefactorDesc","end":100,"file":$file1_str,"start":1},"typehint":"PrepareRefactorReq","interactive":false}"""
+      s"""{"tpe":"ignored","procId":1,"params":{"newName":"bar","typehint":"RenameRefactorDesc","end":100,"file":"$file1","start":1},"typehint":"PrepareRefactorReq","interactive":false}"""
     )
 
     roundtrip(
@@ -211,17 +201,17 @@ class JerkFormatsSpec extends FlatSpec with Matchers
         file1, 1, 100,
         List(ObjectSymbol, ValSymbol)
       ),
-      s"""{"requestedTypes":[{"typehint":"ObjectSymbol"},{"typehint":"ValSymbol"}],"typehint":"SymbolDesignationsReq","end":100,"file":$file1_str,"start":1}"""
+      s"""{"requestedTypes":[{"typehint":"ObjectSymbol"},{"typehint":"ValSymbol"}],"typehint":"SymbolDesignationsReq","end":100,"file":"$file1","start":1}"""
     )
 
     roundtrip(
       ExpandSelectionReq(file1, 100, 200),
-      s"""{"typehint":"ExpandSelectionReq","file":$file1_str,"start":100,"end":200}"""
+      s"""{"typehint":"ExpandSelectionReq","file":"$file1","start":100,"end":200}"""
     )
 
     roundtrip(
       ImplicitInfoReq(file1, OffsetRange(0, 123)),
-      s"""{"typehint":"ImplicitInfoReq","file":$file1_str,"range":{"from":0,"to":123}}"""
+      s"""{"typehint":"ImplicitInfoReq","file":"$file1","range":{"from":0,"to":123}}"""
     )
   }
 
@@ -248,12 +238,12 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       DebugSetBreakReq(file1, 13),
-      s"""{"typehint":"DebugSetBreakReq","file":$file1_str,"line":13}"""
+      s"""{"typehint":"DebugSetBreakReq","file":"$file1","line":13}"""
     )
 
     roundtrip(
       DebugClearBreakReq(file1, 13),
-      s"""{"typehint":"DebugClearBreakReq","file":$file1_str,"line":13}"""
+      s"""{"typehint":"DebugClearBreakReq","file":"$file1","line":13}"""
     )
 
     roundtrip(
@@ -362,12 +352,12 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     roundtrip(
       DebugStepEvent(DebugThreadId(207), "threadNameStr", sourcePos1.file, sourcePos1.line),
       // why is the typehint not the first entry?
-      s"""{"line":57,"typehint":"DebugStepEvent","file":$file1_str,"threadName":"threadNameStr","threadId":207}"""
+      s"""{"line":57,"typehint":"DebugStepEvent","file":"$file1","threadName":"threadNameStr","threadId":207}"""
     )
 
     roundtrip(
       DebugBreakEvent(DebugThreadId(209), "threadNameStr", sourcePos1.file, sourcePos1.line),
-      s"""{"line":57,"typehint":"DebugBreakEvent","file":$file1_str,"threadName":"threadNameStr","threadId":209}"""
+      s"""{"line":57,"typehint":"DebugBreakEvent","file":"$file1","threadName":"threadNameStr","threadId":209}"""
     )
 
     roundtrip(
@@ -380,7 +370,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
     roundtrip(
       DebugExceptionEvent(33L, dtid, "threadNameStr", Some(sourcePos1.file), Some(sourcePos1.line)),
-      s"""{"line":57,"exception":33,"typehint":"DebugExceptionEvent","file":$file1_str,"threadName":"threadNameStr","threadId":13}"""
+      s"""{"line":57,"exception":33,"typehint":"DebugExceptionEvent","file":"$file1","threadName":"threadNameStr","threadId":13}"""
     )
     roundtrip(
       DebugExceptionEvent(33L, dtid, "threadNameStr", None, None),
@@ -457,21 +447,21 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       debugStackFrame,
-      s"""{"typehint":"DebugStackFrame","thisObjectId":{"id":7},"methodName":"method1","locals":[{"index":3,"name":"name1","summary":"summary1","typeName":"type1"},{"index":4,"name":"name2","summary":"summary2","typeName":"type2"}],"pcLocation":{"file":$file1_str,"line":57},"className":"class1","numArgs":4,"index":7}"""
+      s"""{"typehint":"DebugStackFrame","thisObjectId":{"id":7},"methodName":"method1","locals":[{"index":3,"name":"name1","summary":"summary1","typeName":"type1"},{"index":4,"name":"name2","summary":"summary2","typeName":"type2"}],"pcLocation":{"file":"$file1","line":57},"className":"class1","numArgs":4,"index":7}"""
     )
 
     roundtrip(
       DebugBacktrace(List(debugStackFrame), dtid, "thread1"),
-      s"""{"typehint":"DebugBacktrace","frames":[{"thisObjectId":{"id":7},"methodName":"method1","locals":[{"index":3,"name":"name1","summary":"summary1","typeName":"type1"},{"index":4,"name":"name2","summary":"summary2","typeName":"type2"}],"pcLocation":{"file":$file1_str,"line":57},"className":"class1","numArgs":4,"index":7}],"threadId":13,"threadName":"thread1"}"""
+      s"""{"typehint":"DebugBacktrace","frames":[{"thisObjectId":{"id":7},"methodName":"method1","locals":[{"index":3,"name":"name1","summary":"summary1","typeName":"type1"},{"index":4,"name":"name2","summary":"summary2","typeName":"type2"}],"pcLocation":{"file":"$file1","line":57},"className":"class1","numArgs":4,"index":7}],"threadId":13,"threadName":"thread1"}"""
     )
 
     roundtrip(
       sourcePos1,
-      s"""{"typehint":"LineSourcePosition","file":$file1_str,"line":57}"""
+      s"""{"typehint":"LineSourcePosition","file":"$file1","line":57}"""
     )
     roundtrip(
       sourcePos2,
-      s"""{"typehint":"LineSourcePosition","file":$file1_str,"line":59}"""
+      s"""{"typehint":"LineSourcePosition","file":"$file1","line":59}"""
     )
     roundtrip(
       sourcePos3,
@@ -479,17 +469,17 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
     roundtrip(
       sourcePos4,
-      s"""{"typehint":"OffsetSourcePosition","file":$file1_str,"offset":456}"""
+      s"""{"typehint":"OffsetSourcePosition","file":"$file1","offset":456}"""
     )
 
     roundtrip(
       breakPoint1,
-      s"""{"typehint":"Breakpoint","file":$file1_str,"line":57}"""
+      s"""{"typehint":"Breakpoint","file":"$file1","line":57}"""
     )
 
     roundtrip(
       BreakpointList(List(breakPoint1), List(breakPoint2)),
-      s"""{"typehint":"BreakpointList","active":[{"file":$file1_str,"line":57}],"pending":[{"file":$file1_str,"line":59}]}"""
+      s"""{"typehint":"BreakpointList","active":[{"file":"$file1","line":57}],"pending":[{"file":"$file1","line":59}]}"""
     )
 
     roundtrip(
@@ -568,22 +558,22 @@ class JerkFormatsSpec extends FlatSpec with Matchers
   it should "support search related responses" in {
     roundtrip(
       new SymbolSearchResults(List(methodSearchRes, typeSearchRes)),
-      s"""{"typehint":"SymbolSearchResults","syms":[{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":$abd_str,"line":10},"typehint":"MethodSearchResult","ownerName":"ownerStr","declAs":{"typehint":"Method"}},{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":$abd_str,"line":10},"typehint":"TypeSearchResult","declAs":{"typehint":"Trait"}}]}"""
+      s"""{"typehint":"SymbolSearchResults","syms":[{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":"$abd","line":10},"typehint":"MethodSearchResult","ownerName":"ownerStr","declAs":{"typehint":"Method"}},{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":"$abd","line":10},"typehint":"TypeSearchResult","declAs":{"typehint":"Trait"}}]}"""
     )
 
     roundtrip(
       new ImportSuggestions(List(List(methodSearchRes, typeSearchRes))),
-      s"""{"typehint":"ImportSuggestions","symLists":[[{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":$abd_str,"line":10},"typehint":"MethodSearchResult","ownerName":"ownerStr","declAs":{"typehint":"Method"}},{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":$abd_str,"line":10},"typehint":"TypeSearchResult","declAs":{"typehint":"Trait"}}]]}"""
+      s"""{"typehint":"ImportSuggestions","symLists":[[{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":"$abd","line":10},"typehint":"MethodSearchResult","ownerName":"ownerStr","declAs":{"typehint":"Method"}},{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":"$abd","line":10},"typehint":"TypeSearchResult","declAs":{"typehint":"Trait"}}]]}"""
     )
 
     roundtrip(
       methodSearchRes,
-      s"""{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":$abd_str,"line":10},"typehint":"MethodSearchResult","ownerName":"ownerStr","declAs":{"typehint":"Method"}}"""
+      s"""{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":"$abd","line":10},"typehint":"MethodSearchResult","ownerName":"ownerStr","declAs":{"typehint":"Method"}}"""
     )
 
     roundtrip(
       typeSearchRes,
-      s"""{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":$abd_str,"line":10},"typehint":"TypeSearchResult","declAs":{"typehint":"Trait"}}"""
+      s"""{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":"$abd","line":10},"typehint":"TypeSearchResult","declAs":{"typehint":"Trait"}}"""
     )
   }
 
@@ -605,7 +595,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
         SymbolDesignation(11, 22, ClassSymbol)
       )
       ),
-      s"""{"typehint":"SymbolDesignations","file":$symFile_str,"syms":[{"start":7,"end":9,"symType":{"typehint":"VarFieldSymbol"}},{"start":11,"end":22,"symType":{"typehint":"ClassSymbol"}}]}"""
+      s"""{"typehint":"SymbolDesignations","file":"$symFile","syms":[{"start":7,"end":9,"symType":{"typehint":"VarFieldSymbol"}},{"start":11,"end":22,"symType":{"typehint":"ClassSymbol"}}]}"""
     )
 
     roundtrip(
@@ -628,12 +618,12 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       refactorEffect,
-      s"""{"typehint":"RefactorEffect","procedureId":9,"refactorType":{"typehint":"AddImport"},"changes":[{"text":"aaa","typehint":"TextEdit","to":7,"from":5,"file":$file3_str}],"status":"success"}"""
+      s"""{"typehint":"RefactorEffect","procedureId":9,"refactorType":{"typehint":"AddImport"},"changes":[{"text":"aaa","typehint":"TextEdit","to":7,"from":5,"file":"$file3"}],"status":"success"}"""
     )
 
     roundtrip(
       refactorResult,
-      s"""{"typehint":"RefactorResult","procedureId":7,"refactorType":{"typehint":"AddImport"},"touchedFiles":[$file3_str,$file1_str],"status":"success"}"""
+      s"""{"typehint":"RefactorResult","procedureId":7,"refactorType":{"typehint":"AddImport"},"touchedFiles":["$file3","$file1"],"status":"success"}"""
     )
 
   }

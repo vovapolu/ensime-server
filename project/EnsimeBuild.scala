@@ -19,7 +19,15 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val basicSettings = Seq(
     organization := "org.ensime",
     scalaVersion := "2.11.7",
-    version := "0.9.10-SNAPSHOT"
+    version := "0.9.10-SNAPSHOT",
+
+    dependencyOverrides ++= Set(
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.scala-lang.modules" %% "scala-xml" % "1.0.4",
+      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
+      "org.slf4j" % "slf4j-api" % "1.7.12",
+      "com.google.guava" % "guava" % "18.0"
+    )
   )
   val isEmacs = sys.env.get("TERM") == Some("dumb")
 
@@ -39,6 +47,7 @@ object EnsimeBuild extends Build with JdkResolver {
   }.getOrElse(Nil)
 
   lazy val commonSettings = scalariformSettings ++ basicSettings ++ Seq(
+    //resolvers += Resolver.sonatypeRepo("snapshots"),
     scalacOptions in Compile ++= Seq(
       // uncomment this to debug implicit resolution compilation problems
       //"-Xlog-implicits",
@@ -99,7 +108,7 @@ object EnsimeBuild extends Build with JdkResolver {
   ////////////////////////////////////////////////
   // common dependencies
   lazy val pimpathon = "com.github.stacycurl" %% "pimpathon-core" % "1.5.0"
-  lazy val shapeless = "com.chuusai" %% "shapeless" % "2.2.3"
+  lazy val shapeless = "com.chuusai" %% "shapeless" % "2.2.4"
   lazy val logback = Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.3",
     "org.slf4j" % "jul-to-slf4j" % "1.7.12",
@@ -114,10 +123,7 @@ object EnsimeBuild extends Build with JdkResolver {
     "org.scalamock" %% "scalamock-scalatest-support" % "3.2.2" % config,
     "org.scalacheck" %% "scalacheck" % "1.12.1" % config,
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % config,
-    "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % config,
-    // workaround old deps coming from scalatest
-    "org.scala-lang" % "scala-reflect" % scalaV % config,
-    "org.scala-lang.modules" %% "scala-xml" % "1.0.4" % config
+    "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % config
   ) ++ logback.map(_ % config)
 
   def jars(cp: Classpath): String = {
@@ -146,15 +152,6 @@ object EnsimeBuild extends Build with JdkResolver {
     ) ++ testLibs(scalaVersion.value)
   )
 
-  lazy val sprayJsonShapeless = Project("spray-json-shapeless", file("spray-json-shapeless"), settings = commonSettings) settings(
-    licenses := Seq("LGPL 3.0" -> url("http://www.gnu.org/licenses/lgpl-3.0.txt"))
-  ) settings (
-    libraryDependencies ++= Seq(
-      "io.spray" %% "spray-json" % "1.3.2",
-      shapeless
-    ) ++ logback ++ testLibs(scalaVersion.value)
-  )
-
   lazy val api = Project("api", file("api"), settings = commonSettings) settings (
     libraryDependencies ++= Seq(
       "org.scalariform" %% "scalariform" % "0.1.6" intransitive(),
@@ -165,11 +162,10 @@ object EnsimeBuild extends Build with JdkResolver {
   // the JSON protocol
   lazy val jerk = Project("jerk", file("jerk"), settings = commonSettings) dependsOn (
     api,
-    sprayJsonShapeless,
-    sprayJsonShapeless % "test->test",
     api % "test->test" // for the test data
   ) settings (
     libraryDependencies ++= Seq(
+      "com.github.fommil" %% "spray-json-shapeless" % "1.0.0",
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
     ) ++ testLibs(scalaVersion.value)
   )
@@ -210,6 +206,7 @@ object EnsimeBuild extends Build with JdkResolver {
 
   lazy val core = Project("core", file("core")).dependsOn(
     api, sexpress,
+    api % "test->test", // for the interpolator
     // depend on "it" dependencies in "test" or sbt adds them to the release deps!
     // https://github.com/sbt/sbt/issues/1888
     testingEmpty % "test,it",
@@ -269,7 +266,7 @@ object EnsimeBuild extends Build with JdkResolver {
 
   // manual root project so we can exclude the testing projects from publication
   lazy val root = Project(id = "ensime", base = file("."), settings = commonSettings) aggregate (
-    api, sexpress, sprayJsonShapeless, jerk, swank, core, server
+    api, sexpress, jerk, swank, core, server
   ) dependsOn (server)
 }
 

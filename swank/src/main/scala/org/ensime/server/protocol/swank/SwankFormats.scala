@@ -28,7 +28,6 @@ case class SwankRPCFormatException(msg: String, callId: Int, cause: Throwable = 
 object SwankProtocolConversions extends DefaultSexpProtocol
   with SymbolAltFormat
   with OptionAltFormat
-  with CanonFileFormat
   with FamilyFormats
   with CamelCaseToDashes
 

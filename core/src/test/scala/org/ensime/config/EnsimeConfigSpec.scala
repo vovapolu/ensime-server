@@ -11,10 +11,7 @@ import scala.util.Properties
 
 class EnsimeConfigSpec extends FunSpec with Matchers {
 
-  def stringToWireString(s: String) =
-    "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-
-  def fileToWireString(file: File) = stringToWireString(file.canon.getAbsolutePath)
+  import EscapingStringInterpolation._
 
   def test(dir: File, contents: String, testFn: (EnsimeConfig) => Unit): Unit = {
     testFn(EnsimeConfigProtocol.parse(contents))
@@ -26,27 +23,26 @@ class EnsimeConfigSpec extends FunSpec with Matchers {
 
     it("should parse a simple config") {
       withCanonTempDir { dir =>
-        (dir / ".ensime_cache").mkdirs()
-        (dir / "abc").mkdirs()
+        val abc = dir / "abc"
+        val cache = dir / ".ensime_cache"
+        val javaHome = file(Properties.javaHome)
 
-        val dirStr = fileToWireString(dir)
-        val abc = fileToWireString(dir / "abc")
-        val cacheStr = fileToWireString(dir / ".ensime_cache")
-        val javaHome = fileToWireString(file(Properties.javaHome))
+        abc.mkdirs()
+        cache.mkdirs()
 
         test(dir, s"""
 (:name "project"
  :scala-version "2.10.4"
- :java-home $javaHome
- :root-dir $dirStr
- :cache-dir $cacheStr
+ :java-home "$javaHome"
+ :root-dir "$dir"
+ :cache-dir "$cache"
  :reference-source-roots ()
  :debug-args ("-Dthis=that")
  :subprojects ((:name "module1"
                 :scala-version "2.10.4"
                 :depends-on-modules ()
-                :target $abc
-                :test-target $abc
+                :target "$abc"
+                :test-target "$abc"
                 :source-roots ()
                 :reference-source-roots ()
                 :compiler-args ()
@@ -66,23 +62,22 @@ class EnsimeConfigSpec extends FunSpec with Matchers {
 
     it("should parse a minimal config for a binary only project") {
       withCanonTempDir { dir =>
-        (dir / ".ensime_cache").mkdirs()
-        (dir / "abc").mkdirs()
+        val abc = dir / "abc"
+        val cache = dir / ".ensime_cache"
+        val javaHome = file(Properties.javaHome)
 
-        val dirStr = fileToWireString(dir)
-        val abc = fileToWireString(dir / "abc")
-        val cacheStr = fileToWireString(dir / ".ensime_cache")
-        val javaHome = fileToWireString(file(Properties.javaHome))
+        abc.mkdirs()
+        cache.mkdirs()
 
         test(dir, s"""
 (:name "project"
  :scala-version "2.10.4"
- :java-home $javaHome
- :root-dir $dirStr
- :cache-dir $cacheStr
+ :java-home "$javaHome"
+ :root-dir "$dir"
+ :cache-dir "$cache"
  :subprojects ((:name "module1"
                 :scala-version "2.10.4"
-                :targets ($abc))))""", { implicit config =>
+                :targets ("$abc"))))""", { implicit config =>
 
           assert(config.name == "project")
           assert(config.scalaVersion == "2.10.4")
@@ -97,28 +92,27 @@ class EnsimeConfigSpec extends FunSpec with Matchers {
     it("should base class paths on source-mode value") {
       List(true, false) foreach { (sourceMode: Boolean) =>
         withCanonTempDir { dir =>
-          (dir / ".ensime_cache").mkdirs()
-          (dir / "abc").mkdirs()
+          val abc = dir / "abc"
+          val cache = dir / ".ensime_cache"
+          val javaHome = file(Properties.javaHome)
 
-          val dirStr = fileToWireString(dir)
-          val cacheStr = fileToWireString(dir / ".ensime_cache")
-          val abcDirStr = fileToWireString(dir / "abc")
-          val javaHome = fileToWireString(file(Properties.javaHome))
+          abc.mkdirs()
+          cache.mkdirs()
 
           test(dir, s"""
 (:name "project"
  :scala-version "2.10.4"
- :java-home $javaHome
- :root-dir $dirStr
- :cache-dir $cacheStr
+ :java-home "$javaHome"
+ :root-dir "$dir"
+ :cache-dir "$cache"
  :source-mode ${if (sourceMode) "t" else "nil"}
  :subprojects ((:name "module1"
                 :scala-version "2.10.4"
-                :targets ($abcDirStr))))""", { implicit config =>
+                :targets ("$abc"))))""", { implicit config =>
             assert(config.sourceMode == sourceMode)
-            assert(config.runtimeClasspath == Set(dir / "abc"), config)
+            assert(config.runtimeClasspath == Set(abc), config)
             assert(config.compileClasspath == (
-              if (sourceMode) Set.empty else Set(dir / "abc")
+              if (sourceMode) Set.empty else Set(abc)
             ))
           })
         }

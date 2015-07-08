@@ -86,9 +86,6 @@ trait StandardFormats extends ThreadLocalSupport {
     def fromSexpString(s: String) = new URI(s)
   })
 
-  /**
-   * If you want to canonise files, mix in the optional `CanonFileFormat`
-   */
   implicit val FileFormat: SexpFormat[File] = viaString(new ViaString[File] {
     def toSexpString(file: File) = file.getPath
     def fromSexpString(s: String) = new File(s)
@@ -116,25 +113,6 @@ trait StandardFormats extends ThreadLocalSupport {
       val processed = s1.substring(0, 22) + s1.substring(23)
       localFormatter.get.parse(processed)
     }
-  })
-}
-
-trait CanonFileFormat {
-  this: StandardFormats =>
-
-  def canonise(file: File): File =
-    try file.getCanonicalFile
-    catch {
-      case e: Exception => file.getAbsoluteFile
-    }
-
-  /**
-   * Intentionally canonicalises, round trip will not always equal.
-   */
-  override implicit val FileFormat: SexpFormat[File] = viaString(new ViaString[File] {
-    import pimpathon.file._
-    def toSexpString(file: File) = canonise(file).getPath
-    def fromSexpString(s: String) = canonise(file(s))
   })
 }
 

@@ -6,6 +6,7 @@ import scala.util.Properties
 
 import org.ensime.sexp._
 import org.ensime.sexp.formats._
+import org.ensime.core.Canonised
 
 import pimpathon.file._
 
@@ -14,7 +15,6 @@ import org.ensime.api._
 object EnsimeConfigProtocol {
   object Protocol extends DefaultSexpProtocol
     with OptionAltFormat
-    with CanonFileFormat
     with ScalariformFormat
     with CamelCaseToDashes
   import org.ensime.config.EnsimeConfigProtocol.Protocol._
@@ -55,12 +55,12 @@ object EnsimeConfigProtocol {
         dir.mkdirs()
       }
     }
-    m.copy(
+    Canonised(m.copy(
       target = None,
-      targets = m.targetDirs.map(canonise),
+      targets = m.targetDirs,
       testTarget = None,
-      testTargets = m.testTargetDirs.map(canonise),
-      sourceRoots = m.sourceRoots.map(canonise)
-    )
+      testTargets = m.testTargetDirs,
+      sourceRoots = m.sourceRoots
+    ))
   }
 }

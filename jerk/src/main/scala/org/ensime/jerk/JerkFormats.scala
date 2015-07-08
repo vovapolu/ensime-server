@@ -4,7 +4,7 @@ import java.io.File
 import scala.util._
 
 import spray.json._
-import org.ensime.json._
+import fommil.sjs._
 import shapeless._
 
 import org.ensime.api._
@@ -15,6 +15,7 @@ private object JerkConversions extends DefaultJsonProtocol with FamilyFormats {
   // wtf?? why is this needed, why does it even work? Miles??
   implicit val symbolFormat = SymbolJsonFormat
 
+  // move to somewhere more general
   implicit object FileFormat extends JsonFormat[File] {
     def read(j: JsValue): File = j match {
       case JsString(path) => file(path)
