@@ -1,6 +1,5 @@
 package org.ensime.sexp.formats
 
-import scala.reflect.runtime.universe._
 import shapeless._
 
 import org.ensime.sexp._
@@ -11,12 +10,12 @@ import org.ensime.sexp._
  *
  * See https://gist.github.com/fommil/3a04661116c899056197
  *
- * Boilerplate blocked on https://github.com/milessabin/shapeless/issues/238
+ * Will be replaced by a port of spray-json-shapeless.
  */
 trait FamilyFormats {
   case class TypeHint[T](hint: SexpSymbol)
-  implicit def typehint[T: TypeTag]: TypeHint[T] =
-    TypeHint(SexpSymbol(":" + typeOf[T].dealias.toString.replaceAll("\\.type$", "").split("(\\.|\\$)").last))
+  implicit def typehint[T](implicit t: Typeable[T]): TypeHint[T] =
+    TypeHint(SexpSymbol(":" + t.describe.replaceAll("\\.type$", "")))
 
   // always serialises to Nil, and is differentiated by the TraitFormat
   // scala names https://github.com/milessabin/shapeless/issues/256
