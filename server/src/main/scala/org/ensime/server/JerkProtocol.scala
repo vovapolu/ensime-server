@@ -8,12 +8,12 @@ import org.ensime.jerk._
 import spray.json._
 
 class JerkProtocol extends FramedStringProtocol {
-  import JerkFormats._
+  import JerkEnvelopeFormats._
 
   override def read(input: InputStream): RpcRequestEnvelope =
     readString(input).parseJson.convertTo[RpcRequestEnvelope]
 
-  override def write(resp: EnsimeServerMessage, output: OutputStream): Unit =
+  override def write(resp: RpcResponseEnvelope, output: OutputStream): Unit =
     writeString(resp.toJson.compactPrint, output)
 
 }

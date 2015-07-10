@@ -14,13 +14,18 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
   import EscapingStringInterpolation._
 
-  def marshal(value: RpcResponse, via: Option[String]): Unit = {
-    val sexp = (RpcResponseEnvelope(666, value): EnsimeServerMessage).toSexp match {
+  def marshal(value: EnsimeServerMessage, via: Option[String]): Unit = {
+    val envelope = value match {
+      case r: RpcResponse => RpcResponseEnvelope(Some(666), value)
+      case e: EnsimeEvent => RpcResponseEnvelope(None, value)
+    }
+    val sexp = envelope.toSexp match {
       case SexpList(
         SexpSymbol(":return") ::
           SexpList(SexpSymbol(":ok") :: payload :: Nil) ::
           SexpNumber(callId) :: Nil
         ) if callId == 666 => payload
+      case payload => payload
     }
     via match {
       case None => println(s"$value = ${sexp.compactPrint}")
@@ -28,16 +33,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
       case Some(expected) => sexp.compactPrint shouldBe expected
     }
   }
-  def marshal(value: RpcResponse, via: String): Unit = marshal(value, Some(via))
-
-  def marshal(value: EnsimeEvent, via: Option[String]): Unit = {
-    val sexp = (value: EnsimeServerMessage).toSexp
-    via match {
-      case None => println(s"$value = ${sexp.compactPrint}")
-      case Some(expected) => sexp.compactPrint shouldBe expected
-    }
-  }
-  def marshal(value: EnsimeEvent, via: String): Unit = marshal(value, Some(via))
+  def marshal(value: EnsimeServerMessage, via: String): Unit = marshal(value, Some(via))
 
   def unmarshal(from: String, to: RpcRequest): Unit = {
     val sexp = s"(:swank-rpc ${from} 666)"

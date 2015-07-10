@@ -9,5 +9,5 @@ import org.ensime.api._
  */
 trait Protocol {
   def read(input: InputStream): RpcRequestEnvelope
-  def write(msg: EnsimeServerMessage, output: OutputStream): Unit
+  def write(msg: RpcResponseEnvelope, output: OutputStream): Unit
 }

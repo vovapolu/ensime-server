@@ -19,4 +19,7 @@ trait SprayJsonTestSupport {
     recovered shouldBe value
   }
 
+  def roundtrip[T: JsonFormat](value: T, via: String): Unit =
+    roundtrip(value, Some(via))
+
 }

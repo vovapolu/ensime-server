@@ -8,7 +8,7 @@ class FramedStringProtocolSpec extends FlatSpec with Matchers
     with FramedStringProtocol {
 
   def read(input: InputStream) = ???
-  def write(msg: EnsimeServerMessage, output: OutputStream): Unit = ???
+  def write(msg: RpcResponseEnvelope, output: OutputStream): Unit = ???
 
   "FramedStringProtocol" should "write framed strings" in {
     val out = new ByteArrayOutputStream

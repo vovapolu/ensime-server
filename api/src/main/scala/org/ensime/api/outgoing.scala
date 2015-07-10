@@ -2,16 +2,17 @@ package org.ensime.api
 
 import java.io.File
 
-sealed trait EnsimeServerMessage
-
 /**
  * There should be exactly one `RpcResponseEnvelope` in response to an
- * `RpcRequestEnvelope`.
+ * `RpcRequestEnvelope`. If the `callId` is empty, the response is
+ * an asynchronous event.
  */
 case class RpcResponseEnvelope(
-  callId: Int,
-  payload: RpcResponse
-) extends EnsimeServerMessage
+  callId: Option[Int],
+  payload: EnsimeServerMessage
+)
+
+sealed trait EnsimeServerMessage
 
 /**
  * A message that the server can send to the client at any time.
@@ -21,7 +22,7 @@ sealed trait EnsimeEvent extends EnsimeServerMessage
 //////////////////////////////////////////////////////////////////////
 // Contents of the payload
 
-sealed trait RpcResponse
+sealed trait RpcResponse extends EnsimeServerMessage
 case class EnsimeServerError(description: String) extends RpcResponse
 
 case object DebuggerShutdownEvent
