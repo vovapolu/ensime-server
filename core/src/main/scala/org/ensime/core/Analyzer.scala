@@ -6,7 +6,6 @@ import java.io.File
 import java.nio.charset.Charset
 
 import org.ensime.api._
-import org.ensime.config._
 import org.ensime.indexer.{ EnsimeVFS, SearchService }
 import org.ensime.model._
 import org.ensime.util._

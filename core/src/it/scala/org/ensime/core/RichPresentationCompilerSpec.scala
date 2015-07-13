@@ -3,12 +3,9 @@ package org.ensime.core
 import java.io.File
 
 import akka.event.slf4j.SLF4JLogging
-import org.ensime.config._
+import org.ensime.api._
 import org.ensime.fixture._
 import org.ensime.indexer.EnsimeVFS
-
-import org.ensime.api._
-
 import org.scalatest._
 import pimpathon.file._
 
@@ -449,14 +446,14 @@ object ReallyRichPresentationCompilerFixture
     var offset = 0
     var points = Queue.empty[(Int, String)]
     val re = """@([a-z0-9\.]*)@"""
-    val starts = re.r.findAllMatchIn(contents).foreach { m =>
+    re.r.findAllMatchIn(contents).foreach { m =>
       points :+= (m.start - offset, m.group(1))
       offset += (m.end - m.start)
     }
     val file = srcFile(config, "def.scala", contents.replaceAll(re, ""))
     cc.askReloadFile(file)
     cc.askLoadedTyped(file)
-    assert(points.length > 0)
+    assert(points.nonEmpty)
     for (pt <- points) {
       testCode(new OffsetPosition(file, pt._1), pt._2, cc)
     }

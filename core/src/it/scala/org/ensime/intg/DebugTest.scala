@@ -3,16 +3,12 @@ package org.ensime.intg
 import java.io.File
 
 import akka.testkit._
-
 import org.ensime.api._
 import org.ensime.core._
 import org.ensime.fixture._
-import org.ensime.model._
 import org.scalatest._
 import pimpathon.file._
 import pimpathon.option._
-
-import scala.concurrent.duration._
 
 // must be refreshing as the tests don't clean up after themselves properly
 class DebugTest extends WordSpec with Matchers with Inside
@@ -81,10 +77,10 @@ class DebugTest extends WordSpec with Matchers with Inside
 
               //            val bp11 = session.addLineBreakpoint(BP_TYPENAME, 11)
               project ! DebugSetBreakReq(breakpointsFile, 11)
-              expectMsg(VoidResponse)
+              expectMsg(TrueResponse)
               //            val bp13 = session.addLineBreakpoint(BP_TYPENAME, 13)
               project ! DebugSetBreakReq(breakpointsFile, 13)
-              expectMsg(VoidResponse)
+              expectMsg(TrueResponse)
 
               //              session.waitForBreakpointsToBeEnabled(bp11, bp13)
 
@@ -108,7 +104,7 @@ class DebugTest extends WordSpec with Matchers with Inside
 
               //              bp11.setEnabled(false)
               project ! DebugClearBreakReq(breakpointsFile, 11)
-              expectMsg(VoidResponse)
+              expectMsg(TrueResponse)
 
               //              session.waitForBreakpointsToBeDisabled(bp11)
               //
@@ -120,9 +116,9 @@ class DebugTest extends WordSpec with Matchers with Inside
               //
               //              bp11.setEnabled(true); bp13.setEnabled(false)
               project ! DebugSetBreakReq(breakpointsFile, 11)
-              expectMsg(VoidResponse)
+              expectMsg(TrueResponse)
               project ! DebugClearBreakReq(breakpointsFile, 13)
-              expectMsg(VoidResponse)
+              expectMsg(TrueResponse)
 
               //
               //              session.waitForBreakpointsToBeEnabled(bp11)
@@ -174,9 +170,9 @@ class DebugTest extends WordSpec with Matchers with Inside
 
               // break in main
               project ! DebugSetBreakReq(breakpointsFile, 11)
-              expectMsg(VoidResponse)
+              expectMsg(TrueResponse)
               project ! DebugSetBreakReq(breakpointsFile, 13)
-              expectMsg(VoidResponse)
+              expectMsg(TrueResponse)
 
               // breakpoints should now be active
               project ! DebugListBreakpointsReq
@@ -190,7 +186,7 @@ class DebugTest extends WordSpec with Matchers with Inside
 
               // check clear works again
               project ! DebugClearAllBreaksReq
-              expectMsg(VoidResponse)
+              expectMsg(TrueResponse)
               project ! DebugListBreakpointsReq
               expectMsgType[BreakpointList] should matchPattern {
                 case BreakpointList(Nil, Nil) =>
@@ -215,7 +211,6 @@ class DebugTest extends WordSpec with Matchers with Inside
             "debug/Variables.scala",
             21
           ) { variablesFile =>
-              import testkit._
               // boolean local
               getVariableValue(DebugThreadId(1), "a") should matchPattern {
                 case DebugPrimitiveValue("true", "boolean") =>
@@ -310,7 +305,7 @@ trait DebugTestUtils {
     val asyncHelper = p._2
 
     project ! DebugSetBreakReq(resolvedFile, breakLine)
-    expectMsg(VoidResponse)
+    expectMsg(TrueResponse)
 
     project ! DebugStartReq(className)
     expectMsg(DebugVmSuccess())
@@ -321,13 +316,13 @@ trait DebugTestUtils {
     val expect = DebugBreakEvent(DebugThreadId(1), "main", resolvedFile, breakLine)
     asyncHelper.expectMsg(expect)
     project ! DebugClearBreakReq(resolvedFile, breakLine)
-    expectMsg(VoidResponse)
+    expectMsg(TrueResponse)
 
     try {
       f(resolvedFile)
     } finally {
       project ! DebugClearAllBreaksReq
-      expectMsg(VoidResponse)
+      expectMsg(TrueResponse)
 
       // no way to await the stopped condition so we let the app run
       // its course on the main thread

@@ -108,7 +108,7 @@ class ImplicitAnalyzerSpec extends WordSpec with Matchers
 
       val file = srcFile(cc.config, "abc.scala", content)
       cc.askLoadedTyped(file)
-      val implicitPos = content.indexOf("/*1*/");
+      val implicitPos = content.indexOf("/*1*/")
 
       val pos = new OffsetPosition(file, implicitPos)
       val dets = new ImplicitAnalyzer(cc).implicitDetails(pos)

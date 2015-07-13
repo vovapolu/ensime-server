@@ -2,10 +2,8 @@ package org.ensime.core
 
 import akka.pattern.Patterns
 import akka.util.Timeout
-import org.ensime.model._
-import org.ensime.util.Arrays
-
 import org.ensime.api._
+import org.ensime.util.Arrays
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -134,7 +132,7 @@ trait CompletionControl {
             s.localName, CompletionSignature(List.empty, s.name),
             -1, isCallable = false, 40, Some(s.name)
           )
-        }.toList
+        }
       case unknown =>
         throw new IllegalStateException("Unexpected response type from request:" + unknown)
         List.empty
@@ -232,9 +230,12 @@ trait CompletionControl {
 
     val typeSearchResults = typeSearch.flatMap(Await.result(_, Duration.Inf))
 
-    def keywordCompletions(prefix: String): Seq[CompletionInfo] = if (prefix.size > 0) {
-      Keywords.keywordCompletions.filter(_.name.startsWith(prefix))
-    } else Seq()
+    def keywordCompletions(prefix: String): Seq[CompletionInfo] = {
+      if (prefix.length > 0) {
+        Keywords.keywordCompletions.filter(_.name.startsWith(prefix))
+      } else
+        Seq()
+    }
 
     buff.toList ++ typeSearchResults.getOrElse(Nil) ++ keywordCompletions(context.prefix)
 
