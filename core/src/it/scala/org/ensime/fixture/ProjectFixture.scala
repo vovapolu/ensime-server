@@ -45,7 +45,7 @@ object ProjectFixture extends Matchers {
 
 trait ProjectFixture {
   /**
-   * @testCode the project actor and a probe that receives async messages.
+   * the project actor and a probe that receives async messages.
    */
   def withProject(
     testCode: (TestActorRef[Project], TestProbe) => Any

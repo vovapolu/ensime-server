@@ -173,7 +173,7 @@ class SocketHandler(
 
     loop = new Thread {
       var finished = false
-      override def run(): Unit = while (!finished && !socket.isClosed()) {
+      override def run(): Unit = while (!finished && !socket.isClosed) {
         try {
           val envelope = Canonised(protocol.read(in))
           context.actorOf(RequestHandler(envelope, project, self, docs), s"${envelope.callId}")

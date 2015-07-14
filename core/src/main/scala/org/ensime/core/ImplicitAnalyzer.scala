@@ -1,13 +1,9 @@
 package org.ensime.core
 
-import java.io.File
 import org.ensime.api._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.RangePosition
-import scala.reflect.io.AbstractFile
-import scala.tools.nsc.symtab.Flags._
 
 class ImplicitAnalyzer(val global: RichPresentationCompiler) {
 

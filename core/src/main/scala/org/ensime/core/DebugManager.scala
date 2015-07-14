@@ -1,23 +1,17 @@
 package org.ensime.core
 
-import akka.event.LoggingReceive
 import java.io.{ File, InputStream, InputStreamReader }
-import akka.actor._
 
+import akka.actor._
+import akka.event.LoggingReceive
 import com.sun.jdi._
 import com.sun.jdi.event._
 import com.sun.jdi.request.{ EventRequest, EventRequestManager, StepRequest }
-
 import org.ensime.api._
-
-import org.ensime.config._
-import org.ensime.model._
-import org.ensime.util._
+import pimpathon.file._
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.{ Iterable, mutable }
-
-import pimpathon.file._
 
 object DebugManager {
   def apply(
@@ -307,14 +301,14 @@ class DebugManager(
       if (!setBreakpoint(file, line)) {
         bgMessage("Location not loaded. Set pending breakpoint.")
       }
-      sender ! VoidResponse
+      sender ! TrueResponse
     case DebugClearBreakReq(file, line: Int) =>
       clearBreakpoint(file, line)
-      sender ! VoidResponse
+      sender ! TrueResponse
 
     case DebugClearAllBreaksReq =>
       clearAllBreakpoints()
-      sender ! VoidResponse
+      sender ! TrueResponse
 
     case DebugListBreakpointsReq =>
       val breaks = BreakpointList(activeBreakpoints.toList, pendingBreakpoints)
@@ -474,13 +468,13 @@ class DebugManager(
 
     def start(): Unit = {
       evtQ.start()
-      monitor.map { _.start() }
+      monitor.foreach { _.start() }
     }
 
     def dispose() = try {
       evtQ.finished = true
       vm.dispose()
-      monitor.map { _.finished = true }
+      monitor.foreach { _.finished = true }
     } catch {
       case e: VMDisconnectedException =>
     }

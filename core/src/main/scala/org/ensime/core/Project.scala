@@ -2,34 +2,22 @@ package org.ensime.core
 
 import akka.actor._
 import akka.event.LoggingReceive
-import akka.event.LoggingReceive
 import org.apache.commons.vfs2.FileObject
-
 import org.ensime.api._
-
-import org.ensime.config._
 import org.ensime.indexer._
-import org.ensime.model._
-import org.ensime.util._
-import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
 import scala.util.Try
 
 /**
  * The Project actor simply forwards messages coming from the user to
  * the respective subcomponent.
- *
- * @param target for async messages
  */
 class Project(
     broadcaster: ActorRef,
     implicit val config: EnsimeConfig
 ) extends Actor with ActorLogging with Stash {
-  import context.system
-  import context.dispatcher
+  import context.{ dispatcher, system }
 
   /* The main components of the ENSIME server */
   private var analyzer: ActorRef = _
@@ -39,9 +27,6 @@ class Project(
   private var indexer: ActorRef = _
 
   // TODO: use state transitions to manage this state
-  private var indexerReady: Boolean = _
-  private var analyserReady: Boolean = _
-
   // vfs, resolver, search and watchers are considered "reliable" (hah!)
   // TODO: Actor-ise as many of these vals as possible
   private implicit val vfs: EnsimeVFS = EnsimeVFS()

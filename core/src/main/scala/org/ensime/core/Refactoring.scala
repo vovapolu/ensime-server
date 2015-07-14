@@ -4,10 +4,8 @@ import java.io.File
 
 import org.ensime.api._
 
-import org.ensime.model._
 import org.ensime.util._
 
-import scala.collection.mutable
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.refactoring._
 import scala.tools.refactoring.analysis.GlobalIndexes
@@ -15,7 +13,6 @@ import scala.tools.refactoring.common.CompilerAccess
 import scala.tools.refactoring.implementations._
 import scalariform.astselect.AstSelector
 import scalariform.formatter.ScalaFormatter
-import scalariform.parser.ScalaParserException
 import scalariform.utils.Range
 
 import pimpathon.file._
