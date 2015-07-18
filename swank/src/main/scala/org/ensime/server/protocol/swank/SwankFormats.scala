@@ -551,19 +551,27 @@ object SwankProtocolResponse {
     }
   }
 
-  object EnsimeServerMessageFormat extends SexpFormat[EnsimeServerMessage] {
+  implicit object EnsimeServerMessageFormat extends SexpFormat[EnsimeServerMessage] {
     def read(sexp: Sexp): EnsimeServerMessage = ???
     def write(o: EnsimeServerMessage): Sexp = o match {
-      case event: EnsimeEvent => event.toSexp
-      case RpcResponseEnvelope(callId, EnsimeServerError(detail)) => SexpList(
+      case r: RpcResponse => r.toSexp
+      case e: EnsimeEvent => e.toSexp
+    }
+  }
+
+  object RpcResponseEnvelopeFormat extends SexpFormat[RpcResponseEnvelope] {
+    def read(sexp: Sexp): RpcResponseEnvelope = ???
+    def write(o: RpcResponseEnvelope): Sexp = o match {
+      case RpcResponseEnvelope(_, event: EnsimeEvent) => event.toSexp
+      case RpcResponseEnvelope(Some(callId), EnsimeServerError(detail)) => SexpList(
         SexpSymbol(":return"),
         SexpList(SexpSymbol(":abort"), SexpNumber(666), SexpString(detail)),
         SexpNumber(callId)
       )
-      case resp: RpcResponseEnvelope => SexpList(
+      case RpcResponseEnvelope(Some(callId), payload) => SexpList(
         SexpSymbol(":return"),
-        SexpList(SexpSymbol(":ok"), resp.payload.toSexp),
-        SexpNumber(resp.callId)
+        SexpList(SexpSymbol(":ok"), payload.toSexp),
+        SexpNumber(callId)
       )
     }
   }
@@ -870,5 +878,5 @@ object SwankProtocolRequest {
 
 object SwankFormats {
   implicit val RpcRequestEnvelopeFormat = SwankProtocolRequest.RpcRequestEnvelopeFormat
-  implicit val EnsimeServerMessageFormat = SwankProtocolResponse.EnsimeServerMessageFormat
+  implicit val RpcResponseEnvelopeFormat = SwankProtocolResponse.RpcResponseEnvelopeFormat
 }

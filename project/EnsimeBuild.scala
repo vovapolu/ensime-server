@@ -97,9 +97,12 @@ object EnsimeBuild extends Build with JdkResolver {
     testForkedParallel in It := true,
     javaOptions in It += "-Dfile.encoding=UTF8", // for file cloning
     testOptions in It ++= noColorIfEmacs,
+
+    // FIXME: do we still need these?
     internalDependencyClasspath in Compile += { Attributed.blank(JavaTools) },
     internalDependencyClasspath in Test += { Attributed.blank(JavaTools) },
     internalDependencyClasspath in It += { Attributed.blank(JavaTools) },
+
     javaOptions in It ++= Seq(
       "-Dlogback.configurationFile=../logback-it.xml"
     )
@@ -114,7 +117,8 @@ object EnsimeBuild extends Build with JdkResolver {
     "org.slf4j" % "jul-to-slf4j" % "1.7.12",
     "org.slf4j" % "jcl-over-slf4j" % "1.7.12"
   )
-  val akkaVersion = "2.3.11"
+  val akkaVersion = "2.3.12"
+  val streamsVersion = "1.0"
 
   ////////////////////////////////////////////////
   // utils
@@ -221,8 +225,6 @@ object EnsimeBuild extends Build with JdkResolver {
       "com.h2database" % "h2" % "1.4.187",
       "com.typesafe.slick" %% "slick" % "2.1.0",
       "com.jolbox" % "bonecp" % "0.8.0.RELEASE",
-      // bonecp has an old version of guava
-      "com.google.guava" % "guava" % "18.0",
       "org.apache.commons" % "commons-vfs2" % "2.0" intransitive(),
       // lucene 4.8+ needs Java 7: http://www.gossamer-threads.com/lists/lucene/general/225300
       "org.apache.lucene" % "lucene-core" % "4.7.2",
@@ -234,8 +236,7 @@ object EnsimeBuild extends Build with JdkResolver {
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
       "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.6.2",
-      // refactoring has an old version of scala-xml
-      "org.scala-lang.modules" %% "scala-xml" % "1.0.4",
+      // TODO: would be good to loose direct commons deps
       "commons-lang" % "commons-lang" % "2.6",
       "commons-io" % "commons-io" % "2.4" % "test,it"
     ) ++ logback ++ testLibs(scalaVersion.value, "it,test")
@@ -247,6 +248,7 @@ object EnsimeBuild extends Build with JdkResolver {
     swank % "test->test",
     // depend on "it" dependencies in "test" or sbt adds them to the release deps!
     // https://github.com/sbt/sbt/issues/1888
+    core % "test->test",
     core % "it->it",
     testingDocs % "test,it"
   ).configs(It).settings (
@@ -258,7 +260,13 @@ object EnsimeBuild extends Build with JdkResolver {
   ).settings (
     unmanagedJars in Compile += JavaTools,
     libraryDependencies ++= Seq(
-      "io.spray" %% "spray-can" % "1.3.3"
+      "io.spray" %% "spray-can" % "1.3.3",
+      "io.spray" %% "spray-routing" % "1.3.3",
+      "com.typesafe.akka" %% "akka-stream-experimental" % streamsVersion,
+      "com.typesafe.akka" %% "akka-http-core-experimental" % streamsVersion,
+      "com.typesafe.akka" %% "akka-http-experimental" % streamsVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json-experimental" % streamsVersion,
+      "com.typesafe.akka" %% "akka-http-testkit-experimental" % streamsVersion % "test,it"
     ) ++ testLibs(scalaVersion.value, "it,test")
   )
 

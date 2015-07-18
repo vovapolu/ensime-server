@@ -14,7 +14,7 @@ class SwankProtocol extends FramedStringProtocol {
   override def read(input: InputStream): RpcRequestEnvelope =
     readString(input).parseSexp.convertTo[RpcRequestEnvelope]
 
-  override def write(resp: EnsimeServerMessage, output: OutputStream): Unit = {
+  override def write(resp: RpcResponseEnvelope, output: OutputStream): Unit = {
     writeString(resp.toSexp.prettyPrint, output)
   }
 

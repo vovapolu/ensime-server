@@ -1,28 +1,26 @@
 package org.ensime.server
 
+import akka.actor._
+import akka.event.slf4j.SLF4JLogging
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.Http.ServerBinding
+import akka.pattern.ask
+import akka.stream.ActorMaterializer
+import akka.util.Timeout
+import com.google.common.base.Charsets
+import com.google.common.io.Files
 import java.io._
 import java.net.{ InetAddress, ServerSocket, Socket }
 import java.util.concurrent.atomic.AtomicBoolean
-
-import akka.actor._
-import akka.event.LoggingReceive
-import akka.event.slf4j.SLF4JLogging
-import com.google.common.base.Charsets
-import com.google.common.io.Files
 import org.ensime.api._
 import org.ensime.config._
 import org.ensime.core._
-import org.ensime.server.protocol.swank._
 import org.slf4j._
 import org.slf4j.bridge.SLF4JBridgeHandler
-import pimpathon.java.io._
-
-import scala.util.Properties._
+import scala.concurrent.duration._
 import scala.util._
-import scala.util.control.NonFatal
-
-import shapeless._
-import pimpathon.java.io._
+import scala.util.Properties._
+import akka.http.scaladsl.server.RouteResult.route2HandlerFlow
 
 object Server {
   SLF4JBridgeHandler.removeHandlersForRootLogger()
@@ -53,7 +51,7 @@ object Server {
       case other => throw new IllegalArgumentException(s"$other is not a valid ENSIME protocol")
     }
 
-    new Server(protocol, "127.0.0.1", 0).start()
+    new Server(protocol).start()
   }
 
 }
@@ -67,8 +65,7 @@ object Server {
  */
 class Server(
     protocol: Protocol,
-    host: String,
-    requestedPort: Int
+    interface: String = "127.0.0.1"
 )(
     implicit
     config: EnsimeConfig
@@ -77,21 +74,31 @@ class Server(
   require(config.cacheDir.isDirectory, s"${config.cacheDir} is not a valid cache directory")
 
   implicit private val system = ActorSystem("ENSIME")
+  implicit private val mat = ActorMaterializer()
+  implicit private val timeout = Timeout(10 seconds)
 
   val broadcaster = system.actorOf(Broadcaster(), "broadcaster")
   val project = system.actorOf(Project(broadcaster), "project")
-  // TODO: die if broadcaster/project stop
+  val docs = system.actorOf(Props(new DocServer(config)), "docs")
 
-  // visible for testing
-  val listener = new ServerSocket(requestedPort, 0, InetAddress.getByName(host))
+  val webserver = new WebServerImpl(project, broadcaster, docs)
 
+  // async start the HTTP Server
+  Http().bindAndHandle(webserver.route, interface, 0).onSuccess {
+    case ServerBinding(addr) =>
+      log.info(s"ENSIME HTTP on ${addr.getAddress}")
+      writePort(config.cacheDir, addr.getPort, "http")
+  }(system.dispatcher)
+
+  // synchronously start the Socket Server
+  private val listener = new ServerSocket(0, 0, InetAddress.getByName(interface))
   private val hasShutdownFlag = new AtomicBoolean
   private var loop: Thread = _
 
-  log.info("ENSIME Server on " + host + ":" + listener.getLocalPort)
+  log.info("Starting ENSIME TCP on " + interface + ":" + listener.getLocalPort)
   log.info(Environment.info)
 
-  writePort(config.cacheDir, listener.getLocalPort)
+  writePort(config.cacheDir, listener.getLocalPort, "port")
 
   def start(): Unit = {
     loop = new Thread {
@@ -99,7 +106,7 @@ class Server(
         try {
           while (!hasShutdownFlag.get()) {
             val socket = listener.accept()
-            system.actorOf(SocketHandler(protocol, socket, broadcaster, project))
+            system.actorOf(SocketHandler(protocol, socket, broadcaster, project, docs))
           }
         } catch {
           case e: Exception =>
@@ -129,8 +136,8 @@ class Server(
     log.info("Shutdown complete")
   }
 
-  private def writePort(cacheDir: File, port: Int): Unit = {
-    val portfile = new File(cacheDir, "port")
+  private def writePort(cacheDir: File, port: Int, name: String): Unit = {
+    val portfile = new File(cacheDir, name)
     if (!portfile.exists()) {
       log.info("creating portfile " + portfile)
       portfile.createNewFile()
@@ -145,156 +152,4 @@ class Server(
     try out.println(port)
     finally out.close()
   }
-}
-
-/**
- * This actor is spawned when a client connects to a Socket.
- */
-class SocketHandler(
-    protocol: Protocol,
-    socket: Socket,
-    broadcaster: ActorRef,
-    project: ActorRef,
-    implicit val config: EnsimeConfig
-) extends Actor with ActorLogging {
-
-  private var docs: ActorRef = _
-
-  private var in: InputStream = _
-  private var out: OutputStream = _
-  private var loop: Thread = _
-
-  override def preStart(): Unit = {
-    broadcaster ! Broadcaster.Register
-
-    docs = context.actorOf(Props(new DocServer(config)), "docs")
-    in = socket.getInputStream.buffered
-    out = socket.getOutputStream.buffered
-
-    loop = new Thread {
-      var finished = false
-      override def run(): Unit = while (!finished && !socket.isClosed) {
-        try {
-          val envelope = Canonised(protocol.read(in))
-          context.actorOf(RequestHandler(envelope, project, self, docs), s"${envelope.callId}")
-        } catch {
-          case SwankRPCFormatException(msg, callId, cause) =>
-            // specialist SWANK support
-            self ! RpcResponseEnvelope(callId, EnsimeServerError(msg))
-
-          case e: IOException =>
-            log.info("IOException seen - stopping reader")
-            context.stop(self)
-            finished = true
-          case NonFatal(e) =>
-            log.error(e, "Error in socket reader: ")
-          // otherwise ignore the message
-        }
-      }
-    }
-    loop.setName("ENSIME Protocol Loop")
-    loop.start()
-  }
-
-  override def postStop(): Unit = {
-    log.info("Closing socket")
-    broadcaster ! Broadcaster.Unregister
-
-    Try(socket.close())
-    Try(in.close())
-    Try(out.close())
-    Try(loop.interrupt())
-  }
-
-  def receive: Receive = rpcResponses orElse LoggingReceive {
-    case outgoing: EnsimeEvent => protocol.write(outgoing, out)
-  }
-
-  def rpcResponses: Receive = {
-    case outgoing: RpcResponseEnvelope =>
-      try {
-        protocol.write(Canonised(outgoing), out)
-      } catch {
-        case NonFatal(t) =>
-          log.error(t, s"Problem serialising $outgoing")
-          protocol.write(
-            RpcResponseEnvelope(
-              outgoing.callId,
-              EnsimeServerError(s"Server error: ${t.getMessage}")
-            ),
-            out
-          )
-      }
-  }
-
-}
-object SocketHandler {
-  def apply(
-    protocol: Protocol,
-    socket: Socket,
-    broadcaster: ActorRef,
-    project: ActorRef
-  )(implicit config: EnsimeConfig): Props =
-    Props(classOf[SocketHandler], protocol, socket, broadcaster, project, config)
-}
-
-/**
- * Spawned to listen to the server's response to an RpcRequest.
- */
-class RequestHandler(
-    envelope: RpcRequestEnvelope,
-    project: ActorRef,
-    server: ActorRef,
-    docs: ActorRef
-) extends Actor with ActorLogging {
-
-  override def preStart(): Unit = {
-    log.debug(envelope.req.toString)
-    envelope.req match {
-      // multi-phase queries
-      case DocUriAtPointReq(_, _) | DocUriForSymbolReq(_, _, _) =>
-        project ! envelope.req
-        context.become(resolveDocSig, discardOld = false)
-
-      case req => project ! req
-    }
-  }
-
-  def resolveDocSig: Receive = LoggingReceive.withLabel("resolveDocSig") {
-    case None =>
-      self ! FalseResponse
-      context.unbecome()
-    case Some(sig: DocSigPair) =>
-      docs ! DocUriReq(sig)
-      context.unbecome()
-  }
-
-  // we can put all manner of timeout / monitoring logic in here
-
-  def receive = LoggingReceive.withLabel("receive") {
-    case err: EnsimeServerError =>
-      server forward RpcResponseEnvelope(envelope.callId, err)
-      context stop self
-
-    // legacy --- to deal with bad/Optional actor responses
-    case Some(response: RpcResponse) =>
-      server forward RpcResponseEnvelope(envelope.callId, response)
-      context stop self
-    case None =>
-      server forward RpcResponseEnvelope(envelope.callId, FalseResponse)
-      context stop self
-
-    case response: RpcResponse =>
-      server forward RpcResponseEnvelope(envelope.callId, response)
-      context stop self
-  }
-
-}
-object RequestHandler {
-  def apply(
-    env: RpcRequestEnvelope,
-    project: ActorRef,
-    server: ActorRef,
-    docs: ActorRef
-  ): Props = Props(classOf[RequestHandler], env, project, server, docs)
 }

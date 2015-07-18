@@ -36,11 +36,25 @@ private object JerkConversions extends DefaultJsonProtocol with FamilyFormats {
   // some of the case classes use the keyword `type`, so we need a better default
   override implicit def coproductHint[T: Typeable]: CoproductHint[T] = new FlatCoproductHint[T]("typehint")
 
-  val RpcRequestEnvelopeFormat = JsonFormat[RpcRequestEnvelope]
-  val EnsimeServerMessageFormat = JsonFormat[EnsimeServerMessage]
+  // note that cachedImplicit increased the compile time
+  val RpcRequestFormat = RootJsonFormat[RpcRequest]
+  val EnsimeServerMessageFormat = RootJsonFormat[EnsimeServerMessage]
+
 }
 
 object JerkFormats {
-  implicit val RpcRequestEnvelopeFormat = JerkConversions.RpcRequestEnvelopeFormat
-  implicit val EnsimeServerMessageFormat = JerkConversions.EnsimeServerMessageFormat
+  implicit val RpcRequestFormat: RootJsonFormat[RpcRequest] =
+    JerkConversions.RpcRequestFormat
+  implicit val EnsimeServerMessageFormat: RootJsonFormat[EnsimeServerMessage] =
+    JerkConversions.EnsimeServerMessageFormat
+}
+
+object JerkEnvelopeFormats {
+  import JerkFormats._
+  import DefaultJsonProtocol._
+
+  // for the transitional SWANK (avoid derivations)
+  implicit val RpcRequestEnvelopeFormat = jsonFormat2(RpcRequestEnvelope)
+  implicit val RpcResponseEnvelopeFormat = jsonFormat2(RpcResponseEnvelope)
+
 }
