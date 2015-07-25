@@ -111,7 +111,7 @@ object EnsimeBuild extends Build with JdkResolver {
   ////////////////////////////////////////////////
   // common dependencies
   lazy val pimpathon = "com.github.stacycurl" %% "pimpathon-core" % "1.5.0"
-  lazy val shapeless = "com.chuusai" %% "shapeless" % "2.2.4"
+  lazy val shapeless = "com.chuusai" %% "shapeless" % "2.2.5"
   lazy val logback = Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.3",
     "org.slf4j" % "jul-to-slf4j" % "1.7.12",
@@ -167,7 +167,7 @@ object EnsimeBuild extends Build with JdkResolver {
     api % "test->test" // for the test data
   ) settings (
     libraryDependencies ++= Seq(
-      "com.github.fommil" %% "spray-json-shapeless" % "1.0.0",
+      "com.github.fommil" %% "spray-json-shapeless" % "1.1.0",
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
     ) ++ testLibs(scalaVersion.value)
   )
