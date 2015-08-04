@@ -79,7 +79,7 @@ class Server(
 
   val broadcaster = system.actorOf(Broadcaster(), "broadcaster")
   val project = system.actorOf(Project(broadcaster), "project")
-  val docs = system.actorOf(Props(new DocServer(config)), "docs")
+  val docs = system.actorOf(DocServer(), "docs")
 
   val webserver = new WebServerImpl(project, broadcaster, docs)
 
