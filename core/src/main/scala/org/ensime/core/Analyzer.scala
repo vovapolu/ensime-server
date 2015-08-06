@@ -37,8 +37,6 @@ case class DocSig(fqn: DocFqn, member: Option[String])
  */
 case class DocSigPair(scala: DocSig, java: DocSig)
 
-case class DocUriReq(sig: DocSigPair)
-
 class Analyzer(
     broadcaster: ActorRef,
     indexer: ActorRef,

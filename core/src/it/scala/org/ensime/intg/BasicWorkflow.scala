@@ -123,6 +123,20 @@ class BasicWorkflow extends WordSpec with Matchers
             }
 
             //-----------------------------------------------------------------------------------------------
+            // documentation for type at point
+            val intDocSig = DocSigPair(DocSig(DocFqn("scala", "Int"), None), DocSig(DocFqn("", "int"), None))
+
+            // NOTE these are handled as multi-phase queries in requesthandler
+            project ! DocUriAtPointReq(fooFile, OffsetRange(128))
+            expectMsg(Some(intDocSig))
+
+            project ! DocUriForSymbolReq("scala.Int", None, None)
+            expectMsg(Some(intDocSig))
+
+            project ! intDocSig
+            expectMsgType[StringResponse].text should endWith("/index.html#scala.Int")
+
+            //-----------------------------------------------------------------------------------------------
             // uses of symbol at point
 
             log.info("------------------------------------222-")

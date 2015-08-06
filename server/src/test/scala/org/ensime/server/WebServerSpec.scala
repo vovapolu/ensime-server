@@ -1,5 +1,9 @@
 package org.ensime.server
 
+import akka.http.scaladsl.model.MediaTypes
+import akka.util.ByteString
+import java.io.File
+
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import concurrent.Future
 
@@ -28,6 +32,10 @@ class WebServerSpec extends HttpFlatSpec with WebServer {
   val probe = TestProbe()
   def websocketHandler(target: ActorRef): ActorRef = probe.ref
 
+  def docJarContent(filename: String, entry: String): Option[ByteString] =
+    if (filename != "foo-1.0-javadoc.jar" || entry != "bar/Baz.html") None
+    else Some(ByteString("hello"))
+
   "WebServer" should "respond to REST queries" in {
     Post("/rpc", """{"typehint":"ConnectionInfoReq"}""".parseJson) ~> route ~> check {
       status shouldBe StatusCodes.OK
@@ -44,6 +52,18 @@ class WebServerSpec extends HttpFlatSpec with WebServer {
   it should "respond to WebSocket queries" ignore {
     // https://github.com/akka/akka/issues/17914
     fail("no test framework yet")
+  }
+
+  it should "serve contents of documentation archives" in {
+    Get("/docs/foo-1.0-javadoc.jar/bar/Baz.html#thingy()") ~> route ~> check {
+      status shouldBe StatusCodes.OK
+      mediaType shouldBe MediaTypes.`text/html`
+      responseAs[String] shouldBe "hello"
+    }
+
+    Get("/docs/foo-1.0-javadoc.jar/bar/Bag.html#thingy()") ~> route ~> check {
+      status shouldBe StatusCodes.NotFound
+    }
   }
 
 }

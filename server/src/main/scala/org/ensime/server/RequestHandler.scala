@@ -15,8 +15,7 @@ import scala.util.Properties._
 class RequestHandler(
     envelope: RpcRequestEnvelope,
     project: ActorRef,
-    server: ActorRef,
-    docs: ActorRef
+    server: ActorRef
 ) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
@@ -36,7 +35,7 @@ class RequestHandler(
       self ! FalseResponse
       context.unbecome()
     case Some(sig: DocSigPair) =>
-      docs ! DocUriReq(sig)
+      project ! sig
       context.unbecome()
   }
 
@@ -66,7 +65,6 @@ object RequestHandler {
   def apply(
     env: RpcRequestEnvelope,
     project: ActorRef,
-    server: ActorRef,
-    docs: ActorRef
-  ): Props = Props(classOf[RequestHandler], env, project, server, docs)
+    server: ActorRef
+  ): Props = Props(classOf[RequestHandler], env, project, server)
 }

@@ -1,5 +1,10 @@
 package org.ensime.server
 
+import akka.http.scaladsl.model.HttpEntity
+import akka.util.ByteString
+import com.google.common.io.Files
+import java.io.File
+
 import concurrent.Future
 
 import akka.actor._
@@ -26,6 +31,13 @@ trait WebServer {
 
   def websocketHandler(target: ActorRef): ActorRef
 
+  /**
+   * @param filename of the javadoc archive
+   * @param entry of the file within the archive
+   * @return the contents of the entry in filename
+   */
+  def docJarContent(filename: String, entry: String): Option[ByteString]
+
   import Directives._
   import SprayJsonSupport._
   import Route._
@@ -43,9 +55,17 @@ trait WebServer {
           }
         }
       }
-    } ~ path("docs") {
-      // TODO: migrate the DocServer here, remove "docs" ActorRef
-      ???
+    } ~ path("docs" / """[^/]+\.jar""".r / Rest) { (filename, entry) =>
+      rejectEmptyResponse {
+        complete {
+          for {
+            media <- MediaTypes.forExtension(Files.getFileExtension(entry))
+            content <- docJarContent(filename, entry)
+          } yield {
+            HttpResponse(entity = HttpEntity(ContentType(media, None), content))
+          }
+        }
+      }
     } ~ path("jerky") {
       get {
         jsonWebsocket[RpcRequestEnvelope, RpcResponseEnvelope](websocketHandler)

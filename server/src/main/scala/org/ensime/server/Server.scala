@@ -79,9 +79,8 @@ class Server(
 
   val broadcaster = system.actorOf(Broadcaster(), "broadcaster")
   val project = system.actorOf(Project(broadcaster), "project")
-  val docs = system.actorOf(DocServer(), "docs")
 
-  val webserver = new WebServerImpl(project, broadcaster, docs)
+  val webserver = new WebServerImpl(project, broadcaster)
 
   // async start the HTTP Server
   Http().bindAndHandle(webserver.route, interface, 0).onSuccess {
@@ -106,7 +105,7 @@ class Server(
         try {
           while (!hasShutdownFlag.get()) {
             val socket = listener.accept()
-            system.actorOf(SocketHandler(protocol, socket, broadcaster, project, docs))
+            system.actorOf(SocketHandler(protocol, socket, broadcaster, project))
           }
         } catch {
           case e: Exception =>

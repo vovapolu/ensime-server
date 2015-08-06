@@ -25,6 +25,7 @@ class Project(
 
   // TODO consolidate search/indexer
   private var indexer: ActorRef = _
+  private var docs: ActorRef = _
 
   // TODO: use state transitions to manage this state
   // vfs, resolver, search and watchers are considered "reliable" (hah!)
@@ -53,6 +54,7 @@ class Project(
     indexer = context.actorOf(Indexer(searchService), "indexer")
     analyzer = context.actorOf(Analyzer(broadcaster, indexer, searchService), "analyzer")
     debugger = context.actorOf(DebugManager(broadcaster), "debugging")
+    docs = context.actorOf(DocResolver(), "docs")
   }
 
   override def postStop(): Unit = {
@@ -83,21 +85,8 @@ class Project(
     case m: RpcAnalyserRequest => analyzer forward m
     case m: RpcDebuggerRequest => debugger forward m
     case m: RpcSearchRequest => indexer forward m
+    case m: DocSigPair => docs forward m
   }
-
-  /*
-  Funky non-standard cases:
-
-   - SymbolByNameReq (option)
-
-   - PrepareRefactorReq (complex)
-   - ExecRefactorReq (either)
-
-   - DebugLocateNameReq (option)
-   - DebugValueReq (option)
-   - DebugToStringReq (option)
-
-   */
 
 }
 object Project {
