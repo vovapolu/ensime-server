@@ -1,6 +1,7 @@
 package org.ensime.core
 
 import akka.util.ByteString
+import java.io.File
 import java.util.jar.JarFile
 import org.ensime.api.EnsimeConfig
 
@@ -15,4 +16,6 @@ trait DocJarReading {
     entry <- Option(jar.getJarEntry(entry))
     stream = jar.getInputStream(entry)
   } yield ByteString(stream.toByteArray)
+
+  def docJars(): Set[File] = config.allDocJars
 }

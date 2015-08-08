@@ -264,6 +264,7 @@ object EnsimeBuild extends Build with JdkResolver {
       "com.typesafe.akka" %% "akka-http-core-experimental" % streamsVersion,
       "com.typesafe.akka" %% "akka-http-experimental" % streamsVersion,
       "com.typesafe.akka" %% "akka-http-spray-json-experimental" % streamsVersion,
+      "com.typesafe.akka" %% "akka-http-xml-experimental" % streamsVersion,
       "com.typesafe.akka" %% "akka-http-testkit-experimental" % streamsVersion % "test,it"
     ) ++ testLibs(scalaVersion.value, "it,test")
   )
