@@ -49,6 +49,7 @@ class ImplicitAnalyzer(val global: RichPresentationCompiler) {
 
   def implicitDetails(p: Position): List[ImplicitInfo] = {
     val typed = new global.Response[global.Tree]
+    // AskLoadedTyped below doesn't wait, since this code should run in the pres. compiler thread.
     global.askLoadedTyped(p.source, keepLoaded = true, typed)
     typed.get.left.toOption match {
       case Some(tree) =>

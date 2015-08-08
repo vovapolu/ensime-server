@@ -105,8 +105,6 @@ class Analyzer(
     }
     scalaCompiler.askNotifyWhenReady()
     broadcaster ! CompilerRestartedEvent
-
-    context.become(loading orElse stashing)
   }
 
   override def postStop(): Unit = {
@@ -116,13 +114,9 @@ class Analyzer(
 
   def charset: Charset = scalaCompiler.charset
 
-  def receive: Receive = startup orElse stashing
+  def receive: Receive = startup
 
-  def stashing: Receive = withLabel("stashing") {
-    case other => stash()
-  }
-
-  def startup: Receive = withLabel("loading") {
+  def startup: Receive = withLabel("startup") {
     case FullTypeCheckCompleteEvent =>
       reporter.enable()
       // legacy clients expect to see AnalyzerReady and a
@@ -131,14 +125,9 @@ class Analyzer(
       broadcaster ! Broadcaster.Persist(FullTypeCheckCompleteEvent)
       context.become(ready)
       unstashAll()
-  }
 
-  // TODO: custom queue that prioritises and de-dupes restarts of the compiler
-  def loading: Receive = withLabel("loading") {
-    case FullTypeCheckCompleteEvent =>
-      broadcaster ! FullTypeCheckCompleteEvent
-      context.become(ready)
-      unstashAll()
+    case other =>
+      stash()
   }
 
   def ready: Receive = withLabel("ready") {
@@ -171,8 +160,6 @@ class Analyzer(
       scalaCompiler.askReloadAllFiles()
       scalaCompiler.askNotifyWhenReady()
       sender ! VoidResponse
-      context.become(loading orElse stashing)
-
     case UnloadAllReq =>
       if (config.sourceMode) {
         log.info("in source mode, will reload all files")
@@ -186,22 +173,9 @@ class Analyzer(
     case TypecheckFileReq(fileInfo) =>
       handleReloadFiles(List(fileInfo))
       sender ! VoidResponse
-
-      // has the effect of waiting until the presentation compiler has
-      // typechecked the file before responding to any more questions.
-      context.become(loading orElse stashing)
-
     case TypecheckFilesReq(files) =>
       handleReloadFiles(files.map(SourceFileInfo(_)))
       sender ! VoidResponse
-
-    // note that we're not protecting the presentation compiler from
-    // queries here (it will be doing work in the background to
-    // typecheck these files), so we're relying on askLoadedTyped
-    // calls to ensure consistency. This is a performance
-    // optimisation and it may be worth investigating what the
-    // tradeoffs of `become` are in typical usecases.
-
     case req: PrepareRefactorReq =>
       handleRefactorPrepareRequest(req)
     case req: ExecRefactorReq =>
@@ -216,6 +190,7 @@ class Analyzer(
       sender ! info
     case UsesOfSymbolAtPointReq(file, point) =>
       val p = pos(file, point)
+      scalaCompiler.askLoadedTyped(p.source)
       val uses = scalaCompiler.askUsesOfSymAtPoint(p)
       sender ! ERangePositions(uses.map(ERangePositionHelper.fromRangePosition))
     case PackageMemberCompletionReq(path: String, prefix: String) =>
@@ -223,6 +198,7 @@ class Analyzer(
       sender ! members
     case InspectTypeAtPointReq(file: File, range: OffsetRange) =>
       val p = pos(file, range)
+      scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askInspectTypeAt(p)
     case InspectTypeByIdReq(id: Int) =>
       sender ! scalaCompiler.askInspectTypeById(id)
@@ -230,12 +206,14 @@ class Analyzer(
       sender ! scalaCompiler.askInspectTypeByName(name)
     case SymbolAtPointReq(file: File, point: Int) =>
       val p = pos(file, point)
+      scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askSymbolInfoAt(p)
     case SymbolByNameReq(typeFullName: String, memberName: Option[String], signatureString: Option[String]) =>
       sender ! scalaCompiler.askSymbolByName(typeFullName, memberName, signatureString)
 
     case DocUriAtPointReq(file: File, range: OffsetRange) =>
       val p = pos(file, range)
+      scalaCompiler.askLoadedTyped(p.source)
       sender() ! scalaCompiler.askDocSignatureAtPoint(p)
     case DocUriForSymbolReq(typeFullName: String, memberName: Option[String], signatureString: Option[String]) =>
       sender() ! scalaCompiler.askDocSignatureForSymbol(typeFullName, memberName, signatureString)
@@ -244,6 +222,7 @@ class Analyzer(
       sender ! scalaCompiler.askPackageByPath(path)
     case TypeAtPointReq(file: File, range: OffsetRange) =>
       val p = pos(file, range)
+      scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askTypeInfoAt(p)
     case TypeByIdReq(id: Int) =>
       sender ! scalaCompiler.askTypeInfoById(id)
@@ -251,6 +230,7 @@ class Analyzer(
       sender ! scalaCompiler.askTypeInfoByName(name)
     case TypeByNameAtPointReq(name: String, file: File, range: OffsetRange) =>
       val p = pos(file, range)
+      scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askTypeInfoByNameAt(name, p)
     case CallCompletionReq(id: Int) =>
       sender ! scalaCompiler.askCallCompletionInfoById(id)
@@ -259,9 +239,10 @@ class Analyzer(
         sender ! SymbolDesignations(f, List.empty)
       } else {
         val sf = createSourceFile(f)
-        val clampedEnd = math.max(end, start)
-        val pos = new RangePosition(sf, start, start, clampedEnd)
         if (tpes.nonEmpty) {
+          val clampedEnd = math.max(end, start)
+          val pos = new RangePosition(sf, start, start, clampedEnd)
+          scalaCompiler.askLoadedTyped(pos.source)
           val syms = scalaCompiler.askSymbolDesignationsInRegion(pos, tpes)
           sender ! syms
         } else {
@@ -271,6 +252,7 @@ class Analyzer(
 
     case ImplicitInfoReq(file: File, range: OffsetRange) =>
       val p = pos(file, range)
+      scalaCompiler.askLoadedTyped(p.source)
       sender() ! scalaCompiler.askImplicitInfoInRegion(p)
 
     case ExpandSelectionReq(file, start: Int, stop: Int) =>
