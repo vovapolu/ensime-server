@@ -12,7 +12,7 @@ script:
     fi &&
     sbt ++$SCALA_VERSION test it:test &&
     sbt ++$SCALA_VERSION publishLocal &&
-    ensime-emacs/test/run_emacs_tests.sh &&
+    cd ensime-emacs && cask pkg-file && test/run_emacs_tests.sh && cd .. &&
     if [ -n "$SONATYPE_USERNAME" ] && [ -n "$SONATYPE_PASSWORD" ] ; then
       sbt ++$SCALA_VERSION publish &&
       curl --data "build=true" -X POST https://registry.hub.docker.com/u/ensime/ensime/trigger/${DOCKER_TRIGGER_TOKEN}/ ;
