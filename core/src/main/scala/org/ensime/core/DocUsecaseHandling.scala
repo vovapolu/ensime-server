@@ -1,14 +1,10 @@
-package org.ensime.server
+package org.ensime.core
 
 import java.io.{ File, IOException }
 import java.util.jar.JarFile
 import java.util.regex.Pattern
-
 import org.apache.commons.lang.StringEscapeUtils
-
-import org.ensime.api._
 import org.ensime.core._
-
 import scala.io.Source
 
 // Scaladoc uses @usecase comment annotations to substitute kid-safe signatures
@@ -22,7 +18,7 @@ import scala.io.Source
 // Instead of doing things the 'right' way, which would be hard, we use heuristics
 // to determine if the link is likely to be a @usecase, and then go digging
 // through the html content to find the anchor.
-trait DocUsecaseHandling { self: DocServer =>
+trait DocUsecaseHandling { self: DocResolver =>
 
   val PrefixRegexp = """^([A-Za-z:_\+-]+).*""".r
   protected def maybeReplaceWithUsecase(jar: File, sig: DocSig): DocSig = {

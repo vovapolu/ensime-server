@@ -21,7 +21,6 @@ class SocketHandler(
     socket: Socket,
     broadcaster: ActorRef,
     project: ActorRef,
-    docs: ActorRef,
     implicit val config: EnsimeConfig
 ) extends Actor with ActorLogging {
 
@@ -32,7 +31,7 @@ class SocketHandler(
   private var loop: Thread = _
 
   override def preStart(): Unit = {
-    handler = context.actorOf(ConnectionHandler(project, broadcaster, docs, self), "handler")
+    handler = context.actorOf(ConnectionHandler(project, broadcaster, self), "handler")
 
     in = socket.getInputStream.buffered
     out = socket.getOutputStream.buffered
@@ -90,8 +89,7 @@ object SocketHandler {
     protocol: Protocol,
     socket: Socket,
     broadcaster: ActorRef,
-    project: ActorRef,
-    docs: ActorRef
+    project: ActorRef
   )(implicit config: EnsimeConfig): Props =
-    Props(classOf[SocketHandler], protocol, socket, broadcaster, project, docs, config)
+    Props(classOf[SocketHandler], protocol, socket, broadcaster, project, config)
 }

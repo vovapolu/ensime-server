@@ -17,7 +17,6 @@ import shapeless._
 class ConnectionHandler(
     project: ActorRef,
     broadcaster: ActorRef,
-    docs: ActorRef,
     target: ActorRef
 ) extends Actor with ActorLogging {
 
@@ -33,7 +32,7 @@ class ConnectionHandler(
 
   def receiveRpc: Receive = {
     case req: RpcRequestEnvelope =>
-      val handler = RequestHandler(Canonised(req), project, self, docs)
+      val handler = RequestHandler(Canonised(req), project, self)
       context.actorOf(handler, s"${req.callId}")
 
     case outgoing: RpcResponseEnvelope =>
@@ -50,7 +49,6 @@ object ConnectionHandler {
   def apply(
     project: ActorRef,
     broadcaster: ActorRef,
-    docs: ActorRef,
     target: ActorRef
-  ): Props = Props(classOf[ConnectionHandler], project, broadcaster, docs, target)
+  ): Props = Props(classOf[ConnectionHandler], project, broadcaster, target)
 }

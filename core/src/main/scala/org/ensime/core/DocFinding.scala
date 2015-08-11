@@ -1,6 +1,6 @@
 package org.ensime.core
 
-// Transform symbols to scaladoc URI paths, with anchors to select specific
+// Transform symbols to scaladoc components, with anchors to select specific
 // members of a container type.
 //
 // See scala/src/scaladoc/scala/tools/nsc/doc/base/MemberLookupBase.scala for

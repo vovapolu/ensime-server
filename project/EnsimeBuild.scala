@@ -260,12 +260,11 @@ object EnsimeBuild extends Build with JdkResolver {
   ).settings (
     unmanagedJars in Compile += JavaTools,
     libraryDependencies ++= Seq(
-      "io.spray" %% "spray-can" % "1.3.3",
-      "io.spray" %% "spray-routing" % "1.3.3",
       "com.typesafe.akka" %% "akka-stream-experimental" % streamsVersion,
       "com.typesafe.akka" %% "akka-http-core-experimental" % streamsVersion,
       "com.typesafe.akka" %% "akka-http-experimental" % streamsVersion,
       "com.typesafe.akka" %% "akka-http-spray-json-experimental" % streamsVersion,
+      "com.typesafe.akka" %% "akka-http-xml-experimental" % streamsVersion,
       "com.typesafe.akka" %% "akka-http-testkit-experimental" % streamsVersion % "test,it"
     ) ++ testLibs(scalaVersion.value, "it,test")
   )
