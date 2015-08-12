@@ -79,7 +79,7 @@ class WebServerSpec extends HttpFlatSpec with WebServer {
       mediaType shouldBe MediaTypes.`text/xml` // hmm
 
       import ScalaXmlSupport._
-      import StreamlinedXml._
+      import StreamlinedXmlEquality._
 
       // err, the Equality[NodeSeq] doesn't seem to work... reformatting breaks it
       responseAs[NodeSeq] shouldEqual
@@ -87,7 +87,14 @@ class WebServerSpec extends HttpFlatSpec with WebServer {
           <head/>
           <body>
             <h1>ENSIME: Your Project's Documention</h1>
-            <ul><li><a href="docs/bar-javadoc.jar/index.html">bar-javadoc.jar</a> </li><li><a href="docs/foo-javadoc.jar/index.html">foo-javadoc.jar</a> </li></ul>
+            <ul>
+              <li>
+                <a href="docs/bar-javadoc.jar/index.html">bar-javadoc.jar</a>
+              </li>
+              <li>
+                <a href="docs/foo-javadoc.jar/index.html">foo-javadoc.jar</a>
+              </li>
+            </ul>
           </body>
         </html>
     }

@@ -36,10 +36,7 @@ class BasicWorkflow extends WordSpec with Matchers
             project ! TypecheckFilesReq(List(fooFile))
             expectMsg(VoidResponse)
 
-            asyncHelper.receiveN(2) should contain only (
-              ClearAllScalaNotesEvent,
-              FullTypeCheckCompleteEvent
-            )
+            asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
 
             //-----------------------------------------------------------------------------------------------
             // semantic highlighting
@@ -145,10 +142,7 @@ class BasicWorkflow extends WordSpec with Matchers
             project ! TypecheckFilesReq(List(fooFile))
             expectMsg(VoidResponse)
 
-            asyncHelper.receiveN(2) should contain only (
-              ClearAllScalaNotesEvent,
-              FullTypeCheckCompleteEvent
-            )
+            asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
 
             project ! UsesOfSymbolAtPointReq(fooFile, 119) // point on testMethod
             expectMsgPF() {

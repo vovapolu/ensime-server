@@ -26,6 +26,7 @@ object ProjectFixture extends Matchers {
       // these are too noisy for tests
       case e: SendBackgroundMessageEvent => true
       case e: DebugOutputEvent => true
+      case ClearAllScalaNotesEvent => true
     }
 
     val project = TestActorRef[Project](Project(probe.ref), "project")
