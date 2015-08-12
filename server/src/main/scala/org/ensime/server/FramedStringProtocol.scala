@@ -24,27 +24,26 @@ trait FramedStringProtocol extends Protocol with SLF4JLogging {
   }
 
   protected def readString(input: InputStream): String = {
-    val reader = new InputStreamReader(input, "UTF-8")
-
-    def fillArray(a: Array[Char]): Unit = {
+    def fillArray(a: Array[Byte]): Unit = {
       var n = 0
       while (n < a.length) {
-        val read = reader.read(a, n, a.length - n)
+        val read = input.read(a, n, a.length - n)
         if (read != -1) n += read
         else throw new EOFException("End of file reached in socket reader.")
       }
     }
 
-    val headerBuf = new Array[Char](6)
+    val headerBuf = new Array[Byte](6)
+
     fillArray(headerBuf)
-    val msgLen = Integer.valueOf(new String(headerBuf), 16).intValue()
+    val msgLen = Integer.valueOf(new String(headerBuf, "UTF-8"), 16).intValue()
     if (msgLen == 0)
       throw new IllegalStateException("Empty message read from socket!")
 
-    val buf: Array[Char] = new Array[Char](msgLen)
+    val buf: Array[Byte] = new Array[Byte](msgLen)
     fillArray(buf)
 
-    val request = new String(buf)
+    val request = new String(buf, "UTF-8")
     if (log.isTraceEnabled) {
       log.trace(request)
     }
