@@ -1,17 +1,11 @@
 package org.ensime.intg
 
 import akka.event.slf4j.SLF4JLogging
-import org.ensime.model._
 import org.ensime.api._
-import org.ensime.util._
 import org.ensime.core._
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
-
-import scala.concurrent.duration._
-import pimpathon.file._
-
 import org.ensime.fixture._
+import org.scalatest.{ Matchers, WordSpec }
+import pimpathon.file._
 
 class BasicWorkflow extends WordSpec with Matchers
     with IsolatedEnsimeConfigFixture
@@ -37,6 +31,13 @@ class BasicWorkflow extends WordSpec with Matchers
             expectMsg(VoidResponse)
 
             asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
+
+            // Asking to typecheck mising file should report an error not kill system
+
+            val missingFile = sourceRoot / "missing.scala"
+            val missingFilePath = missingFile.getAbsolutePath
+            project ! TypecheckFilesReq(List(missingFile))
+            expectMsg(EnsimeServerError(s"""file(s): "$missingFilePath" do not exist"""))
 
             //-----------------------------------------------------------------------------------------------
             // semantic highlighting

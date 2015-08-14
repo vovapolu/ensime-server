@@ -170,17 +170,15 @@ class Analyzer(
       }
       sender ! VoidResponse
     case TypecheckFileReq(fileInfo) =>
-      handleReloadFiles(List(fileInfo))
-      sender ! VoidResponse
+      sender ! handleReloadFiles(List(fileInfo))
     case TypecheckFilesReq(files) =>
-      handleReloadFiles(files.map(SourceFileInfo(_)))
-      sender ! VoidResponse
+      sender ! handleReloadFiles(files.map(SourceFileInfo(_)))
     case req: PrepareRefactorReq =>
-      handleRefactorPrepareRequest(req)
+      sender ! handleRefactorPrepareRequest(req)
     case req: ExecRefactorReq =>
-      handleRefactorExec(req)
+      sender ! handleRefactorExec(req)
     case req: CancelRefactorReq =>
-      handleRefactorCancel(req)
+      sender ! handleRefactorCancel(req)
     case CompletionsReq(fileInfo, point, maxResults, caseSens, reload) =>
       val sourcefile = createSourceFile(fileInfo)
       reporter.disable()
@@ -209,14 +207,12 @@ class Analyzer(
       sender ! scalaCompiler.askSymbolInfoAt(p)
     case SymbolByNameReq(typeFullName: String, memberName: Option[String], signatureString: Option[String]) =>
       sender ! scalaCompiler.askSymbolByName(typeFullName, memberName, signatureString)
-
     case DocUriAtPointReq(file: File, range: OffsetRange) =>
       val p = pos(file, range)
       scalaCompiler.askLoadedTyped(p.source)
       sender() ! scalaCompiler.askDocSignatureAtPoint(p)
     case DocUriForSymbolReq(typeFullName: String, memberName: Option[String], signatureString: Option[String]) =>
       sender() ! scalaCompiler.askDocSignatureForSymbol(typeFullName, memberName, signatureString)
-
     case InspectPackageByPathReq(path: String) =>
       sender ! scalaCompiler.askPackageByPath(path)
     case TypeAtPointReq(file: File, range: OffsetRange) =>
@@ -264,19 +260,23 @@ class Analyzer(
 
   }
 
-  def handleReloadFiles(files: List[SourceFileInfo]): Unit = {
-    files foreach { file =>
-      require(file.file.exists, "" + file + " does not exist")
-    }
+  def handleReloadFiles(files: List[SourceFileInfo]): RpcResponse = {
+    val missingFiles = files.filterNot(_.file.exists())
+    if (missingFiles.nonEmpty) {
+      val missingFilePaths = missingFiles.map { f => "\"" + f.file + "\"" }.mkString(",")
+      EnsimeServerError(s"file(s): $missingFilePaths do not exist")
+    } else {
 
-    val (javas, scalas) = files.filter(_.file.exists).partition(
-      _.file.getName.endsWith(".java")
-    )
+      val (javas, scalas) = files.filter(_.file.exists).partition(
+        _.file.getName.endsWith(".java")
+      )
 
-    if (scalas.nonEmpty) {
-      val sourceFiles = scalas.map(createSourceFile)
-      scalaCompiler.askReloadFiles(sourceFiles)
-      scalaCompiler.askNotifyWhenReady()
+      if (scalas.nonEmpty) {
+        val sourceFiles = scalas.map(createSourceFile)
+        scalaCompiler.askReloadFiles(sourceFiles)
+        scalaCompiler.askNotifyWhenReady()
+      }
+      VoidResponse
     }
   }
 
