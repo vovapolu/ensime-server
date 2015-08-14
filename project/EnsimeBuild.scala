@@ -236,7 +236,8 @@ object EnsimeBuild extends Build with JdkResolver {
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
       "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.6.2",
-      // TODO: would be good to loose direct commons deps
+      // refactoring has an old version of scala-xml
+      "org.scala-lang.modules" %% "scala-xml" % "1.0.4",
       "commons-lang" % "commons-lang" % "2.6",
       "commons-io" % "commons-io" % "2.4" % "test,it"
     ) ++ logback ++ testLibs(scalaVersion.value, "it,test")

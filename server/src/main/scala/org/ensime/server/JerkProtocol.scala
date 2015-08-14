@@ -1,19 +1,22 @@
 package org.ensime.server
 
-import java.io._
-
+import akka.util.ByteString
 import org.ensime.api._
 import org.ensime.jerk._
-
 import spray.json._
 
 class JerkProtocol extends FramedStringProtocol {
   import JerkEnvelopeFormats._
 
-  override def read(input: InputStream): RpcRequestEnvelope =
-    readString(input).parseJson.convertTo[RpcRequestEnvelope]
+  override def encode(resp: RpcResponseEnvelope): ByteString = writeString(resp.toJson.compactPrint)
 
-  override def write(resp: RpcResponseEnvelope, output: OutputStream): Unit =
-    writeString(resp.toJson.compactPrint, output)
-
+  override def decode(bytes: ByteString): (Option[RpcRequestEnvelope], ByteString) = {
+    tryReadString(bytes) match {
+      case (Some(message), remainder) =>
+        val parsedMessage = message.parseJson.convertTo[RpcRequestEnvelope]
+        (Some(parsedMessage), remainder)
+      case (None, remainder) =>
+        (None, remainder)
+    }
+  }
 }

@@ -1,16 +1,17 @@
 package org.ensime.core
 
-import akka.actor._
-import akka.event.LoggingReceive
-import akka.event.LoggingReceive.withLabel
 import java.io.File
 import java.nio.charset.Charset
+
+import akka.actor._
+import akka.event.LoggingReceive.withLabel
 import org.ensime.api._
 import org.ensime.indexer.{ EnsimeVFS, SearchService }
 import org.ensime.model._
 import org.ensime.util._
 import org.slf4j.LoggerFactory
 import pimpathon.file._
+
 import scala.reflect.internal.util.{ OffsetPosition, RangePosition, SourceFile }
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interactive.Global
@@ -308,5 +309,5 @@ object Analyzer {
     implicit
     config: EnsimeConfig,
     vfs: EnsimeVFS
-  ) = Props(classOf[Analyzer], broadcaster, indexer, search, config, vfs)
+  ) = Props(new Analyzer(broadcaster, indexer, search, config, vfs))
 }
