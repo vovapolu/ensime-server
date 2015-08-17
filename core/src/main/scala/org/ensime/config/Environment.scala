@@ -31,4 +31,8 @@ object Environment {
     } catch {
       case _: Exception => "unknown"
     }
+
+  def shutdownOnDisconnectFlag: Boolean = {
+    Option(System.getProperty("ensime.explode.on.disconnect")).isDefined
+  }
 }

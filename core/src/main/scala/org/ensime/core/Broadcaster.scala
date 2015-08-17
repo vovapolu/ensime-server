@@ -54,12 +54,12 @@ class Broadcaster extends Actor with ActorLogging {
   } {
     subscriber forward message
   }
-
 }
+
 object Broadcaster {
   object Register
   object Unregister
   case class Persist(message: Any)
 
-  def apply(): Props = Props(classOf[Broadcaster])
+  def apply(): Props = Props(new Broadcaster)
 }

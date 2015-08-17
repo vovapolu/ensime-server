@@ -53,7 +53,7 @@ trait RefactoringHandler { self: Analyzer =>
 
   private var effects = Map.empty[Int, RefactorEffect]
 
-  def handleRefactorPrepareRequest(req: PrepareRefactorReq): Unit = {
+  def handleRefactorPrepareRequest(req: PrepareRefactorReq): RpcResponse = {
     val procedureId = req.procId
     val refactor = req.params
     val result = scalaCompiler.askPrepareRefactor(procedureId, refactor)
@@ -61,29 +61,29 @@ trait RefactoringHandler { self: Analyzer =>
     result match {
       case Right(effect: RefactorEffect) =>
         effects += procedureId -> effect
-        sender() ! effect
+        effect
 
       case Left(failure) =>
-        sender() ! failure
+        failure
     }
   }
 
-  def handleRefactorExec(req: ExecRefactorReq): Unit = {
+  def handleRefactorExec(req: ExecRefactorReq): RpcResponse = {
     val procedureId = req.procId
     effects.get(procedureId) match {
       case Some(effect: RefactorEffect) =>
         scalaCompiler.askExecRefactor(procedureId, req.tpe, effect) match {
-          case Right(success) => sender() ! success
-          case Left(failure) => sender() ! failure
+          case Right(success) => success
+          case Left(failure) => failure
         }
       case None =>
-        sender() ! RefactorFailure(procedureId, "No effect found for procId " + procedureId)
+        RefactorFailure(procedureId, "No effect found for procId " + procedureId)
     }
   }
 
-  def handleRefactorCancel(req: CancelRefactorReq): Unit = {
+  def handleRefactorCancel(req: CancelRefactorReq): RpcResponse = {
     effects -= req.procId
-    sender ! VoidResponse
+    VoidResponse
   }
 
   def handleExpandselection(file: File, start: Int, stop: Int): FileRange = {

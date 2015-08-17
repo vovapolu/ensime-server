@@ -1,27 +1,19 @@
 package org.ensime.server
 
-import akka.http.scaladsl.model.HttpEntity
-import akka.util.ByteString
-import com.google.common.io.Files
 import java.io.File
 
-import concurrent.Future
-
 import akka.actor._
-import akka.pattern.ask
-import akka.util.Timeout
-
-import akka.stream._
-import akka.stream.scaladsl._
-import akka.http.scaladsl.server._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
-
+import akka.http.scaladsl.model.{ HttpEntity, _ }
+import akka.http.scaladsl.server._
+import akka.stream._
+import akka.util.{ ByteString, Timeout }
+import com.google.common.io.Files
 import org.ensime.api._
-import org.ensime.core._
 import org.ensime.jerk._
+
+import scala.concurrent.Future
 
 trait WebServer {
   implicit def system: ActorSystem
@@ -45,14 +37,12 @@ trait WebServer {
   def docJars(): Set[File]
 
   import Directives._
-  import SprayJsonSupport._
-  import Route._
-
-  import JerkFormats._
   import JerkEnvelopeFormats._
-  import WebSocketBoilerplate._
-
+  import JerkFormats._
+  import Route._
   import ScalaXmlSupport._
+  import SprayJsonSupport._
+  import WebSocketBoilerplate._
 
   val route = seal {
     path("rpc") {

@@ -1,32 +1,98 @@
 package org.ensime.server
 
+import java.io._
+
+import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import akka.event.slf4j.SLF4JLogging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
-import akka.pattern.ask
+import akka.http.scaladsl.server.RouteResult.route2HandlerFlow
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.google.common.base.Charsets
 import com.google.common.io.Files
-import java.io._
-import java.net.{ InetAddress, ServerSocket, Socket }
-import java.util.concurrent.atomic.AtomicBoolean
 import org.ensime.api._
 import org.ensime.config._
 import org.ensime.core._
+import org.ensime.server.tcp.TCPServer
 import org.slf4j._
 import org.slf4j.bridge.SLF4JBridgeHandler
+
 import scala.concurrent.duration._
-import scala.util._
 import scala.util.Properties._
-import akka.http.scaladsl.server.RouteResult.route2HandlerFlow
+import scala.util._
+
+case class ShutdownRequest(reason: String, isError: Boolean = false)
+
+class ServerActor(
+    config: EnsimeConfig,
+    protocol: Protocol,
+    interface: String = "127.0.0.1"
+) extends Actor with ActorLogging {
+
+  override val supervisorStrategy = OneForOneStrategy() {
+    case ex: Exception =>
+      self ! ShutdownRequest(s"Monitor actor failed with ${ex.getClass} - ${ex.toString}", isError = true)
+      Stop
+  }
+
+  def initialiseChildren(): Unit = {
+
+    implicit val config = this.config
+    implicit val mat = ActorMaterializer()
+    implicit val timeout = Timeout(10 seconds)
+
+    val broadcaster = context.actorOf(Broadcaster(), "broadcaster")
+    val project = context.actorOf(Project(broadcaster), "project")
+
+    val shutdownOnLastDisconnect = Environment.shutdownOnDisconnectFlag
+    context.actorOf(TCPServer(config.cacheDir, protocol, project,
+      broadcaster, shutdownOnLastDisconnect), "tcp-server")
+
+    // this is a bit ugly in a couple of ways
+    // 1) web server creates handlers in the top domain
+    // 2) We have to manually capture the failure to write the port file and lift the error to a failure.
+    val webserver = new WebServerImpl(project, broadcaster)(config, context.system, mat, timeout)
+
+    // async start the HTTP Server
+    val selfRef = self
+    Http()(context.system).bindAndHandle(webserver.route, interface, 0).onSuccess {
+      case ServerBinding(addr) =>
+        log.info(s"ENSIME HTTP on ${addr.getAddress}")
+        try {
+          PortUtil.writePort(config.cacheDir, addr.getPort, "http")
+        } catch {
+          case ex: Throwable =>
+            selfRef ! ShutdownRequest(s"http endpoint failed to initialise: ${ex.getMessage}", isError = true)
+        }
+    }(context.system.dispatcher)
+
+    log.info(Environment.info)
+  }
+
+  override def preStart(): Unit = {
+    try {
+      initialiseChildren()
+    } catch {
+      case t: Throwable =>
+        self ! ShutdownRequest(t.toString, isError = true)
+    }
+  }
+  override def receive: Receive = {
+    case req: ShutdownRequest =>
+      triggerShutdown(req)
+  }
+
+  def triggerShutdown(request: ShutdownRequest): Unit = {
+    Server.shutdown(context.system, request)
+  }
+
+}
 
 object Server {
   SLF4JBridgeHandler.removeHandlersForRootLogger()
   SLF4JBridgeHandler.install()
-
-  val log = LoggerFactory.getLogger(classOf[Server])
+  val log = LoggerFactory.getLogger("Server")
 
   def main(args: Array[String]): Unit = {
     val ensimeFileStr = propOrNone("ensime.config").getOrElse(
@@ -51,104 +117,31 @@ object Server {
       case other => throw new IllegalArgumentException(s"$other is not a valid ENSIME protocol")
     }
 
-    new Server(protocol).start()
+    val system = ActorSystem("ENSIME")
+    system.actorOf(Props(new ServerActor(config, protocol)), "ensime-main")
   }
 
-}
+  def shutdown(system: ActorSystem, request: ShutdownRequest): Unit = {
+    val t = new Thread(new Runnable {
+      def run() {
+        if (request.isError)
+          log.error(s"Shutdown requested due to internal error: ${request.reason}")
+        else
+          log.info(s"Shutdown requested: ${request.reason}")
 
-/**
- * The Legacy Socket handler is a bit nasty --- it was originally
- * written before there were any decent Scala libraries for IO so we
- * end up doing Socket loops in Threads.
- *
- * It's crying out to be rewritten with akka.io.
- */
-class Server(
-    protocol: Protocol,
-    interface: String = "127.0.0.1"
-)(
-    implicit
-    config: EnsimeConfig
-) extends SLF4JLogging {
-  // the config file parsing will attempt to create directories that are expected
-  require(config.cacheDir.isDirectory, s"${config.cacheDir} is not a valid cache directory")
+        log.info("Shutting down the ActorSystem")
+        Try(system.shutdown())
 
-  implicit private val system = ActorSystem("ENSIME")
-  implicit private val mat = ActorMaterializer()
-  implicit private val timeout = Timeout(10 seconds)
+        log.info("Awaiting actor system termination")
+        Try(system.awaitTermination())
 
-  val broadcaster = system.actorOf(Broadcaster(), "broadcaster")
-  val project = system.actorOf(Project(broadcaster), "project")
-
-  val webserver = new WebServerImpl(project, broadcaster)
-
-  // async start the HTTP Server
-  Http().bindAndHandle(webserver.route, interface, 0).onSuccess {
-    case ServerBinding(addr) =>
-      log.info(s"ENSIME HTTP on ${addr.getAddress}")
-      writePort(config.cacheDir, addr.getPort, "http")
-  }(system.dispatcher)
-
-  // synchronously start the Socket Server
-  private val listener = new ServerSocket(0, 0, InetAddress.getByName(interface))
-  private val hasShutdownFlag = new AtomicBoolean
-  private var loop: Thread = _
-
-  log.info("Starting ENSIME TCP on " + interface + ":" + listener.getLocalPort)
-  log.info(Environment.info)
-
-  writePort(config.cacheDir, listener.getLocalPort, "port")
-
-  def start(): Unit = {
-    loop = new Thread {
-      override def run(): Unit = {
-        try {
-          while (!hasShutdownFlag.get()) {
-            val socket = listener.accept()
-            system.actorOf(SocketHandler(protocol, socket, broadcaster, project))
-          }
-        } catch {
-          case e: Exception =>
-            if (!hasShutdownFlag.get())
-              log.error("ENSIME Server socket listener", e)
-        } finally listener.close()
+        log.info("Shutdown complete")
+        if (request.isError)
+          System.exit(1)
+        else
+          System.exit(0)
       }
-    }
-    loop.setName("ENSIME Connection Loop")
-    loop.start()
-  }
-
-  // TODO: attach this to the appropriate KILL signal
-  def shutdown(): Unit = {
-    hasShutdownFlag.set(true)
-    Try(loop.interrupt())
-
-    log.info("Shutting down the ActorSystem")
-    Try(system.shutdown())
-
-    log.info("Closing Socket listener")
-    Try(listener.close())
-
-    log.info("Awaiting actor system termination")
-    Try(system.awaitTermination())
-
-    log.info("Shutdown complete")
-  }
-
-  private def writePort(cacheDir: File, port: Int, name: String): Unit = {
-    val portfile = new File(cacheDir, name)
-    if (!portfile.exists()) {
-      log.info("creating portfile " + portfile)
-      portfile.createNewFile()
-    } else throw new IOException(
-      "An ENSIME server might be open already for this project. " +
-        "If you are sure this is not the case, please delete " +
-        portfile.getAbsolutePath + " and try again"
-    )
-
-    portfile.deleteOnExit()
-    val out = new PrintWriter(portfile)
-    try out.println(port)
-    finally out.close()
+    })
+    t.start()
   }
 }

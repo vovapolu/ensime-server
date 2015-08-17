@@ -1,42 +1,39 @@
 package org.ensime.server
 
-import org.scalatest._
-import java.io._
+import akka.util.ByteString
 import org.ensime.api._
+import org.scalatest._
 
 class FramedStringProtocolSpec extends FlatSpec with Matchers
     with FramedStringProtocol {
+  // subclassed FramedStringProtocol so we can get access we want to test
 
-  def read(input: InputStream) = ???
-  def write(msg: RpcResponseEnvelope, output: OutputStream): Unit = ???
+  override def decode(bytes: ByteString): (Option[RpcRequestEnvelope], ByteString) = ???
+  override def encode(msg: RpcResponseEnvelope): ByteString = ???
 
   "FramedStringProtocol" should "write framed strings" in {
-    val out = new ByteArrayOutputStream
-    writeString("foobar", out)
-    val written = new String(out.toByteArray(), "UTF-8")
+    val buffer = writeString("foobar")
+    val written = buffer.utf8String
 
     written shouldBe "000006foobar"
   }
 
   it should "write multi-byte UTF-8 strings" in {
-    val out = new ByteArrayOutputStream
-    writeString("€", out)
-    val written = new String(out.toByteArray(), "UTF-8")
+    val buffer = writeString("€")
+    val written = buffer.utf8String
 
     written shouldBe "000003€"
   }
 
   it should "read framed strings" in {
-    val in = new ByteArrayInputStream("000006foobar".getBytes("UTF-8"))
-    val read = readString(in)
+    val read = tryReadString(ByteString("000006foobar", "UTF-8"))
 
-    read shouldBe "foobar"
+    read shouldBe (Some("foobar"), ByteString())
   }
 
   it should "read multi-byte UTF-8 strings" in {
-    val in = new ByteArrayInputStream("000003€".getBytes("UTF-8"))
-    val read = readString(in)
+    val read = tryReadString(ByteString("000003€000003€", "UTF-8"))
 
-    read shouldBe "€"
+    read shouldBe (Some("€"), ByteString("000003€", "UTF-8"))
   }
 }
