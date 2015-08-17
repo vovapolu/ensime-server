@@ -19,8 +19,9 @@ object DebugManager {
   )(
     implicit
     config: EnsimeConfig
-  ): Props = Props(classOf[DebugManager], broadcaster, config)
+  ): Props = Props(new DebugManager(broadcaster, config))
 }
+
 class DebugManager(
     broadcaster: ActorRef,
     config: EnsimeConfig
@@ -71,9 +72,8 @@ class DebugManager(
   }
 
   def setBreakpoint(file: File, line: Int): Boolean = {
-    if ((for (vm <- maybeVM) yield {
-      vm.setBreakpoint(file, line)
-    }).getOrElse { false }) {
+    val applied = maybeVM.exists { vm => vm.setBreakpoint(file, line) }
+    if (applied) {
       activeBreakpoints.add(Breakpoint(file, line))
       true
     } else {
@@ -152,26 +152,26 @@ class DebugManager(
     }
   }
 
-  private def handleRPCWithVM()(action: (VM => Unit)) = {
+  private def handleRPCWithVM()(action: (VM => RpcResponse)): RpcResponse = {
     withVM { vm =>
       action(vm)
     }.getOrElse {
       log.warning("Could not access debug VM.")
-      sender ! FalseResponse
+      FalseResponse
     }
   }
 
-  private def handleRPCWithVMAndThread(threadId: DebugThreadId)(action: ((VM, ThreadReference) => Unit)) = {
+  private def handleRPCWithVMAndThread(threadId: DebugThreadId)(action: ((VM, ThreadReference) => RpcResponse)): RpcResponse = {
     withVM { vm =>
       (for (thread <- vm.threadById(threadId)) yield {
         action(vm, thread)
       }).getOrElse {
         log.warning("Could not find thread: " + threadId)
-        sender ! FalseResponse
+        FalseResponse
       }
     }.getOrElse {
       log.warning("Could not access debug VM")
-      sender ! FalseResponse
+      FalseResponse
     }
   }
 
@@ -204,13 +204,15 @@ class DebugManager(
       (for (pos <- locToPos(e.location())) yield {
         broadcaster ! DebugStepEvent(DebugThreadId(e.thread().uniqueID()), e.thread().name, pos.file, pos.line)
       }) getOrElse {
-        log.warning("Step position not found: " + e.location().sourceName() + " : " + e.location().lineNumber())
+        val loc = e.location()
+        log.warning("Step position not found: " + loc.sourceName() + " : " + loc.lineNumber())
       }
     case e: BreakpointEvent =>
       (for (pos <- locToPos(e.location())) yield {
         broadcaster ! DebugBreakEvent(DebugThreadId(e.thread().uniqueID()), e.thread().name, pos.file, pos.line)
       }) getOrElse {
-        log.warning("Break position not found: " + e.location().sourceName() + " : " + e.location().lineNumber())
+        val loc = e.location()
+        log.warning("Break position not found: " + loc.sourceName() + " : " + loc.lineNumber())
       }
     case e: ExceptionEvent =>
       withVM { vm => vm.remember(e.exception) }
@@ -237,67 +239,75 @@ class DebugManager(
     case e: MethodExitEvent =>
   }
 
-  def handleStartupFailure(e: Exception): Unit = {
+  def disposeCurrentVM(): Unit = {
+    withVM { vm =>
+      vm.dispose()
+    }
+  }
+  def handleStartupFailure(e: Exception): RpcResponse = {
     maybeVM = None
     log.error(e, "Failure during VM startup")
     val message = e.toString
-    sender ! DebugVmError(1, message)
+    DebugVmError(1, message)
+  }
+
+  def handleDebugStartReq(commandLine: String): RpcResponse = {
+    disposeCurrentVM()
+    try {
+      val vm = new VM(VmStart(commandLine))
+      maybeVM = Some(vm)
+      vm.start()
+      DebugVmSuccess()
+    } catch {
+      case e: Exception =>
+        log.error(e, "Could not start VM")
+        handleStartupFailure(e)
+    }
+  }
+
+  def handleDebugAttachReq(hostname: String, port: String): RpcResponse = {
+    disposeCurrentVM()
+    try {
+      val vm = new VM(VmAttach(hostname, port))
+      maybeVM = Some(vm)
+      vm.start()
+      DebugVmSuccess()
+    } catch {
+      case e: Exception =>
+        log.error(e, "Could not attach VM")
+        handleStartupFailure(e)
+    }
   }
 
   def fromUser: Receive = {
-    case DebugStartReq(commandLine: String) ⇒
-      withVM { vm ⇒
-        vm.dispose()
-      }
-      try {
-        val vm = new VM(VmStart(commandLine))
-        maybeVM = Some(vm)
-        vm.start()
-        sender ! DebugVmSuccess()
-      } catch {
-        case e: Exception =>
-          log.error(e, "Could not start VM")
-          handleStartupFailure(e)
-      }
+    case DebugStartReq(commandLine: String) =>
+      sender ! handleDebugStartReq(commandLine)
     case DebugAttachReq(hostname, port) ⇒
-      withVM { vm ⇒
-        vm.dispose()
-      }
-      try {
-        val vm = new VM(VmAttach(hostname, port))
-        maybeVM = Some(vm)
-        vm.start()
-        sender ! DebugVmSuccess()
-      } catch {
-        case e: Exception =>
-          log.error(e, "Could not attach VM")
-          handleStartupFailure(e)
-      }
+      sender ! handleDebugAttachReq(hostname, port)
     case DebugActiveVmReq =>
-      handleRPCWithVM() { vm =>
-        sender ! TrueResponse
+      sender ! handleRPCWithVM() { vm =>
+        TrueResponse
       }
-
     case DebugStopReq =>
-      handleRPCWithVM() { vm =>
+      sender ! handleRPCWithVM() { vm =>
+        if (vm.mode.shouldExit) {
+          vm.exit(0)
+        }
         vm.dispose()
-        sender ! TrueResponse
+        TrueResponse
       }
-
     case DebugRunReq =>
-      handleRPCWithVM() { vm =>
+      sender ! handleRPCWithVM() { vm =>
         vm.resume()
-        sender ! TrueResponse
+        TrueResponse
       }
     case DebugContinueReq(threadId) =>
-      handleRPCWithVMAndThread(threadId) {
+      sender ! handleRPCWithVMAndThread(threadId) {
         (vm, thread) =>
           vm.resume()
-          sender ! TrueResponse
+          TrueResponse
       }
     case DebugSetBreakReq(file, line: Int) =>
-      log.info(s"sender = ${sender()}")
-
       if (!setBreakpoint(file, line)) {
         bgMessage("Location not loaded. Set pending breakpoint.")
       }
@@ -315,78 +325,97 @@ class DebugManager(
       sender ! breaks
 
     case DebugNextReq(threadId: DebugThreadId) =>
-      handleRPCWithVMAndThread(threadId) {
+      sender ! handleRPCWithVMAndThread(threadId) {
         (vm, thread) =>
           vm.newStepRequest(
             thread,
             StepRequest.STEP_LINE,
             StepRequest.STEP_OVER
           )
-          sender ! TrueResponse
+          TrueResponse
       }
 
     case DebugStepReq(threadId: DebugThreadId) =>
-      handleRPCWithVMAndThread(threadId) {
+      sender ! handleRPCWithVMAndThread(threadId) {
         (vm, thread) =>
           vm.newStepRequest(
             thread,
             StepRequest.STEP_LINE,
             StepRequest.STEP_INTO
           )
-          sender ! TrueResponse
+          TrueResponse
       }
 
     case DebugStepOutReq(threadId: DebugThreadId) =>
-      handleRPCWithVMAndThread(threadId) {
+      sender ! handleRPCWithVMAndThread(threadId) {
         (vm, thread) =>
           vm.newStepRequest(
             thread,
             StepRequest.STEP_LINE,
             StepRequest.STEP_OUT
           )
-          sender ! TrueResponse
+          TrueResponse
       }
 
     case DebugLocateNameReq(threadId: DebugThreadId, name: String) =>
-      handleRPCWithVMAndThread(threadId) {
+      sender ! handleRPCWithVMAndThread(threadId) {
         (vm, thread) =>
-          sender ! vm.locationForName(thread, name)
+          vm.locationForName(thread, name).getOrElse(FalseResponse)
       }
     case DebugBacktraceReq(threadId: DebugThreadId, index: Int, count: Int) =>
-      handleRPCWithVMAndThread(threadId) { (vm, thread) =>
-        val bt = vm.backtrace(thread, index, count)
-        sender ! bt
+      sender ! handleRPCWithVMAndThread(threadId) { (vm, thread) =>
+        vm.backtrace(thread, index, count)
       }
     case DebugValueReq(location) =>
-      handleRPCWithVM() { (vm) =>
-        sender ! vm.debugValueAtLocation(location)
+      sender ! handleRPCWithVM() { vm =>
+        vm.debugValueAtLocation(location).getOrElse(FalseResponse)
       }
     case DebugToStringReq(threadId, location) =>
-      handleRPCWithVM() { (vm) =>
-        sender ! vm.debugValueAtLocationToString(threadId, location)
+      sender ! handleRPCWithVM() { vm =>
+        vm.debugValueAtLocationToString(threadId, location) match {
+          case Some(strValue) => StringResponse(strValue)
+          case None => FalseResponse
+        }
       }
 
     case DebugSetValueReq(location, newValue) =>
-      handleRPCWithVM() { vm =>
+      sender ! handleRPCWithVM() { vm =>
         location match {
           case DebugStackSlot(threadId, frame, offset) => vm.threadById(threadId) match {
             case Some(thread) =>
               val status = vm.setStackVar(thread, frame, offset, newValue)
-              sender ! status
+              status match {
+                case true =>
+                  TrueResponse
+                case false =>
+                  FalseResponse
+              }
             case _ =>
+              log.error("Unknown thread " + threadId + " for debug-set-value")
+              FalseResponse
           }
           case unknown =>
             log.error("Unsupported location type for debug-set-value.: " + unknown)
-            sender ! FalseResponse
+            FalseResponse
         }
       }
   }
 
-  private sealed abstract class VmMode()
-  private case class VmAttach(hostname: String, port: String) extends VmMode()
-  private case class VmStart(commandLine: String) extends VmMode()
+  private sealed abstract class VmMode {
+    /**
+     * @return True if the vm should be existed for this mode
+     */
+    def shouldExit: Boolean
+  }
 
-  private class VM(mode: VmMode) {
+  private case class VmAttach(hostname: String, port: String) extends VmMode {
+    override def shouldExit: Boolean = false
+  }
+  private case class VmStart(commandLine: String) extends VmMode {
+    override def shouldExit: Boolean = true
+  }
+
+  private class VM(val mode: VmMode) {
     import scala.collection.JavaConversions._
 
     private val vm: VirtualMachine = {
@@ -469,6 +498,10 @@ class DebugManager(
     def start(): Unit = {
       evtQ.start()
       monitor.foreach { _.start() }
+    }
+
+    def exit(exitCode: Int): Unit = {
+      vm.exit(exitCode)
     }
 
     def dispose() = try {

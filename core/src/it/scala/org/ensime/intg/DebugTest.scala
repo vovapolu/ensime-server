@@ -8,7 +8,6 @@ import org.ensime.core._
 import org.ensime.fixture._
 import org.scalatest._
 import pimpathon.file._
-import pimpathon.option._
 
 // must be refreshing as the tests don't clean up after themselves properly
 class DebugTest extends WordSpec with Matchers with Inside
@@ -339,17 +338,10 @@ trait DebugTestUtils {
     import testkit._
     val project = p._1
     project ! DebugLocateNameReq(threadId, variableName)
-    val vLocOpt = expectMsgType[Option[DebugLocation]]
-    val vLoc = vLocOpt.getOrThrow(
-      s"unable to locate variable $variableName on thread $threadId"
-    )
+    val vLoc = expectMsgType[DebugLocation]
 
     project ! DebugValueReq(vLoc)
-    val vValueOpt = expectMsgType[Option[DebugValue]]
-    val vValue = vValueOpt.getOrThrow(
-      s"Unable to get value of variable $variableName"
-    )
-    vValue
+    expectMsgType[DebugValue]
   }
 
   def checkTopStackFrame(className: String, method: String, line: Int)(implicit testkit: TestKitFix, p: (TestActorRef[Project], TestProbe)): Unit = {
