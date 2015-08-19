@@ -267,7 +267,8 @@ case class ExpandSelectionReq(file: File, start: Int, end: Int) extends RpcAnaly
 sealed trait RpcDebuggerRequest extends RpcRequest
 
 /**
- * Responds with a `FalseResponse` or a `TrueResponse`.
+ * Query whether we are in an active debug session
+ * Responds with a `TrueResponse` or a `FalseResponse`.
  */
 case object DebugActiveVmReq extends RpcDebuggerRequest
 
