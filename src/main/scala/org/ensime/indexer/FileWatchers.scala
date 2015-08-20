@@ -1,14 +1,15 @@
 package org.ensime.indexer
 
 import java.io.File
+
 import akka.event.slf4j.SLF4JLogging
 import org.apache.commons.vfs2._
 import org.apache.commons.vfs2.impl._
-import org.ensime.config._
+import org.ensime.config.EnsimeConfig
+import pimpathon.file._
+
 import scala.concurrent.backport.ExecutionContext.Implicits.global
 import scala.concurrent.backport.Future
-
-import pimpathon.file._
 
 trait ClassfileListener {
   def classfileAdded(f: FileObject): Unit
@@ -56,26 +57,46 @@ class ClassfileWatcher(
 
   // WORKAROUND https://issues.apache.org/jira/browse/VFS-536
   // We don't have a dedicated test for this because it is an upstream bug
-  private val workaround = new DefaultFileMonitor(new FileListener {
-    private def targets =
-      config.compileClasspath.filter(_.isDirectory).map(vfile).map(_.getName)
-    def watched(event: FileChangeEvent) = {
-      val dir = event.getFile
-      val name = dir.getName
-      targets.exists(name.isAncestor(_))
+  private val workaround = new DefaultFileMonitor(
+    new FileListener {
+      private def targets: Set[FileName] = for {
+        dir <- config.targetClasspath
+        ref = vfile(dir)
+      } yield ref.getName()
+
+      def watched(event: FileChangeEvent) = {
+        val dir = event.getFile
+        val changed = dir.getName
+        // read backwards as: "changed is an ancestor of target"
+        targets.exists { target => target isAncestor changed }
+      }
+      def fileChanged(event: FileChangeEvent): Unit = {
+        if (watched(event)) {
+          // a fast delete followed by a create looks like a change
+          log.debug(event.getFile + " was possibly recreated")
+          reset()
+        }
+      }
+      def fileCreated(event: FileChangeEvent): Unit = {
+        if (watched(event)) {
+          log.debug(event.getFile + " was created")
+          reset()
+        }
+      }
+      def fileDeleted(event: FileChangeEvent): Unit = {
+        if (watched(event)) {
+          log.debug(event.getFile + " was deleted")
+          // nothing to do, we need to wait for it to return
+        }
+      }
     }
-    def fileChanged(event: FileChangeEvent): Unit =
-      if (watched(event)) reset()
-    def fileCreated(event: FileChangeEvent): Unit =
-      if (watched(event)) reset()
-    def fileDeleted(event: FileChangeEvent): Unit = {}
-  })
+  )
 
   workaround.setRecursive(false)
   workaround.start()
 
-  private def ancestors(f: File): List[File] = {
-    val parent = f.getParentFile()
+  private def ancestors(f: FileObject): List[FileObject] = {
+    val parent = f.getParent
     if (parent == null) Nil
     else parent :: ancestors(parent)
   }
@@ -84,23 +105,36 @@ class ClassfileWatcher(
   // calling reset() a lot of times. We should probably debounce it, but
   // it seems to happen so quickly that no damage is done.
   private def reset(): Unit = {
+    // When this triggers we tend to see it multiple times because
+    // we're watching the various depths within the project.
     log.info("Setting up new file watchers")
-    // must remove then add to avoid leaks
 
+    val root = vfile(config.root)
+
+    // must remove then add to avoid leaks
     for {
       d <- config.targetClasspath
-      _ = fm.removeFile(d)
-      _ = fm.addFile(d)
-      ancestor <- ancestors(d)
-      if config.root.contains(ancestor)
+      dir = vfile(d)
+      _ = fm.removeFile(dir)
+      _ = fm.addFile(dir)
+      ancestor <- ancestors(dir)
+      if ancestor.getName isAncestor root.getName
       _ = workaround.removeFile(ancestor)
       _ = workaround.addFile(ancestor)
-    } workaround.removeFile(config.root)
+    } {
+      // side effects in the for comprehension
+    }
 
-    workaround.addFile(config.root)
+    workaround.removeFile(root)
+    workaround.addFile(root)
   }
 
   reset()
+
+  def shutdown(): Unit = {
+    fm.stop()
+    workaround.stop()
+  }
 
 }
 
@@ -126,6 +160,10 @@ class SourceWatcher(
   fm.start()
 
   config.modules.values.foreach { m =>
-    m.sourceRoots foreach { r => fm.addFile(r) }
+    m.sourceRoots foreach { r => fm.addFile(vfile(r)) }
+  }
+
+  def shutdown(): Unit = {
+    fm.stop()
   }
 }
