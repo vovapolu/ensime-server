@@ -149,7 +149,8 @@ class SemanticHighlighting(val global: RichPresentationCompiler) extends Compile
 
   def symbolDesignationsInRegion(
     p: RangePosition,
-    requestedTypes: Set[SourceSymbol]): SymbolDesignations = {
+    requestedTypes: Set[SourceSymbol]
+  ): SymbolDesignations = {
     val typed = new Response[global.Tree]
     global.askLoadedTyped(p.source, typed)
     typed.get.left.toOption match {

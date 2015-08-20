@@ -98,7 +98,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
       Helpers.withPosInCompiledSource(
         "package com.example",
         "object A { def aMethod(a: Int) = a }",
-        "object B { val x = A.@@ ") { (p, cc) =>
+        "object B { val x = A.@@ "
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.length > 1)
           assert(result.completions.head.name == "aMethod")
@@ -109,7 +110,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
       Helpers.withPosInCompiledSource(
         "package com.example",
         "object A { def aMethod(a: Int) = a }",
-        "object B { val x = A.aMeth@@ }") { (p, cc) =>
+        "object B { val x = A.aMeth@@ }"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.length == 1)
           assert(result.completions.head.name == "aMethod")
@@ -120,7 +122,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
       Helpers.withPosInCompiledSource(
         "package com.example",
         "object Abc { def aMethod(a: Int) = a }",
-        "object B { val x = Ab@@ }") { (p, cc) =>
+        "object B { val x = Ab@@ }"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.length > 1)
           assert(result.completions.head.name == "Abc")
@@ -131,7 +134,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
       Helpers.withPosInCompiledSource(
         "package com.example",
         "object Abc { def aMethod(a: Int) = a }",
-        "object B { val x = Abc aM@@ }") { (p, cc) =>
+        "object B { val x = Abc aM@@ }"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.head.name == "aMethod")
         }
@@ -141,7 +145,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
       Helpers.withPosInCompiledSource(
         "package com.example",
         "object Abc { def aMethod(a: Int) = a }",
-        "object B { val x = Abc @@ }") { (p, cc) =>
+        "object B { val x = Abc @@ }"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.head.name == "aMethod")
         }
@@ -150,7 +155,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
     it("can complete multi-character infix operator") {
       Helpers.withPosInCompiledSource(
         "package com.example",
-        "object B { val l = Nil; val ll = l +@@ }") { (p, cc) =>
+        "object B { val l = Nil; val ll = l +@@ }"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.exists(_.name == "++"))
         }
@@ -160,7 +166,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
     ignore("can complete top level import") {
       Helpers.withPosInCompiledSource(
         "package com.example",
-        "import ja@@") { (p, cc) =>
+        "import ja@@"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.exists(_.name == "java"))
         }
@@ -170,7 +177,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
     ignore("can complete sub-import") {
       Helpers.withPosInCompiledSource(
         "package com.example",
-        "import java.ut@@") { (p, cc) =>
+        "import java.ut@@"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.exists(_.name == "util"))
         }
@@ -179,7 +187,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
     it("can complete multi-import") {
       Helpers.withPosInCompiledSource(
         "package com.example",
-        "import java.util.{ V@@ }") { (p, cc) =>
+        "import java.util.{ V@@ }"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.exists(_.name == "Vector"))
         }
@@ -189,7 +198,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
       Helpers.withPosInCompiledSource(
         "package com.example",
         "import java.util.Vector",
-        "object A { def main { new V@@ } }") { (p, cc) =>
+        "object A { def main { new V@@ } }"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.exists(m => m.name == "Vector" && m.isCallable))
         }
@@ -198,7 +208,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
     it("can complete symbol in logical op") {
       Helpers.withPosInCompiledSource(
         "package com.example",
-        "object A { val apple = true; true || app@@ }") { (p, cc) =>
+        "object A { val apple = true; true || app@@ }"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.exists(_.name == "apple"))
         }
@@ -207,7 +218,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
     it("can complete infix method of Set.") {
       Helpers.withPosInCompiledSource(
         "package com.example",
-        "object A { val t = Set[String](\"a\", \"b\"); t @@ }") { (p, cc) =>
+        "object A { val t = Set[String](\"a\", \"b\"); t @@ }"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.exists(_.name == "seq"))
           assert(result.completions.exists(_.name == "|"))
@@ -220,7 +232,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
       Helpers.withPosInCompiledSource(
         "package com.example",
         "object Abc { def aMethod(a: Int) = a }",
-        "object B { val x = s\"hello there, ${Abc.aMe@@}\"}") { (p, cc) =>
+        "object B { val x = s\"hello there, ${Abc.aMe@@}\"}"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.head.name == "aMethod")
         }
@@ -230,7 +243,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
       Helpers.withPosInCompiledSource(
         "package com.example",
         "object Abc { def aMethod(a: Int) = a }",
-        "object B { val x = \"hello there Ab@@\"}") { (p, cc) =>
+        "object B { val x = \"hello there Ab@@\"}"
+      ) { (p, cc) =>
           val result = cc.completionsAt(p, 10, caseSens = false)
           assert(result.completions.isEmpty)
         }
@@ -243,7 +257,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
         "def banana(p: List[String]): List[String] = p",
         "def pineapple: List[String] = List(\"spiky\")",
         "}",
-        "object Main { def main { val my@@A = new A() }}") { (p, cc) =>
+        "object Main { def main { val my@@A = new A() }}"
+      ) { (p, cc) =>
           val info = cc.askInspectTypeAt(p).get
           val sup = info.supers.find(sup => sup.tpe.name == "A").get;
           {
@@ -269,7 +284,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
       Helpers.withPosInCompiledSource(
         "package com.example",
         "trait bidon { }",
-        "case class pi@@po extends bidon { }") { (p, cc) =>
+        "case class pi@@po extends bidon { }"
+      ) { (p, cc) =>
           val info = cc.askInspectTypeAt(p)
           val supers = info.map(_.supers).getOrElse(List())
           val supersNames = supers.map(_.tpe.name).toList
@@ -342,7 +358,8 @@ class RichPresentationCompilerSpec extends FunSpec with Matchers with SLF4JLoggi
         Helpers.compileScala(
           List(defsFile.path),
           (dir / "target" / "classes").getPath,
-          cc.settings.classpath.value)
+          cc.settings.classpath.value
+        )
 
         cc.search.refreshResolver()
         Await.result(cc.search.refresh(), 180.seconds)

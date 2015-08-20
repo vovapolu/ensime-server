@@ -28,7 +28,8 @@ import pimpathon.file._
 object Helpers {
 
   def withAnalyzer(
-    action: (File, TestActorRef[Analyzer]) => Any)(implicit cfg: (File) => EnsimeConfig = { dir => basicConfig(dir, jars = false) }) =
+    action: (File, TestActorRef[Analyzer]) => Any
+  )(implicit cfg: (File) => EnsimeConfig = { dir => basicConfig(dir, jars = false) }) =
     withTempDirectory { tmpRaw =>
       val tmp = tmpRaw.canon
       require(tmp.isDirectory)

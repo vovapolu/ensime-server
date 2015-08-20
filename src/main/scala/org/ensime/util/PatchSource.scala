@@ -9,13 +9,15 @@ import org.ensime.model.PatchReplace
 object PatchSource {
 
   def applyOperations(
-    s: SourceFile, ops: List[PatchOp]): SourceFile = {
+    s: SourceFile, ops: List[PatchOp]
+  ): SourceFile = {
     val result = applyOperations(s.content, ops)
     new BatchSourceFile(s.file, result)
   }
 
   def applyOperations(
-    input: String, ops: List[PatchOp]): String = {
+    input: String, ops: List[PatchOp]
+  ): String = {
     val chars = new Array[Char](input.length)
     input.getChars(0, input.length, chars, 0)
     val result = applyOperations(chars, ops)
@@ -23,7 +25,8 @@ object PatchSource {
   }
 
   def applyOperations(
-    input: Array[Char], ops: List[PatchOp]): Array[Char] = {
+    input: Array[Char], ops: List[PatchOp]
+  ): Array[Char] = {
     val newLen = input.length + netLengthChange(ops)
     val result = new Array[Char](newLen)
     var offset = 0

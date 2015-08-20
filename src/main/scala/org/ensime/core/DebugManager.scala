@@ -44,7 +44,8 @@ case class DebugVmError(code: Int, details: String) extends DebugVmStatus
 class DebugManager(
     project: ActorRef,
     indexer: ActorRef,
-    config: EnsimeConfig) extends Actor with ActorLogging {
+    config: EnsimeConfig
+) extends Actor with ActorLogging {
 
   def ignoreErr[T](action: => T, orElse: => T): T = {
     try { action } catch { case e: Exception => orElse }
@@ -248,7 +249,8 @@ class DebugManager(
               e.exception.uniqueID(),
               e.thread().uniqueID(),
               e.thread().name,
-              if (e.catchLocation() != null) locToPos(e.catchLocation()) else None))
+              if (e.catchLocation() != null) locToPos(e.catchLocation()) else None
+            ))
           case e: ThreadDeathEvent =>
             project ! AsyncEvent(DebugThreadDeathEvent(e.thread().uniqueID()))
           case e: ThreadStartEvent =>
@@ -345,27 +347,33 @@ class DebugManager(
             case DebugNextReq(threadId: Long) =>
               handleRPCWithVMAndThread(threadId) {
                 (vm, thread) =>
-                  vm.newStepRequest(thread,
+                  vm.newStepRequest(
+                    thread,
                     StepRequest.STEP_LINE,
-                    StepRequest.STEP_OVER)
+                    StepRequest.STEP_OVER
+                  )
                   sender ! true
               }
 
             case DebugStepReq(threadId: Long) =>
               handleRPCWithVMAndThread(threadId) {
                 (vm, thread) =>
-                  vm.newStepRequest(thread,
+                  vm.newStepRequest(
+                    thread,
                     StepRequest.STEP_LINE,
-                    StepRequest.STEP_INTO)
+                    StepRequest.STEP_INTO
+                  )
                   sender ! true
               }
 
             case DebugStepOutReq(threadId: Long) =>
               handleRPCWithVMAndThread(threadId) {
                 (vm, thread) =>
-                  vm.newStepRequest(thread,
+                  vm.newStepRequest(
+                    thread,
                     StepRequest.STEP_LINE,
-                    StepRequest.STEP_OUT)
+                    StepRequest.STEP_OUT
+                  )
                   sender ! true
               }
 
@@ -490,8 +498,10 @@ class DebugManager(
     private val process = vm.process()
     private val monitor = mode match {
       case VmAttach(_, _) => Nil
-      case VmStart(_) => List(new MonitorOutput(process.getErrorStream),
-        new MonitorOutput(process.getInputStream))
+      case VmStart(_) => List(
+        new MonitorOutput(process.getErrorStream),
+        new MonitorOutput(process.getInputStream)
+      )
     }
     private val savedObjects = new mutable.HashMap[Long, ObjectReference]()
 
@@ -529,7 +539,8 @@ class DebugManager(
       val request = erm.createStepRequest(
         thread,
         stride,
-        depth)
+        depth
+      )
       request.addCountFilter(1)
       request.enable()
       vm.resume()
@@ -657,7 +668,8 @@ class DebugManager(
 
     private def makeFields(
       tpeIn: ReferenceType,
-      obj: ObjectReference): List[DebugClassField] = {
+      obj: ObjectReference
+    ): List[DebugClassField] = {
       tpeIn match {
         case tpeIn: ClassType =>
           var fields = List[DebugClassField]()
@@ -670,7 +682,8 @@ class DebugManager(
               DebugClassField(
                 i, f.name(),
                 f.typeName(),
-                valueSummary(value))
+                valueSummary(value)
+              )
             }.toList ++ fields
             tpe = tpe.superclass
           }
@@ -701,7 +714,8 @@ class DebugManager(
         valueSummary(value),
         makeFields(value.referenceType(), value),
         value.referenceType().name(),
-        value.uniqueID())
+        value.uniqueID()
+      )
     }
 
     private def makeDebugStr(value: StringReference): DebugStringInstance = {
@@ -709,7 +723,8 @@ class DebugManager(
         valueSummary(value),
         makeFields(value.referenceType(), value),
         value.referenceType().name(),
-        value.uniqueID())
+        value.uniqueID()
+      )
     }
 
     private def makeDebugArr(value: ArrayReference): DebugArrayInstance = {
@@ -717,12 +732,14 @@ class DebugManager(
         value.length,
         value.referenceType().name,
         value.referenceType().asInstanceOf[ArrayType].componentTypeName(),
-        value.uniqueID)
+        value.uniqueID
+      )
     }
 
     private def makeDebugPrim(value: PrimitiveValue): DebugPrimitiveValue = DebugPrimitiveValue(
       valueSummary(value),
-      value.`type`().name())
+      value.`type`().name()
+    )
 
     private def makeDebugNull(): DebugNullValue = DebugNullValue("Null")
 
@@ -749,7 +766,8 @@ class DebugManager(
         }).orElse(
           fieldByName(objRef, name).flatMap { f =>
             Some(DebugObjectField(objRef.uniqueID, f.name))
-          })
+          }
+        )
       }
     }
 
@@ -836,7 +854,8 @@ class DebugManager(
     }
 
     private def valueForStackVar(
-      thread: ThreadReference, frame: Int, offset: Int): Option[Value] = {
+      thread: ThreadReference, frame: Int, offset: Int
+    ): Option[Value] = {
       if (thread.frameCount > frame &&
         thread.frame(frame).visibleVariables.length > offset) {
         val stackFrame = thread.frame(frame)
@@ -879,8 +898,11 @@ class DebugManager(
       val pcLocation = locToPos(frame.location).getOrElse(
         LineSourcePosition(
           CanonFile(
-            frame.location.sourcePath()),
-          frame.location.lineNumber))
+            frame.location.sourcePath()
+          ),
+          frame.location.lineNumber
+        )
+      )
       val thisObjId = ignoreErr(remember(frame.thisObject()).uniqueID, -1L)
       DebugStackFrame(index, locals, numArgs, className, methodName, pcLocation, thisObjId)
     }

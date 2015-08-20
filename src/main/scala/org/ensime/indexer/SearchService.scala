@@ -23,7 +23,8 @@ import scala.concurrent.backport.ExecutionContext.Implicits.global
  */
 class SearchService(
   config: EnsimeConfig,
-  resolver: SourceResolver) extends ClassfileIndexer
+  resolver: SourceResolver
+) extends ClassfileIndexer
     with ClassfileListener
     with SLF4JLogging {
 

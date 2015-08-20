@@ -57,7 +57,8 @@ case object ClientReadyEvent
 
 class Project(
     val config: EnsimeConfig,
-    actorSystem: ActorSystem) extends ProjectEnsimeApiImpl {
+    actorSystem: ActorSystem
+) extends ProjectEnsimeApiImpl {
   val log = LoggerFactory.getLogger(this.getClass)
 
   protected val actor = actorSystem.actorOf(Props(new ProjectActor()), "project")
@@ -88,7 +89,8 @@ class Project(
   }
 
   protected val indexer: ActorRef = actorSystem.actorOf(Props(
-    new Indexer(config, search, this)), "indexer")
+    new Indexer(config, search, this)
+  ), "indexer")
 
   protected var debugger: Option[ActorRef] = None
 
@@ -183,7 +185,8 @@ class Project(
 
   protected def startCompiler(): Unit = {
     val newAnalyzer = actorSystem.actorOf(Props(
-      new Analyzer(actor, indexer, search, config)), "analyzer")
+      new Analyzer(actor, indexer, search, config)
+    ), "analyzer")
     analyzer = Some(newAnalyzer)
   }
 

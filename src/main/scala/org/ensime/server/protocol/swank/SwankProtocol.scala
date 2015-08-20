@@ -13,9 +13,11 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.backport.Future
 
-class SwankProtocol(actorSystem: ActorSystem,
+class SwankProtocol(
+    actorSystem: ActorSystem,
     val peer: ActorRef,
-    val rpcTarget: EnsimeApi) extends Protocol with SwankWireFormatCodec {
+    val rpcTarget: EnsimeApi
+) extends Protocol with SwankWireFormatCodec {
 
   import org.ensime.server.protocol.swank.SwankProtocol._
 

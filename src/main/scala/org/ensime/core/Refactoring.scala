@@ -34,13 +34,17 @@ trait RefactorProcedure {
   val refactorType: scala.Symbol
 }
 
-case class RefactorEffect(procedureId: Int,
+case class RefactorEffect(
+  procedureId: Int,
   refactorType: scala.Symbol,
-  changes: Seq[FileEdit]) extends RefactorProcedure
+  changes: Seq[FileEdit]
+) extends RefactorProcedure
 
-case class RefactorResult(procedureId: Int,
+case class RefactorResult(
+  procedureId: Int,
   refactorType: scala.Symbol,
-  touched: Seq[File]) extends RefactorProcedure
+  touched: Seq[File]
+) extends RefactorProcedure
 
 sealed abstract class RefactorDesc(val refactorType: Symbol)
 
@@ -66,7 +70,8 @@ abstract class RefactoringEnvironment(file: String, start: Int, end: Int) {
   def performRefactoring(
     procId: Int,
     tpe: scala.Symbol,
-    parameters: refactoring.RefactoringParameters): Either[RefactorFailure, RefactorEffect] = {
+    parameters: refactoring.RefactoringParameters
+  ): Either[RefactorFailure, RefactorEffect] = {
 
     val af = AbstractFile.getFile(file)
 
@@ -114,7 +119,8 @@ trait RefactoringHandler { self: Analyzer =>
       case Some(effect: RefactorEffect) =>
         project ! AddUndo(
           "Refactoring of type: " + req.refactorType.toString,
-          FileUtils.inverseEdits(effect.changes, charset))
+          FileUtils.inverseEdits(effect.changes, charset)
+        )
         val result = scalaCompiler.askExecRefactor(procedureId, req.refactorType, effect)
         sender ! result
       case None =>
@@ -193,16 +199,19 @@ trait RefactoringControl { self: RichCompilerControl with RefactoringImpl =>
 
   def askPrepareRefactor(
     procId: Int,
-    refactor: RefactorDesc): Either[RefactorFailure, RefactorEffect] = {
+    refactor: RefactorDesc
+  ): Either[RefactorFailure, RefactorEffect] = {
     askOption(prepareRefactor(procId, refactor)).getOrElse(Left(RefactorFailure(procId, "Refactor call failed")))
   }
 
   def askExecRefactor(
     procId: Int,
     tpe: scala.Symbol,
-    effect: RefactorEffect): Either[RefactorFailure, RefactorResult] = {
+    effect: RefactorEffect
+  ): Either[RefactorFailure, RefactorResult] = {
     askOption(execRefactor(procId, tpe, effect)).getOrElse(
-      Left(RefactorFailure(procId, "Refactor exec call failed."))) match {
+      Left(RefactorFailure(procId, "Refactor exec call failed."))
+    ) match {
         case Right(result) =>
           // Reload all files touched by refactoring, so subsequent refactorings
           // will see consistent state.
@@ -322,7 +331,8 @@ trait RefactoringImpl { self: RichPresentationCompiler =>
   protected def execRefactor(
     procId: Int,
     refactorType: scala.Symbol,
-    effect: RefactorEffect): Either[RefactorFailure, RefactorResult] = {
+    effect: RefactorEffect
+  ): Either[RefactorFailure, RefactorResult] = {
     logger.info("Applying changes: " + effect.changes)
     writeChanges(effect.changes, charset) match {
       case Right(touchedFiles) =>

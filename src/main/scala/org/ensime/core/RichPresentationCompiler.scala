@@ -142,7 +142,8 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
   // force the full path of Set because nsc appears to have a conflicting Set....
   def askSymbolDesignationsInRegion(p: RangePosition, tpes: collection.immutable.Set[SourceSymbol]): SymbolDesignations =
     askOption(
-      new SemanticHighlighting(this).symbolDesignationsInRegion(p, tpes)).getOrElse(SymbolDesignations("", List.empty))
+      new SemanticHighlighting(this).symbolDesignationsInRegion(p, tpes)
+    ).getOrElse(SymbolDesignations("", List.empty))
 
   def askClearTypeCache(): Unit = clearTypeCache()
 
@@ -161,7 +162,8 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
       new BatchSourceFile(AbstractFile.getFile(f.getCanonicalPath), contents)
   }
   def findSourceFile(path: String): Option[SourceFile] = allSources.find(
-    _.file.path == path)
+    _.file.path == path
+  )
 
   // TODO: friends should not give friends other people's types (Position)
   def askLinkPos(sym: Symbol, path: AbstractFile): Option[Position] =
@@ -174,7 +176,8 @@ class RichPresentationCompiler(
   val richReporter: Reporter,
   var parent: ActorRef,
   var indexer: ActorRef,
-  val search: SearchService) extends Global(origSettings, richReporter)
+  val search: SearchService
+) extends Global(origSettings, richReporter)
     with ModelBuilders with RichCompilerControl
     with RefactoringImpl with Completion with Helpers {
 
@@ -236,7 +239,8 @@ class RichPresentationCompiler(
           sym.tpe,
           sym.isPublic,
           inherited,
-          viaView)
+          viaView
+        )
         members(sym) = m
       } catch {
         case e: Throwable =>
@@ -280,7 +284,8 @@ class RichPresentationCompiler(
     new TypeInspectInfo(
       TypeInfo(tpe, PosNeededAvail),
       companionTypeOf(tpe).map(cacheType),
-      prepareSortedInterfaceInfo(typePublicMembers(tpe.asInstanceOf[Type]), parents))
+      prepareSortedInterfaceInfo(typePublicMembers(tpe.asInstanceOf[Type]), parents)
+    )
   }
 
   protected def inspectTypeAt(p: Position): Option[TypeInspectInfo] = {
@@ -406,7 +411,8 @@ class RichPresentationCompiler(
               case p: RangePosition => p
               case p =>
                 new RangePosition(
-                  p.source, p.point, p.point, p.point)
+                  p.source, p.point, p.point, p.point
+                )
             }
           }
         }

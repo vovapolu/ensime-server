@@ -20,7 +20,8 @@ case class EnsimeConfig(
     subprojects: List[EnsimeModule],
     `formatting-prefs`: FormattingPreferences,
     `source-mode`: Boolean,
-    `debug-args`: List[String]) extends SLF4JLogging {
+    `debug-args`: List[String]
+) extends SLF4JLogging {
   (`root-dir` :: `cache-dir` :: referenceSourceJars).foreach { f =>
     require(f.exists, "" + f + " is required but does not exist")
   }
@@ -80,7 +81,8 @@ case class EnsimeModule(
     `runtime-deps`: List[File],
     `test-deps`: List[File],
     `source-roots`: List[File],
-    `reference-source-roots`: List[File]) extends SLF4JLogging {
+    `reference-source-roots`: List[File]
+) extends SLF4JLogging {
   // only check the files, not the directories, see below
   (`compile-deps` ::: `runtime-deps` :::
     `test-deps` ::: `reference-source-roots`).foreach { f =>

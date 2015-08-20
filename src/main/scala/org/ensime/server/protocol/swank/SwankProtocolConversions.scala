@@ -44,26 +44,30 @@ object SwankProtocolConversions {
   def toWF(obj: DebugObjectReference): SExp = {
     SExp(
       key(":type"), 'reference,
-      key(":object-id"), obj.objectId.toString)
+      key(":object-id"), obj.objectId.toString
+    )
   }
   def toWF(obj: DebugArrayElement): SExp = {
     SExp(
       key(":type"), 'element,
       key(":object-id"), obj.objectId.toString,
-      key(":index"), obj.index)
+      key(":index"), obj.index
+    )
   }
   def toWF(obj: DebugObjectField): SExp = {
     SExp(
       key(":type"), 'field,
       key(":object-id"), obj.objectId.toString,
-      key(":field"), obj.name)
+      key(":field"), obj.name
+    )
   }
   def toWF(obj: DebugStackSlot): SExp = {
     SExp(
       key(":type"), 'slot,
       key(":thread-id"), obj.threadId.toString,
       key(":frame"), obj.frame,
-      key(":offset"), obj.offset)
+      key(":offset"), obj.offset
+    )
   }
 
   def toWF(obj: DebugValue): SExp = {
@@ -79,14 +83,16 @@ object SwankProtocolConversions {
   def toWF(obj: DebugNullValue): SExp = {
     SExp(
       key(":val-type"), 'null,
-      key(":type-name"), obj.typeName)
+      key(":type-name"), obj.typeName
+    )
   }
 
   def toWF(obj: DebugPrimitiveValue): SExp = {
     SExp(
       key(":val-type"), 'prim,
       key(":summary"), obj.summary,
-      key(":type-name"), obj.typeName)
+      key(":type-name"), obj.typeName
+    )
   }
 
   def toWF(obj: DebugClassField): SExp = {
@@ -94,7 +100,8 @@ object SwankProtocolConversions {
       key(":index"), obj.index,
       key(":name"), obj.name,
       key(":summary"), obj.summary,
-      key(":type-name"), obj.typeName)
+      key(":type-name"), obj.typeName
+    )
   }
 
   def toWF(obj: DebugObjectInstance): SExp = {
@@ -102,7 +109,8 @@ object SwankProtocolConversions {
       key(":val-type"), 'obj,
       key(":fields"), SExpList(obj.fields.map(toWF)),
       key(":type-name"), obj.typeName,
-      key(":object-id"), obj.objectId.toString)
+      key(":object-id"), obj.objectId.toString
+    )
   }
 
   def toWF(obj: DebugStringInstance): SExp = {
@@ -111,7 +119,8 @@ object SwankProtocolConversions {
       key(":summary"), obj.summary,
       key(":fields"), SExpList(obj.fields.map(toWF)),
       key(":type-name"), obj.typeName,
-      key(":object-id"), obj.objectId.toString)
+      key(":object-id"), obj.objectId.toString
+    )
   }
 
   def toWF(obj: DebugArrayInstance): SExp = {
@@ -120,7 +129,8 @@ object SwankProtocolConversions {
       key(":length"), obj.length,
       key(":type-name"), obj.typeName,
       key(":element-type-name"), obj.elementTypeName,
-      key(":object-id"), obj.objectId.toString)
+      key(":object-id"), obj.objectId.toString
+    )
   }
 
   def toWF(obj: DebugStackLocal): SExp = {
@@ -128,7 +138,8 @@ object SwankProtocolConversions {
       key(":index"), obj.index,
       key(":name"), obj.name,
       key(":summary"), obj.summary,
-      key(":type-name"), obj.typeName)
+      key(":type-name"), obj.typeName
+    )
   }
 
   def toWF(obj: DebugStackFrame): SExp = {
@@ -139,24 +150,28 @@ object SwankProtocolConversions {
       key(":class-name"), obj.className,
       key(":method-name"), obj.methodName,
       key(":pc-location"), toWF(obj.pcLocation),
-      key(":this-object-id"), obj.thisObjectId.toString)
+      key(":this-object-id"), obj.thisObjectId.toString
+    )
   }
 
   def toWF(obj: DebugBacktrace): SExp = {
     SExp(
       key(":frames"), SExpList(obj.frames.map(toWF)),
       key(":thread-id"), obj.threadId.toString,
-      key(":thread-name"), obj.threadName)
+      key(":thread-name"), obj.threadName
+    )
   }
 
   def toWF(pos: SourcePosition): SExp = pos match {
     case e: EmptySourcePosition => TruthAtom
     case l: LineSourcePosition => SExp(
       key(":file"), l.file.getAbsolutePath,
-      key(":line"), l.line)
+      key(":line"), l.line
+    )
     case o: OffsetSourcePosition => SExp(
       key(":file"), o.file.getAbsolutePath,
-      key(":offset"), o.offset)
+      key(":offset"), o.offset
+    )
   }
 
   def toWF(info: ConnectionInfo): SExp = {
@@ -164,7 +179,8 @@ object SwankProtocolConversions {
       key(":pid"), 'nil,
       key(":implementation"),
       SExp(key(":name"), info.serverName),
-      key(":version"), info.protocolVersion)
+      key(":version"), info.protocolVersion
+    )
   }
 
   def toWF(evt: EnsimeEvent): SExp = {
@@ -274,9 +290,11 @@ object SwankProtocolConversions {
        *   ))
        */
       case DebugOutputEvent(out: String) =>
-        SExp(key(":debug-event"),
+        SExp(
+          key(":debug-event"),
           SExp(key(":type"), 'output,
-            key(":body"), out))
+            key(":body"), out)
+        )
 
       /**
        * Doc Event:
@@ -294,12 +312,14 @@ object SwankProtocolConversions {
        *   ))
        */
       case DebugStepEvent(threadId, threadName, pos) =>
-        SExp(key(":debug-event"),
+        SExp(
+          key(":debug-event"),
           SExp(key(":type"), 'step,
             key(":thread-id"), threadId.toString,
             key(":thread-name"), threadName,
             key(":file"), pos.file.getAbsolutePath,
-            key(":line"), pos.line))
+            key(":line"), pos.line)
+        )
 
       /**
        * Doc Event:
@@ -316,12 +336,14 @@ object SwankProtocolConversions {
        *   ))
        */
       case DebugBreakEvent(threadId, threadName, pos) =>
-        SExp(key(":debug-event"),
+        SExp(
+          key(":debug-event"),
           SExp(key(":type"), 'breakpoint,
             key(":thread-id"), threadId.toString,
             key(":thread-name"), threadName,
             key(":file"), pos.file.getAbsolutePath,
-            key(":line"), pos.line))
+            key(":line"), pos.line)
+        )
 
       /**
        * Doc Event:
@@ -334,8 +356,10 @@ object SwankProtocolConversions {
        *   ))
        */
       case DebugVMDeathEvent() =>
-        SExp(key(":debug-event"),
-          SExp(key(":type"), 'death))
+        SExp(
+          key(":debug-event"),
+          SExp(key(":type"), 'death)
+        )
 
       /**
        * Doc Event:
@@ -348,8 +372,10 @@ object SwankProtocolConversions {
        *   ))
        */
       case DebugVMStartEvent() =>
-        SExp(key(":debug-event"),
-          SExp(key(":type"), 'start))
+        SExp(
+          key(":debug-event"),
+          SExp(key(":type"), 'start)
+        )
 
       /**
        * Doc Event:
@@ -362,8 +388,10 @@ object SwankProtocolConversions {
        *   ))
        */
       case DebugVMDisconnectEvent() =>
-        SExp(key(":debug-event"),
-          SExp(key(":type"), 'disconnect))
+        SExp(
+          key(":debug-event"),
+          SExp(key(":type"), 'disconnect)
+        )
 
       /**
        * Doc Event:
@@ -384,7 +412,8 @@ object SwankProtocolConversions {
        *   ))
        */
       case DebugExceptionEvent(excId, threadId, threadName, maybePos) =>
-        SExp(key(":debug-event"),
+        SExp(
+          key(":debug-event"),
           SExp(key(":type"), 'exception,
             key(":exception"), excId.toString,
             key(":thread-id"), threadId.toString,
@@ -394,7 +423,8 @@ object SwankProtocolConversions {
             }.getOrElse('nil),
             key(":line"), maybePos.map { p =>
               IntAtom(p.line)
-            }.getOrElse('nil)))
+            }.getOrElse('nil))
+        )
 
       /**
        * Doc Event:
@@ -408,9 +438,11 @@ object SwankProtocolConversions {
        *   ))
        */
       case DebugThreadStartEvent(threadId: Long) =>
-        SExp(key(":debug-event"),
+        SExp(
+          key(":debug-event"),
           SExp(key(":type"), 'threadStart,
-            key(":thread-id"), threadId.toString))
+            key(":thread-id"), threadId.toString)
+        )
 
       /**
        * Doc Event:
@@ -424,22 +456,26 @@ object SwankProtocolConversions {
        *   ))
        */
       case DebugThreadDeathEvent(threadId: Long) =>
-        SExp(key(":debug-event"),
+        SExp(
+          key(":debug-event"),
           SExp(key(":type"), 'threadDeath,
-            key(":thread-id"), threadId.toString))
+            key(":thread-id"), threadId.toString)
+        )
     }
   }
 
   def toWF(bp: Breakpoint): SExp = {
     SExp(
       key(":file"), bp.pos.file.getAbsolutePath,
-      key(":line"), bp.pos.line)
+      key(":line"), bp.pos.line
+    )
   }
 
   def toWF(bps: BreakpointList): SExp = {
     SExp(
       key(":active"), SExpList(bps.active.map { toWF }),
-      key(":pending"), SExpList(bps.pending.map { toWF }))
+      key(":pending"), SExpList(bps.pending.map { toWF })
+    )
   }
 
   def toWF(config: EnsimeConfig): SExp = SExp(
@@ -478,7 +514,8 @@ object SwankProtocolConversions {
       key(":end"), note.end,
       key(":line"), note.line,
       key(":col"), note.col,
-      key(":file"), note.file)
+      key(":file"), note.file
+    )
   }
 
   def toWF(notelist: NoteList): SExp = {
@@ -487,7 +524,8 @@ object SwankProtocolConversions {
       key(":is-full"),
       toWF(isFull),
       key(":notes"),
-      SExpList(notes.map(toWF).toList))
+      SExpList(notes.map(toWF).toList)
+    )
   }
 
   def toWF(values: Iterable[WireFormat]): SExp = {
@@ -501,7 +539,8 @@ object SwankProtocolConversions {
           SExp(param._1, param._2)
         })
       }),
-      value.result)
+      value.result
+    )
   }
 
   def toWF(value: CompletionInfo): SExp = {
@@ -510,13 +549,15 @@ object SwankProtocolConversions {
       (":type-sig", toWF(value.tpeSig)),
       (":type-id", value.tpeId),
       (":is-callable", value.isCallable),
-      (":to-insert", value.toInsert.map(strToSExp).getOrElse('nil)))
+      (":to-insert", value.toInsert.map(strToSExp).getOrElse('nil))
+    )
   }
 
   def toWF(value: CompletionInfoList): SExp = {
     SExp.propList(
       (":prefix", value.prefix),
-      (":completions", SExpList(value.completions.map(toWF))))
+      (":completions", SExpList(value.completions.map(toWF)))
+    )
   }
 
   def toWF(value: PackageMemberInfoLight): SExp = {
@@ -531,14 +572,16 @@ object SwankProtocolConversions {
       // not entirely clear why "decl-pos" instead of "pos"
       (":decl-pos", value.declPos.map(toWF).getOrElse('nil)),
       (":is-callable", value.isCallable),
-      (":owner-type-id", value.ownerTypeId.map(intToSExp).getOrElse('nil)))
+      (":owner-type-id", value.ownerTypeId.map(intToSExp).getOrElse('nil))
+    )
   }
 
   def toWF(value: FileRange): SExp = {
     SExp.propList(
       (":file", value.file),
       (":start", value.start),
-      (":end", value.end))
+      (":end", value.end)
+    )
   }
 
   def toWF(value: NamedTypeMemberInfo): SExp = {
@@ -546,7 +589,8 @@ object SwankProtocolConversions {
       (":name", value.name),
       (":type", toWF(value.tpe)),
       (":pos", value.pos.map(toWF).getOrElse('nil)),
-      (":decl-as", value.declaredAs))
+      (":decl-as", value.declaredAs)
+    )
   }
 
   def toWF(value: EntityInfo): SExp = {
@@ -565,30 +609,36 @@ object SwankProtocolConversions {
           (":type-id", value.id),
           (":arrow-type", true),
           (":result-type", toWF(value.resultType)),
-          (":param-sections", SExp(value.paramSections.map(toWF))))
+          (":param-sections", SExp(value.paramSections.map(toWF)))
+        )
       case value: BasicTypeInfo =>
-        SExp.propList((":name", value.name),
+        SExp.propList(
+          (":name", value.name),
           (":type-id", value.id),
           (":full-name", value.fullName),
           (":decl-as", value.declaredAs),
           (":type-args", SExp(value.args.map(toWF))),
           (":members", SExp(value.members.map(toWF))),
           (":pos", value.pos.map(toWF).getOrElse('nil)),
-          (":outer-type-id", value.outerTypeId.map(intToSExp).getOrElse('nil)))
+          (":outer-type-id", value.outerTypeId.map(intToSExp).getOrElse('nil))
+        )
     }
   }
 
   def toWF(value: PackageInfo): SExp = {
-    SExp.propList((":name", value.name),
+    SExp.propList(
+      (":name", value.name),
       (":info-type", 'package),
       (":full-name", value.fullName),
-      (":members", SExpList(value.members.map(toWF).toList)))
+      (":members", SExpList(value.members.map(toWF).toList))
+    )
   }
 
   def toWF(value: CallCompletionInfo): SExp = {
     SExp.propList(
       (":result-type", toWF(value.resultType)),
-      (":param-sections", SExp(value.paramSections.map(toWF))))
+      (":param-sections", SExp(value.paramSections.map(toWF)))
+    )
   }
 
   def toWF(value: ParamSectionInfo): SExp = {
@@ -596,14 +646,16 @@ object SwankProtocolConversions {
       (":params", SExp(value.params.map {
         case (nm, tp) => SExp(nm, toWF(tp))
       })),
-      (":is-implicit", value.isImplicit))
+      (":is-implicit", value.isImplicit)
+    )
 
   }
 
   def toWF(value: InterfaceInfo): SExp = {
     SExp.propList(
       (":type", toWF(value.tpe)),
-      (":via-view", value.viaView.map(strToSExp).getOrElse('nil)))
+      (":via-view", value.viaView.map(strToSExp).getOrElse('nil))
+    )
   }
 
   def toWF(value: TypeInspectInfo): SExp = {
@@ -614,14 +666,16 @@ object SwankProtocolConversions {
         case Some(id) => id
         case None => 'nil
       }),
-      (":interfaces", SExp(value.supers.map(toWF))))
+      (":interfaces", SExp(value.supers.map(toWF)))
+    )
   }
 
   def toWF(value: RefactorFailure): SExp = {
     SExp.propList(
       (":procedure-id", value.procedureId),
       (":status", 'failure),
-      (":reason", value.message))
+      (":reason", value.message)
+    )
   }
 
   def toWF(value: RefactorEffect): SExp = {
@@ -629,7 +683,8 @@ object SwankProtocolConversions {
       (":procedure-id", value.procedureId),
       (":refactor-type", value.refactorType),
       (":status", 'success),
-      (":changes", SExpList(value.changes.map(changeToWF).toList)))
+      (":changes", SExpList(value.changes.map(changeToWF).toList))
+    )
   }
 
   def toWF(value: RefactorResult): SExp = {
@@ -637,7 +692,8 @@ object SwankProtocolConversions {
       (":procedure-id", value.procedureId),
       (":refactor-type", value.refactorType),
       (":status", 'success),
-      (":touched-files", SExpList(value.touched.map(f => strToSExp(f.getAbsolutePath)).toList)))
+      (":touched-files", SExpList(value.touched.map(f => strToSExp(f.getAbsolutePath)).toList))
+    )
   }
 
   def toWF(value: SymbolSearchResults): SExp = {
@@ -657,14 +713,16 @@ object SwankProtocolConversions {
           (":name", value.name),
           (":local-name", value.localName),
           (":decl-as", value.declaredAs),
-          (":pos", value.pos.map(toWF).getOrElse('nil)))
+          (":pos", value.pos.map(toWF).getOrElse('nil))
+        )
       case value: MethodSearchResult =>
         SExp.propList(
           (":name", value.name),
           (":local-name", value.localName),
           (":decl-as", value.declaredAs),
           (":pos", value.pos.map(toWF).getOrElse('nil)),
-          (":owner-name", value.owner))
+          (":owner-name", value.owner)
+        )
     }
   }
 
@@ -674,20 +732,23 @@ object SwankProtocolConversions {
       (":file", p.file),
       (":offset", p.offset),
       (":start", p.start),
-      (":end", p.end))
+      (":end", p.end)
+    )
   }
 
   def toWF(value: Undo): SExp = {
     SExp.propList(
       (":id", value.id),
       (":changes", SExpList(value.changes.map(changeToWF))),
-      (":summary", value.summary))
+      (":summary", value.summary)
+    )
   }
 
   def toWF(value: UndoResult): SExp = {
     SExp.propList(
       (":id", value.id),
-      (":touched-files", SExpList(value.touched.map(f => strToSExp(f.getAbsolutePath)).toList)))
+      (":touched-files", SExpList(value.touched.map(f => strToSExp(f.getAbsolutePath)).toList))
+    )
   }
 
   def toWF(value: SymbolDesignations): SExp = {
@@ -696,17 +757,20 @@ object SwankProtocolConversions {
       (":syms",
         SExpList(value.syms.map { s =>
           SExpList(List(SymbolAtom(sourceSymbolToSymbol(s.symType)), s.start, s.end))
-        })))
+        }))
+    )
   }
 
   def toWF(vmStatus: DebugVmStatus): SExp = {
     vmStatus match {
       case DebugVmSuccess => SExp(
-        key(":status"), "success")
+        key(":status"), "success"
+      )
       case DebugVmError(code, details) => SExp(
         key(":status"), "error",
         key(":error-code"), code,
-        key(":details"), details)
+        key(":details"), details
+      )
     }
   }
 
@@ -715,7 +779,8 @@ object SwankProtocolConversions {
       (":file", ch.file.getCanonicalPath),
       (":text", ch.text),
       (":from", ch.from),
-      (":to", ch.to))
+      (":to", ch.to)
+    )
   }
 
 }

@@ -163,8 +163,8 @@ object DatabaseService {
       source: Option[String], // VFS
       line: Option[Int],
       offset: Option[Int] = None // future features:
-      //    type: ??? --- better than descriptor/internal
-      ) {
+  //    type: ??? --- better than descriptor/internal
+  ) {
     // this is just as a helper until we can use more sensible
     // domain objects with slick
     def sourceFileObject = source.map(vfilename)

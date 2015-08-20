@@ -14,7 +14,8 @@ import pimpathon.any._
 class SearchServiceSpec extends FunSpec with Matchers with SLF4JLogging {
 
   def genProject(base: File): EnsimeConfig = {
-    val config = basicConfig(base,
+    val config = basicConfig(
+      base,
       sources = true, testSources = true,
       classes = true, testClasses = true
     )

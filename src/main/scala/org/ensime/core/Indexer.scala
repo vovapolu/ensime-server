@@ -12,7 +12,8 @@ import ProtocolConst._
 class Indexer(
     config: EnsimeConfig,
     index: SearchService,
-    project: Project) extends Actor with ActorLogging {
+    project: Project
+) extends Actor with ActorLogging {
 
   private def typeResult(hit: FqnSymbol) = TypeSearchResult(
     hit.fqn, hit.fqn.split("\\.").last, hit.declAs,

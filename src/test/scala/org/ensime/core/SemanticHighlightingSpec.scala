@@ -13,7 +13,8 @@ class SemanticHighlightingSpec extends FunSpec with Matchers {
     dir: File,
     cc: RichCompilerControl,
     contents: String,
-    tpes: Set[SourceSymbol] = SourceSymbol.allSymbols): List[(SourceSymbol, String)] = {
+    tpes: Set[SourceSymbol] = SourceSymbol.allSymbols
+  ): List[(SourceSymbol, String)] = {
 
     val file = Helpers.srcFile(dir, "abc.scala", Helpers.contents(contents))
     cc.askLoadedTyped(file)
@@ -146,7 +147,8 @@ class SemanticHighlightingSpec extends FunSpec with Matchers {
         )
 
         // TODO "c" should be a varField
-        assert(sds == List(
+        assert(
+          sds == List(
           // 2.9.2
           (ObjectSymbol, "C"),
           (ObjectSymbol, "A"),

@@ -51,7 +51,8 @@ object TestUtil {
     classes: Boolean = false,
     testClasses: Boolean = false,
     jars: Boolean = true,
-    compilerArgs: List[String] = List.empty): EnsimeConfig = {
+    compilerArgs: List[String] = List.empty
+  ): EnsimeConfig = {
     val base = tmp.canon
     require(base.isDirectory)
 

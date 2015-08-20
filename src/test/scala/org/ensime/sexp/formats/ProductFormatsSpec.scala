@@ -51,7 +51,8 @@ class ProductFormatsSpec extends FormatSpec
       assertFormat(wibble, SexpData(
         SexpSymbol(":thing") -> SexpString("wibble"),
         SexpSymbol(":thong") -> SexpNumber(13),
-        SexpSymbol(":bling") -> SexpList(SexpString("fork"))))
+        SexpSymbol(":bling") -> SexpList(SexpString("fork"))
+      ))
 
       val wobble = Wibble("wibble", 13, None)
 
@@ -59,7 +60,8 @@ class ProductFormatsSpec extends FormatSpec
       assertFormat(wobble, SexpData(
         SexpSymbol(":thing") -> SexpString("wibble"),
         SexpSymbol(":thong") -> SexpNumber(13),
-        SexpSymbol(":bling") -> SexpNil))
+        SexpSymbol(":bling") -> SexpNil
+      ))
 
       // but tolerate missing entries
       assert(SexpData(
