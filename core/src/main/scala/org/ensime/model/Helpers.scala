@@ -94,11 +94,11 @@ trait Helpers { self: Global =>
     def typeIndexerName(sym: Symbol): String = {
       val owner = sym.owner
       if (owner.isRoot || owner.isRootPackage) {
-        sym.nameString
+        sym.encodedName
       } else if (owner.hasPackageFlag) {
-        owner.fullName + "." + sym.nameString
+        owner.fullName + "." + sym.encodedName
       } else {
-        typeIndexerName(owner) + "$" + sym.nameString
+        typeIndexerName(owner) + "$" + sym.encodedName
       }
     }
 
@@ -107,7 +107,7 @@ trait Helpers { self: Global =>
     } else if (sym.isModule) {
       typeIndexerName(sym) + "$"
     } else {
-      symbolIndexerName(sym.owner) + "." + sym.nameString
+      symbolIndexerName(sym.owner) + "." + sym.encodedName
     }
   }
 

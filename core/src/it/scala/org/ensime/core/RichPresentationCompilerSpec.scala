@@ -76,6 +76,25 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
         }
     }
 
+    "find source declaration of standard operator" in withPresCompiler { (config, cc) =>
+      import ReallyRichPresentationCompilerFixture._
+
+      cc.search.refreshResolver()
+      Await.result(cc.search.refresh(), 180.seconds)
+
+      runForPositionInCompiledSource(config, cc,
+        "package com.example",
+        "object Bla { val x = 1 @0@+ 1 }") { (p, label, cc) =>
+          val sym = cc.askSymbolInfoAt(p).get
+          assert(sym.declPos.isDefined)
+          assert(sym.declPos.get match {
+            case OffsetSourcePosition(f, i) =>
+              f.path.contains("Int.scala") && i > 0
+            case _ => false
+          })
+        }
+    }
+
     "get symbol info by name" in withPresCompiler { (config, cc) =>
       def verify(
         fqn: String, member: Option[String], sig: Option[String], expectedLocalName: String,
