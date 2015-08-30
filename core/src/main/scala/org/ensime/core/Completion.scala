@@ -56,7 +56,8 @@ trait CompletionControl {
     val (src, p, patched) = if (defaultPrefix.isEmpty) {
       // Add a fake prefix if none was provided by the user. Otherwise the
       // compiler will give us a weird tree.
-      val src = spliceSource(inputP.source, inputP.end, inputP.end, "a")
+      val src = spliceSource(inputP.source, inputP.endOrCursor, inputP.endOrCursor, "a")
+      //(src, inputP.withSourceShifted(src, 1), true)
       (src, inputP.withSource(src).withShift(1), true)
     } else {
       (inputP.source, inputP, false)

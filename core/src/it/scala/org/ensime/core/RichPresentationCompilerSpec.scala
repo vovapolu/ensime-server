@@ -15,6 +15,7 @@ import scala.concurrent.duration._
 import scala.reflect.internal.util.{ BatchSourceFile, OffsetPosition }
 import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.ConsoleReporter
+import scala.util.Properties
 
 class RichPresentationCompilerThatNeedsJavaLibsSpec extends WordSpec with Matchers
     with IsolatedRichPresentationCompilerFixture
@@ -441,6 +442,8 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
 }
 
 trait RichPresentationCompilerTestUtils {
+  val scala210 = Properties.versionNumberString.startsWith("2.10")
+
   def compileScala(paths: List[String], target: File, classPath: String): Unit = {
     val settings = new Settings
     settings.outputDirs.setSingleOutput(target.getAbsolutePath)

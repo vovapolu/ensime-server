@@ -28,7 +28,7 @@ class ClassfileDepicklerSpec extends FunSpec with Matchers with BeforeAndAfterAl
     }
 
     it("don't expect anything in closures") {
-      assert(new ClassfileDepickler(vfs.vres("scala/util/matching/Regex$Groups$$anonfun$unapplySeq$4.class")).scalasig === None)
+      assert(new ClassfileDepickler(vfs.vres("scala/io/Source$$anonfun$1.class")).scalasig === None)
     }
 
     it("can find type aliases") {

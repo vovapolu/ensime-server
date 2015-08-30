@@ -95,6 +95,10 @@ class BasicWorkflow extends WordSpec with Matchers
               case SymbolSearchResults(List(
                 TypeSearchResult("scala.util.Random", "Random", DeclaredAs.Class, Some(_)),
                 TypeSearchResult("scala.util.Random$", "Random$", DeclaredAs.Class, Some(_)))) =>
+              case SymbolSearchResults(List(
+                TypeSearchResult("java.util.Random", "Random", DeclaredAs.Class, Some(_)),
+                TypeSearchResult("scala.util.Random", "Random", DeclaredAs.Class, Some(_)))) =>
+              // this is a pretty ropey test at the best of times
             }
 
             //-----------------------------------------------------------------------------------------------

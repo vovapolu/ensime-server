@@ -18,16 +18,24 @@ object EnsimeBuild extends Build with JdkResolver {
   // common
   lazy val basicSettings = Seq(
     organization := "org.ensime",
-    scalaVersion := "2.11.7",
+    //scalaVersion := "2.11.7",
+    scalaVersion := "2.10.5",
     version := "0.9.10-SNAPSHOT",
 
     dependencyOverrides ++= Set(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scala-lang.modules" %% "scala-xml" % "1.0.4",
       "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
+      "org.scalamacros" %% "quasiquotes" % "2.0.1",
       "org.slf4j" % "slf4j-api" % "1.7.12",
       "com.google.guava" % "guava" % "18.0"
-    )
+    ),
+
+    libraryDependencies ++= {
+      if (scalaVersion.value.startsWith("2.10."))
+        Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
+      else Nil
+    }
   )
   val isEmacs = sys.env.get("TERM") == Some("dumb")
 
@@ -112,6 +120,7 @@ object EnsimeBuild extends Build with JdkResolver {
   // common dependencies
   lazy val pimpathon = "com.github.stacycurl" %% "pimpathon-core" % "1.5.0"
   lazy val shapeless = "com.chuusai" %% "shapeless" % "2.2.5"
+
   lazy val logback = Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.3",
     "org.slf4j" % "jul-to-slf4j" % "1.7.12",
@@ -147,8 +156,8 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val sexpress = Project("sexpress", file("sexpress"), settings = commonSettings) settings (
     licenses := Seq("LGPL 3.0" -> url("http://www.gnu.org/licenses/lgpl-3.0.txt")),
     libraryDependencies ++= Seq(
-      shapeless,
       "org.parboiled" %% "parboiled-scala" % "1.1.7",
+      shapeless,
       pimpathon,
       "com.google.guava" % "guava" % "18.0" % "test"
     ) ++ testLibs(scalaVersion.value)
@@ -156,7 +165,7 @@ object EnsimeBuild extends Build with JdkResolver {
 
   lazy val api = Project("api", file("api"), settings = commonSettings) settings (
     libraryDependencies ++= Seq(
-      "org.scalariform" %% "scalariform" % "0.1.6" intransitive(),
+      "org.scalariform" %% "scalariform" % "0.1.7" intransitive(),
       pimpathon
     ) ++ testLibs(scalaVersion.value)
   )
@@ -222,7 +231,7 @@ object EnsimeBuild extends Build with JdkResolver {
     commonItSettings
   ).settings(
     libraryDependencies ++= Seq(
-      "com.h2database" % "h2" % "1.4.187",
+      "com.h2database" % "h2" % "1.4.188",
       "com.typesafe.slick" %% "slick" % "2.1.0",
       "com.jolbox" % "bonecp" % "0.8.0.RELEASE",
       "org.apache.commons" % "commons-vfs2" % "2.0" intransitive(),
@@ -236,8 +245,6 @@ object EnsimeBuild extends Build with JdkResolver {
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
       "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.6.2",
-      // refactoring has an old version of scala-xml
-      "org.scala-lang.modules" %% "scala-xml" % "1.0.4",
       "commons-lang" % "commons-lang" % "2.6",
       "commons-io" % "commons-io" % "2.4" % "test,it"
     ) ++ logback ++ testLibs(scalaVersion.value, "it,test")

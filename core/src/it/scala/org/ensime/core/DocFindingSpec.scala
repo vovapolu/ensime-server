@@ -15,6 +15,7 @@ import scala.concurrent.duration._
 import scala.reflect.internal.util.{ BatchSourceFile, OffsetPosition }
 import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.ConsoleReporter
+import scala.util.Properties
 
 class DocFindingSpec extends FlatSpec with Matchers
     with IsolatedRichPresentationCompilerFixture
@@ -114,12 +115,21 @@ class DocFindingSpec extends FlatSpec with Matchers
 
           // Check @usecase handling.
           case "29" => sig.scala shouldBe DocSig(DocFqn("scala", "Some"), Some("++[B>:A,That](that:scala.collection.GenTraversableOnce[B])(implicitbf:scala.collection.generic.CanBuildFrom[Repr,B,That]):That"))
-          case "30" => sig.scala shouldBe DocSig(DocFqn("scala.collection.immutable", "List"), Some("flatMap[B,That](f:A=>scala.collection.GenTraversableOnce[B])(implicitbf:scala.collection.generic.CanBuildFrom[List[A],B,That]):That"))
-          case "31" => sig.scala shouldBe DocSig(DocFqn("scala.collection.immutable", "List"), Some("collect[B,That](pf:PartialFunction[A,B])(implicitbf:scala.collection.generic.CanBuildFrom[List[A],B,That]):That"))
+          case "30" =>
+            val expected = if (scala210)
+              DocSig(DocFqn("scala.collection.immutable", "List"), Some("flatMap[B,That](f:A=>scala.collection.GenTraversableOnce[B])(implicitbf:scala.collection.generic.CanBuildFrom[Repr,B,That]):That"))
+            else
+              DocSig(DocFqn("scala.collection.immutable", "List"), Some("flatMap[B,That](f:A=>scala.collection.GenTraversableOnce[B])(implicitbf:scala.collection.generic.CanBuildFrom[List[A],B,That]):That"))
+
+            sig.scala shouldBe expected
+          case "31" =>
+            val expected = if (scala210)
+              DocSig(DocFqn("scala.collection.immutable", "List"), Some("collect[B,That](pf:PartialFunction[A,B])(implicitbf:scala.collection.generic.CanBuildFrom[Repr,B,That]):That"))
+            else
+              DocSig(DocFqn("scala.collection.immutable", "List"), Some("collect[B,That](pf:PartialFunction[A,B])(implicitbf:scala.collection.generic.CanBuildFrom[List[A],B,That]):That"))
+            sig.scala shouldBe expected
         }
 
-        //cc.askDocSignatureForSymbol("com.google.common.io.Files$", Some("simplifyPath"), None).get.java shouldBe
-        //DocSig(DocFqn("com.google.common.io", "Files"), Some("simplifyPath(java.lang.String)"))
       }
 
   }

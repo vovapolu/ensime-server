@@ -10,8 +10,7 @@ addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.4.0")
 
 // sbt-coveralls needs a new release
 // https://github.com/scoverage/sbt-coveralls/issues/52
-addSbtPlugin("org.scoverage" %% "sbt-scoverage" % "1.2.0")
-//addSbtPlugin("org.scoverage" %% "sbt-coveralls" % "1.0.0")
+//addSbtPlugin("org.scoverage" %% "sbt-scoverage" % "1.3.1")
+//addSbtPlugin("org.scoverage" %% "sbt-coveralls" % "1.0.1")
 
 scalacOptions in Compile ++= Seq("-feature", "-deprecation")
-
