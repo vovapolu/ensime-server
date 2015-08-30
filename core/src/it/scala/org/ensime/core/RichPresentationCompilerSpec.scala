@@ -16,6 +16,36 @@ import scala.reflect.internal.util.{ BatchSourceFile, OffsetPosition }
 import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.ConsoleReporter
 
+class RichPresentationCompilerThatNeedsJavaLibsSpec extends WordSpec with Matchers
+    with IsolatedRichPresentationCompilerFixture
+    with RichPresentationCompilerTestUtils
+    with ReallyRichPresentationCompilerFixture
+    with SLF4JLogging {
+
+  val original = EnsimeConfigFixture.SimpleTestProject
+
+  "RichPresentationCompiler" should {
+    "locate source position of Java classes in import statements" in withPresCompiler { (config, cc) =>
+      import ReallyRichPresentationCompilerFixture._
+
+      cc.search.refreshResolver()
+      Await.result(cc.search.refresh(), 180.seconds)
+
+      runForPositionInCompiledSource(config, cc,
+        "package com.example",
+        "import java.io.File@0@") { (p, label, cc) =>
+          val sym = cc.askSymbolInfoAt(p).get
+          assert(sym.declPos.isDefined)
+          assert(sym.declPos.get match {
+            case LineSourcePosition(f, i) =>
+              f.path.contains("File.java") && i > 0
+            case _ => false
+          })
+        }
+    }
+  }
+}
+
 class RichPresentationCompilerSpec extends WordSpec with Matchers
     with IsolatedRichPresentationCompilerFixture
     with RichPresentationCompilerTestUtils
