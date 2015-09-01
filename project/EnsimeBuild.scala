@@ -18,8 +18,7 @@ object EnsimeBuild extends Build with JdkResolver {
   // common
   lazy val basicSettings = Seq(
     organization := "org.ensime",
-    //scalaVersion := "2.11.7",
-    scalaVersion := "2.10.5",
+    scalaVersion := "2.11.7",
     version := "0.9.10-SNAPSHOT",
 
     dependencyOverrides ++= Set(
@@ -57,12 +56,31 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val commonSettings = scalariformSettings ++ basicSettings ++ Seq(
     //resolvers += Resolver.sonatypeRepo("snapshots"),
     scalacOptions in Compile ++= Seq(
-      // uncomment this to debug implicit resolution compilation problems
+      // uncomment to debug implicit resolution compilation problems
       //"-Xlog-implicits",
-      "-encoding", "UTF-8", "-target:jvm-1.6", "-feature", "-deprecation",
-      "-Xfatal-warnings",
-      "-language:postfixOps", "-language:implicitConversions"
-    ),
+      // break in case of emergency
+      //"-Ytyper-debug",
+      "-encoding", "UTF-8",
+      "-target:jvm-1.6",
+      "-feature",
+      "-deprecation",
+      "-language:postfixOps",
+      "-language:implicitConversions",
+      "-Xlint",
+      "-Yinline-warnings",
+      "-Yno-adapted-args",
+      "-Ywarn-dead-code",
+      //"-Ywarn-numeric-widen", // bad implicit widening somewhere
+      //"-Ywarn-value-discard", // will require a lot of work
+      "-Xfuture"
+    ) ++ {
+      if (scalaVersion.value.startsWith("2.11")) Seq("-Ywarn-unused-import")
+      else Nil
+    } ++ {
+      // fatal warnings can get in the way during the DEV cycle
+      if (sys.env.contains("CI")) Seq("-Xfatal-warnings")
+      else Nil
+    },
     javacOptions in (Compile, compile) ++= Seq(
       "-source", "1.6", "-target", "1.6", "-Xlint:all", "-Werror",
       "-Xlint:-options", "-Xlint:-path", "-Xlint:-processing"

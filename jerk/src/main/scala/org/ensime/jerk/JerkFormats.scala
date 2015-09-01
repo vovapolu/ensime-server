@@ -1,7 +1,6 @@
 package org.ensime.jerk
 
 import java.io.File
-import scala.util._
 
 import spray.json._
 import fommil.sjs._

@@ -6,8 +6,6 @@ import org.scalatest._
 import org.ensime.sexp._
 import org.ensime.api._
 
-import pimpathon.file._
-
 class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
   import SwankFormats._
   import SwankTestData._

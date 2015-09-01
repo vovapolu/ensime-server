@@ -2,7 +2,6 @@ package org.ensime.core
 
 import java.io.File
 import org.scalatest._
-import shapeless._
 import pimpathon.file._
 
 import org.ensime.api._

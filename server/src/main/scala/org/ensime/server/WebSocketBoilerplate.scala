@@ -4,18 +4,13 @@ import akka.actor._
 import akka.event.LoggingReceive
 import akka.pattern.ask
 import akka.util.Timeout
-import org.ensime.api._
-import org.ensime.core._
-import org.ensime.jerk._
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 import spray.json._
-import shapeless._
 
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
 
 /**

@@ -2,10 +2,9 @@
 // License: see the LICENSE file
 package org.ensime.core
 
-import Predef.{any2stringadd => _, _}
+import Predef.{any2stringadd => _}
 
-import scala.reflect.internal.util.Position
-import scala.reflect.internal.util.SourceFile
+//import scala.reflect.internal.util.Position
 
 /**
  * Simulate methods that were added in later versions of the scalac

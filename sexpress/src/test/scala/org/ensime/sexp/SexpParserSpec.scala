@@ -4,7 +4,6 @@ import com.google.common.base.Charsets
 import com.google.common.io.Files
 import org.scalatest._
 import scala.util.Properties.userHome
-import pimpathon.file._
 
 class SexpParserSpec extends WordSpec with Matchers {
   import SexpParser.{ parse, flatParse }

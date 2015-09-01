@@ -136,7 +136,6 @@ trait CompletionControl {
         }
       case unknown =>
         throw new IllegalStateException("Unexpected response type from request:" + unknown)
-        List.empty
     }.map(Some(_)).recover { case _ => None }
   }
 

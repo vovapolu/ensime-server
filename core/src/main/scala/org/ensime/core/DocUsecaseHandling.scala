@@ -4,7 +4,6 @@ import java.io.{ File, IOException }
 import java.util.jar.JarFile
 import java.util.regex.Pattern
 import org.apache.commons.lang.StringEscapeUtils
-import org.ensime.core._
 import scala.io.Source
 
 // Scaladoc uses @usecase comment annotations to substitute kid-safe signatures

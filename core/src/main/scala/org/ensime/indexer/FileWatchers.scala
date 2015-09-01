@@ -5,7 +5,6 @@ import java.io.File
 import akka.event.slf4j.SLF4JLogging
 import org.apache.commons.vfs2._
 import org.apache.commons.vfs2.impl._
-import pimpathon.file._
 
 import org.ensime.api._
 

@@ -309,7 +309,7 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
     "complete interpolated variables in strings" in withPosInCompiledSource(
       "package com.example",
       "object Abc { def aMethod(a: Int) = a }",
-      "object B { val x = s\"hello there, ${Abc.aMe@@}\"}"
+      s"""object B { val x = s"hello there, $${Abc.aMe@@}"}"""
     ) { (p, cc) =>
         val result = cc.completionsAt(p, 10, caseSens = false)
         assert(result.completions.head.name == "aMethod")
@@ -499,7 +499,7 @@ object ReallyRichPresentationCompilerFixture
     var points = Queue.empty[(Int, String)]
     val re = """@([a-z0-9\.]*)@"""
     re.r.findAllMatchIn(contents).foreach { m =>
-      points :+= (m.start - offset, m.group(1))
+      points :+= ((m.start - offset, m.group(1)))
       offset += (m.end - m.start)
     }
     val file = srcFile(config, "def.scala", contents.replaceAll(re, ""))

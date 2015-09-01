@@ -3,15 +3,12 @@ package org.ensime.core
 import java.io.File
 
 import akka.event.slf4j.SLF4JLogging
-import org.ensime.api._
 import org.ensime.fixture._
 import org.ensime.indexer.EnsimeVFS
 import org.scalatest._
-import pimpathon.file._
 
 import scala.collection.immutable.Queue
 import scala.concurrent.Await
-import scala.concurrent.duration._
 import scala.reflect.internal.util.{ BatchSourceFile, OffsetPosition }
 import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.ConsoleReporter

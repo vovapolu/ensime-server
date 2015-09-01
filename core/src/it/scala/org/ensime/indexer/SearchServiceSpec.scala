@@ -23,7 +23,7 @@ class SearchServiceSpec extends WordSpec with Matchers
     }
 
     "not refresh files that have not changed" in withSearchService { implicit service =>
-      refresh() shouldBe (0, 0)
+      refresh() shouldBe ((0, 0))
     }
 
     "refresh files that have 'changed'" in {
@@ -53,7 +53,7 @@ class SearchServiceSpec extends WordSpec with Matchers
         classfile shouldBe 'exists
 
         classfile.delete()
-        refresh() shouldBe (1, 0)
+        refresh() shouldBe ((1, 0))
       }
     }
   }

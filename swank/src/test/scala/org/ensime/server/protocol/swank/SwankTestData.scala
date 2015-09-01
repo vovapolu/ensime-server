@@ -1,10 +1,6 @@
 package org.ensime.server.protocol.swank
 
-import java.io.File
-
 import org.ensime.api._
-
-import pimpathon.file._
 
 object SwankTestData extends EnsimeTestData {
 
@@ -39,8 +35,6 @@ object SwankTestData extends EnsimeTestData {
   val debugBacktraceStr = s"""(:frames ((:index 7 :locals ((:index 3 :name "name1" :summary "summary1" :type-name "type1") (:index 4 :name "name2" :summary "summary2" :type-name "type2")) :num-args 4 :class-name "class1" :method-name "method1" :pc-location (:file "$file1" :line 57) :this-object-id "7")) :thread-id "17" :thread-name "thread1")"""
 
   val undoResultStr = """(:id 7 :touched-files ($file3_str $file4_str))"""
-
-  val replConfigStr = """(:classpath ($file1))"""
 
   val importSuggestionsStr = s"""(((:type method :name "abc" :local-name "a" :decl-as method :pos (:type line :file $abd :line 10) :owner-name "ownerStr") (:type type :name "abc" :local-name "a" :decl-as trait :pos (:type line :file $abd :line 10))))"""
 
