@@ -6,6 +6,7 @@ import scala.reflect.internal.util.Position
 import scala.tools.nsc.reporters.Reporter
 
 import org.ensime.api._
+import org.ensime.core.PositionBackCompat
 
 trait ReportHandler {
   def messageUser(str: String): Unit
@@ -13,7 +14,7 @@ trait ReportHandler {
   def reportScalaNotes(notes: List[Note]): Unit
 }
 
-class PresentationReporter(handler: ReportHandler) extends Reporter {
+class PresentationReporter(handler: ReportHandler) extends Reporter with PositionBackCompat {
 
   val log = LoggerFactory.getLogger(classOf[PresentationReporter])
   private var enabled = true
@@ -41,8 +42,8 @@ class PresentationReporter(handler: ReportHandler) extends Reporter {
               f,
               formatMessage(msg),
               NoteSeverity(severity.id),
-              pos.start,
-              pos.end,
+              pos.startOrCursor,
+              pos.endOrCursor,
               pos.line,
               pos.column
             )

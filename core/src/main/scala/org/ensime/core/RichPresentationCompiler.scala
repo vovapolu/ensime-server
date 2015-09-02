@@ -207,7 +207,7 @@ class RichPresentationCompiler(
 ) extends Global(settings, richReporter)
     with ModelBuilders with RichCompilerControl
     with RefactoringImpl with Completion with Helpers
-    with PresentationCompilerBackCompat {
+    with PresentationCompilerBackCompat with PositionBackCompat {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 

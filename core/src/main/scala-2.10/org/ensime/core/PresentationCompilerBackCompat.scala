@@ -14,6 +14,14 @@ import scala.reflect.internal.util.SourceFile
 trait PresentationCompilerBackCompat {
   this: RichPresentationCompiler =>
 
+  implicit class RichSymbols(sym: Symbol) {
+    def isLocalToBlock: Boolean = sym.isLocal
+
+    def paramLists: List[List[Symbol]] = sym.paramss
+  }
+}
+
+trait PositionBackCompat {
   implicit class RichPosition(pos: Position) {
     def withSource(src: SourceFile): Position =
       pos.withSource(src, 0)
@@ -21,12 +29,8 @@ trait PresentationCompilerBackCompat {
     def withShift(shift: Int): Position =
       pos.withSource(pos.source, shift)
 
+    // I wish we could override `start` and `end`
+    def startOrCursor: Int = pos.startOrPoint
     def endOrCursor: Int = pos.endOrPoint
-  }
-
-  implicit class RichSymbols(sym: Symbol) {
-    def isLocalToBlock: Boolean = sym.isLocal
-
-    def paramLists: List[List[Symbol]] = sym.paramss
   }
 }

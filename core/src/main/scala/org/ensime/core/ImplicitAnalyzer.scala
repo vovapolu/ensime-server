@@ -20,8 +20,8 @@ class ImplicitAnalyzer(val global: RichPresentationCompiler) {
           t match {
             case t: ApplyImplicitView =>
               implicits.append(ImplicitConversionInfo(
-                treeP.start,
-                treeP.end,
+                treeP.startOrCursor,
+                treeP.endOrCursor,
                 SymbolInfo(t.fun.symbol)
               ))
             case t: ApplyToImplicitArgs =>
@@ -30,8 +30,8 @@ class ImplicitAnalyzer(val global: RichPresentationCompiler) {
                 case _ => false
               }
               implicits.append(ImplicitParamInfo(
-                treeP.start,
-                treeP.end,
+                treeP.startOrCursor,
+                treeP.endOrCursor,
                 SymbolInfo(t.fun.symbol),
                 t.args.map { a => SymbolInfo(a.symbol) },
                 funIsImplicit

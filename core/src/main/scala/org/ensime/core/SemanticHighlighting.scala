@@ -33,7 +33,7 @@ class SemanticHighlighting(val global: RichPresentationCompiler) extends Compile
 
       def add(designation: SourceSymbol): Boolean = {
         val pos = t.namePosition()
-        addAt(pos.start, pos.end, designation)
+        addAt(pos.startOrCursor, pos.endOrCursor, designation)
       }
 
       def qualifySymbol(sym: Symbol): Boolean = {
@@ -41,11 +41,11 @@ class SemanticHighlighting(val global: RichPresentationCompiler) extends Compile
           false
         } else if (sym.isCaseApplyOrUnapply) {
           val owner = sym.owner
-          val start = treeP.start
+          val start = treeP.startOrCursor
           val end = start + owner.name.length
           addAt(start, end, ObjectSymbol)
         } else if (sym.isConstructor) {
-          addAt(treeP.start, treeP.end, ConstructorSymbol)
+          addAt(treeP.startOrCursor, treeP.endOrCursor, ConstructorSymbol)
         } else if (sym.isTypeParameterOrSkolem) {
           add(TypeParamSymbol)
         } else if (sym.hasFlag(PARAM)) {
@@ -141,8 +141,8 @@ class SemanticHighlighting(val global: RichPresentationCompiler) extends Compile
                   // case MyClass(a:Int,b:Int)
                   //
                   // Works, but this is *way* under-constrained.
-                  val start = treeP.start
-                  val end = treeP.end
+                  val start = treeP.startOrCursor
+                  val end = treeP.endOrCursor
                   addAt(start, end, ObjectSymbol)
                 }
               }
