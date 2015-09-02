@@ -328,9 +328,10 @@ trait DebugTestUtils {
       project ! DebugContinueReq(DebugThreadId(1))
       expectMsg(TrueResponse)
       project ! DebugStopReq
-      expectMsg(TrueResponse)
-
-      //asyncHelper.expectAsync(30 seconds, DebugVMDisconnectEvent)
+      expectMsgPF() {
+        case TrueResponse =>
+        case FalseResponse => // windows does this sometimes
+      }
     }
   }
 
