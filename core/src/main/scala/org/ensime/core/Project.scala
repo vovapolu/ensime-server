@@ -4,6 +4,7 @@ import akka.actor._
 import akka.event.LoggingReceive
 import org.apache.commons.vfs2.FileObject
 import org.ensime.api._
+import org.ensime.core.debug.DebugManager
 import org.ensime.indexer._
 
 import scala.concurrent.duration._
