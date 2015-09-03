@@ -1,28 +1,41 @@
-image: ensime/ensime:latest
+build:
+  image: ensime/ensime:latest
+  pull: true
+  environment:
+    - EMACS=/opt/emacs-24.4/bin/emacs
+    - AKKA_TEST_TIMEFACTOR=10
+  commands:
+    - sbt ++$SCALA_VERSION gen-ensime &&
+      mkdir .ensime_cache &&
+      git clone --depth 1 https://github.com/ensime/ensime-emacs.git ensime-emacs &&
+      sbt ++$SCALA_VERSION clean test:compile it:compile doc &&
+      if [ $(git diff | wc -l) -ge 1 ] ; then
+        echo "Code formatting does not meet the project's standards:" ;
+        git --no-pager diff ;
+        exit 1 ;
+      fi &&
+      sbt ++$SCALA_VERSION test it:test &&
+      sbt ++$SCALA_VERSION publishLocal &&
+      if [ "${SCALA_VERSION}" = "2.11.7" ] ; then
+        cd ensime-emacs && cask pkg-file && test/run_emacs_tests.sh && cd .. ;
+      fi &&
+      if [ -n "${SONATYPE_USERNAME}" ] && [ -n "${SONATYPE_PASSWORD}" ] ; then
+        sbt ++$SCALA_VERSION publish ;
+      fi
 
-script:
-  - sbt ++$SCALA_VERSION gen-ensime &&
-    mkdir .ensime_cache &&
-    git clone --depth 1 https://github.com/ensime/ensime-emacs.git ensime-emacs &&
-    sbt ++$SCALA_VERSION clean test:compile it:compile doc &&
-    if [ $(git diff | wc -l) -ge 1 ] ; then
-      echo "Code formatting does not meet the project's standards:" ;
-      git --no-pager diff ;
-      exit 1 ;
-    fi &&
-    sbt ++$SCALA_VERSION test it:test &&
-    sbt ++$SCALA_VERSION publishLocal &&
-    cd ensime-emacs && cask pkg-file && test/run_emacs_tests.sh && cd .. &&
-    if [ -n "$SONATYPE_USERNAME" ] && [ -n "$SONATYPE_PASSWORD" ] ; then
-      sbt ++$SCALA_VERSION publish &&
-      curl --data "build=true" -X POST https://registry.hub.docker.com/u/ensime/ensime/trigger/${DOCKER_TRIGGER_TOKEN}/ ;
-    fi
+matrix:
+  SCALA_VERSION:
+    - 2.11.7
+    - 2.10.5
 
+deploy:
+  dockerhub:
+    token: $$DOCKER_TRIGGER_TOKEN
+    repo: ensime/ensime
+    when:
+      matrix:
+        SCALA_VERSION: 2.11.7
+    
 # BLOCKED https://github.com/scoverage/sbt-coveralls/pull/41
 #- sbt ++$SCALA_VERSION clean coverage test it:test &&
 #  sbt coverageAggregate coveralls
-
-env:
-  - SCALA_VERSION=2.11.7
-  - EMACS=/opt/emacs-24.4/bin/emacs
-  - AKKA_TEST_TIMEFACTOR=10
