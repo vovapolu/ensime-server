@@ -1,7 +1,6 @@
 package org.ensime.server
 
 import akka.actor._
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
 import akka.stream._
 import akka.stream.scaladsl._
@@ -18,7 +17,6 @@ class WebSocketBoilerplateSpec extends AkkaFlatSpec {
 
   import system.dispatcher
   import akka.pattern.pipe
-  import FlowGraph.Implicits._
 
   "WebSocketBoilerplate" should "produce Flow[In, Out]" in {
     val service = TestProbe()

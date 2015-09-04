@@ -15,6 +15,7 @@ import scala.concurrent.duration._
 import scala.reflect.internal.util.{ BatchSourceFile, OffsetPosition }
 import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.ConsoleReporter
+import scala.util.Properties
 
 class RichPresentationCompilerThatNeedsJavaLibsSpec extends WordSpec with Matchers
     with IsolatedRichPresentationCompilerFixture
@@ -308,7 +309,7 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
     "complete interpolated variables in strings" in withPosInCompiledSource(
       "package com.example",
       "object Abc { def aMethod(a: Int) = a }",
-      "object B { val x = s\"hello there, ${Abc.aMe@@}\"}"
+      s"""object B { val x = s"hello there, $${Abc.aMe@@}"}"""
     ) { (p, cc) =>
         val result = cc.completionsAt(p, 10, caseSens = false)
         assert(result.completions.head.name == "aMethod")
@@ -441,6 +442,8 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
 }
 
 trait RichPresentationCompilerTestUtils {
+  val scala210 = Properties.versionNumberString.startsWith("2.10")
+
   def compileScala(paths: List[String], target: File, classPath: String): Unit = {
     val settings = new Settings
     settings.outputDirs.setSingleOutput(target.getAbsolutePath)
@@ -496,7 +499,7 @@ object ReallyRichPresentationCompilerFixture
     var points = Queue.empty[(Int, String)]
     val re = """@([a-z0-9\.]*)@"""
     re.r.findAllMatchIn(contents).foreach { m =>
-      points :+= (m.start - offset, m.group(1))
+      points :+= ((m.start - offset, m.group(1)))
       offset += (m.end - m.start)
     }
     val file = srcFile(config, "def.scala", contents.replaceAll(re, ""))

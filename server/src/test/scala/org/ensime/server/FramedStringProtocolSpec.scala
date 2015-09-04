@@ -28,12 +28,12 @@ class FramedStringProtocolSpec extends FlatSpec with Matchers
   it should "read framed strings" in {
     val read = tryReadString(ByteString("000006foobar", "UTF-8"))
 
-    read shouldBe (Some("foobar"), ByteString())
+    read shouldBe ((Some("foobar"), ByteString()))
   }
 
   it should "read multi-byte UTF-8 strings" in {
     val read = tryReadString(ByteString("000003€000003€", "UTF-8"))
 
-    read shouldBe (Some("€"), ByteString("000003€", "UTF-8"))
+    read shouldBe ((Some("€"), ByteString("000003€", "UTF-8")))
   }
 }

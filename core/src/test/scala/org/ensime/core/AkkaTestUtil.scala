@@ -4,7 +4,6 @@ import akka.actor._
 import akka.event.slf4j.SLF4JLogging
 import akka.testkit._
 import org.scalatest._
-import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
 import org.scalatest.Assertions
 import java.util.UUID

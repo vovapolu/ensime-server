@@ -5,7 +5,6 @@ import java.io.File
 import org.ensime.api._
 
 import org.apache.commons.vfs2.FileObject
-import org.ensime.config._
 import org.ensime.core.RichPresentationCompiler
 import org.ensime.indexer.DatabaseService._
 import org.ensime.indexer.EnsimeVFS

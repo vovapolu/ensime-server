@@ -1,7 +1,6 @@
 package org.ensime.core
 
 import akka.testkit._
-import org.scalatest._
 import scala.concurrent.duration._
 
 class BroadcasterSpec extends AkkaFlatSpec {

@@ -7,7 +7,6 @@ import akka.util.Timeout
 import org.ensime.api._
 import org.ensime.core._
 import scala.concurrent.Future
-import shapeless._
 
 class WebServerImpl(
     project: ActorRef,

@@ -196,7 +196,7 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
 
 class RichPresentationCompiler(
   val config: EnsimeConfig,
-  settings: Settings,
+  override val settings: Settings,
   val richReporter: Reporter,
   val parent: ActorRef,
   val indexer: ActorRef,
@@ -206,7 +206,8 @@ class RichPresentationCompiler(
   val vfs: EnsimeVFS
 ) extends Global(settings, richReporter)
     with ModelBuilders with RichCompilerControl
-    with RefactoringImpl with Completion with Helpers {
+    with RefactoringImpl with Completion with Helpers
+    with PresentationCompilerBackCompat with PositionBackCompat {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 

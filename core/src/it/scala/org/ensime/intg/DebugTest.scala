@@ -262,7 +262,7 @@ class DebugTest extends WordSpec with Matchers with Inside
               inside(getVariableValue(DebugThreadId(1), "j")) {
                 case DebugObjectInstance("Instance of $colon$colon", debugFields, "scala.collection.immutable.$colon$colon", _) =>
                   exactly(1, debugFields) should matchPattern {
-                    case DebugClassField(_, "head", "java.lang.Object", "Instance of Integer") =>
+                    case DebugClassField(_, head, "java.lang.Object", "Instance of Integer") if head == "head" | head == "scala$collection$immutable$$colon$colon$$hd" =>
                   }
               }
 
@@ -328,9 +328,10 @@ trait DebugTestUtils {
       project ! DebugContinueReq(DebugThreadId(1))
       expectMsg(TrueResponse)
       project ! DebugStopReq
-      expectMsg(TrueResponse)
-
-      //asyncHelper.expectAsync(30 seconds, DebugVMDisconnectEvent)
+      expectMsgPF() {
+        case TrueResponse =>
+        case FalseResponse => // windows does this sometimes
+      }
     }
   }
 

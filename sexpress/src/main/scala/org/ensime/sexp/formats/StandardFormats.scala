@@ -24,8 +24,6 @@ import org.ensime.sexp.util.ThreadLocalSupport
  * `OptionAltFormat`.
  */
 trait StandardFormats extends ThreadLocalSupport {
-  import SexpFormatUtils._
-
   implicit def optionFormat[T: SexpFormat]: SexpFormat[Option[T]] = new SexpFormat[Option[T]] {
     def write(option: Option[T]) = option match {
       case Some(x) => SexpList(x.toSexp)

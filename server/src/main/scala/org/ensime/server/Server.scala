@@ -123,7 +123,7 @@ object Server {
 
   def shutdown(system: ActorSystem, request: ShutdownRequest): Unit = {
     val t = new Thread(new Runnable {
-      def run() {
+      def run(): Unit = {
         if (request.isError)
           log.error(s"Shutdown requested due to internal error: ${request.reason}")
         else

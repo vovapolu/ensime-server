@@ -4,10 +4,8 @@ import akka.actor._
 import akka.event.LoggingReceive
 import akka.event.slf4j.SLF4JLogging
 import akka.pattern.ask
-import java.io._
 import org.ensime.api._
 import org.ensime.core._
-import scala.util.Properties._
 
 /**
  * Spawned to listen to the server's response to an RpcRequest.

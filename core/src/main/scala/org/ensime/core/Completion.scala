@@ -56,7 +56,8 @@ trait CompletionControl {
     val (src, p, patched) = if (defaultPrefix.isEmpty) {
       // Add a fake prefix if none was provided by the user. Otherwise the
       // compiler will give us a weird tree.
-      val src = spliceSource(inputP.source, inputP.end, inputP.end, "a")
+      val src = spliceSource(inputP.source, inputP.endOrCursor, inputP.endOrCursor, "a")
+      //(src, inputP.withSourceShifted(src, 1), true)
       (src, inputP.withSource(src).withShift(1), true)
     } else {
       (inputP.source, inputP, false)
@@ -72,25 +73,25 @@ trait CompletionControl {
           case Apply(fun, _) =>
             fun match {
               case Select(qualifier: New, name) =>
-                Some(ScopeContext(src, qualifier.pos.end, defaultPrefix, constructing = true))
+                Some(ScopeContext(src, qualifier.pos.endOrCursor, defaultPrefix, constructing = true))
               case Select(qual, name) if qual.pos.isDefined && qual.pos.isRange =>
                 val prefix = if (patched) "" else name.decoded
-                Some(MemberContext(src, qual.pos.end, prefix, constructing))
+                Some(MemberContext(src, qual.pos.endOrCursor, prefix, constructing))
               case _ =>
-                val prefix = if (patched) "" else src.content.slice(fun.pos.start, fun.pos.end).mkString
-                Some(ScopeContext(src, fun.pos.end, prefix, constructing))
+                val prefix = if (patched) "" else src.content.slice(fun.pos.startOrCursor, fun.pos.endOrCursor).mkString
+                Some(ScopeContext(src, fun.pos.endOrCursor, prefix, constructing))
             }
           case Literal(Constant(_)) => None
           case New(name) =>
-            Some(ScopeContext(src, name.pos.end, defaultPrefix, constructing = true))
+            Some(ScopeContext(src, name.pos.endOrCursor, defaultPrefix, constructing = true))
           case Select(qualifier, name) if qualifier.pos.isDefined && qualifier.pos.isRange =>
-            Some(MemberContext(src, qualifier.pos.end, defaultPrefix, constructing))
+            Some(MemberContext(src, qualifier.pos.endOrCursor, defaultPrefix, constructing))
           case Import(expr, _) =>
             val topLevel = ImportTopLevelRegexp.findFirstMatchIn(preceding).isDefined
             if (topLevel) {
-              Some(ScopeContext(src, expr.pos.end, defaultPrefix, constructing = false))
+              Some(ScopeContext(src, expr.pos.endOrCursor, defaultPrefix, constructing = false))
             } else {
-              Some(MemberContext(src, expr.pos.end, defaultPrefix, constructing = false))
+              Some(MemberContext(src, expr.pos.endOrCursor, defaultPrefix, constructing = false))
             }
           case other =>
             Some(ScopeContext(src, p.point, defaultPrefix, constructing))
@@ -135,7 +136,6 @@ trait CompletionControl {
         }
       case unknown =>
         throw new IllegalStateException("Unexpected response type from request:" + unknown)
-        List.empty
     }.map(Some(_)).recover { case _ => None }
   }
 
@@ -215,7 +215,7 @@ trait CompletionControl {
         m match {
           case m @ ScopeMember(sym, tpe, accessible, viaView) =>
             val p = sym.pos
-            val inSymbol = p.isRange && (context.offset >= p.start && context.offset <= p.end)
+            val inSymbol = p.isRange && (context.offset >= p.startOrCursor && context.offset <= p.endOrCursor)
             if (!sym.isConstructor && !inSymbol) {
               buff ++= toCompletionInfo(context, sym, tpe, inherited = false, NoSymbol)
             }

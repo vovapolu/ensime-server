@@ -6,8 +6,7 @@ import akka.event.slf4j.SLF4JLogging
 import akka.pattern.ask
 import org.ensime.api._
 import org.ensime.core._
-import scala.util.Properties._
-import shapeless._
+//import shapeless._
 
 /**
  * Accepts RpcRequestEnvelope and responds with an RpcResponseEnvelope to target.
