@@ -123,10 +123,14 @@ trait Helpers { self: Global =>
       }
     }
     val typeSym = tpe.typeSymbol
+    val prefix =
+      if (typeSym.enclosingPackage == NoSymbol)
+        ""
+      else typeSym.enclosingPackage.fullName + "."
     if (typeSym.isNestedClass) {
-      typeSym.enclosingPackage.fullName + "." + nestedClassName(typeSym)
+      prefix + nestedClassName(typeSym)
     } else {
-      typeSym.enclosingPackage.fullName + "." + typeShortName(typeSym)
+      prefix + typeShortName(typeSym)
     }
   }
 

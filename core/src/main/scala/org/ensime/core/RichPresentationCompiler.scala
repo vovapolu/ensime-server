@@ -350,8 +350,10 @@ class RichPresentationCompiler(
   }
 
   protected def typeAt(p: Position): Option[Type] = {
-    val tree = wrapTypedTreeAt(p)
-    typeOfTree(tree)
+    wrapTypedTreeAt(p) match {
+      case Import(_, _) => symbolAt(p).map(_.tpe)
+      case tree => typeOfTree(tree)
+    }
   }
 
   protected def typeByName(name: String): Option[Type] =
@@ -407,7 +409,7 @@ class RichPresentationCompiler(
             }
             List(locate(pos, expr))
           } else {
-            selectors.filter(_.namePos < pos.point).sortBy(_.namePos).lastOption map { sel =>
+            selectors.filter(_.namePos <= pos.point).sortBy(_.namePos).lastOption map { sel =>
               val tpe = stabilizedType(expr)
               List(tpe.member(sel.name), tpe.member(sel.name.toTypeName))
             } getOrElse Nil

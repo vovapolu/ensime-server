@@ -363,6 +363,34 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
         assert(supersNames.toSet === Set("pipo", "bidon", "Object", "Product", "Serializable", "Any"))
       }
 
+    "get type info for imports" in withPresCompiler { (config, cc) =>
+      val expected = Map(
+        "1.0" -> Some("java$"),
+        "1.1" -> Some("java$"),
+        "1.2" -> Some("java.io$"),
+        "1.3" -> Some("java.io$"),
+        "1.4" -> Some("java.io.File$"),
+        "1.5" -> Some("java.io.File$"),
+        "1.6" -> Some("java.lang.String"),
+        "1.7" -> Some("java.lang.String"),
+        "2.0" -> Some("java.io.Bits$"),
+        "2.1" -> Some("java.io.Bits$"),
+        "2.2" -> Some("java.io.File$"),
+        "2.3" -> Some("java.io.File$"),
+        "3.0" -> None
+      )
+
+      import ReallyRichPresentationCompilerFixture._
+      runForPositionInCompiledSource(config, cc,
+        "package com.example",
+        "import @1.0@java@1.1@.@1.2@io@1.3@.@1.4@File@1.5@.@1.6@separator@1.7@",
+        "import java.io.{ @2.0@Bits => one@2.1@, @2.2@File => two@2.3@ }",
+        "import java.io._@3.0@") { (p, label, cc) =>
+          val info = cc.askTypeInfoAt(p)
+          assert(info.map { _.fullName } === expected(label))
+        }
+    }
+
     "get symbol positions for compiled files" in withPresCompiler { (config, cc) =>
       val defsFile = srcFile(config, "com/example/defs.scala", contents(
         "package com.example",
