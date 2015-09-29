@@ -23,13 +23,14 @@ object EnsimeBuild extends Build with JdkResolver {
     version := "0.9.10-SNAPSHOT",
 
     dependencyOverrides ++= Set(
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-library" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.scala-lang" % "scalap" % scalaVersion.value,
       "org.scala-lang.modules" %% "scala-xml" % "1.0.4",
       "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
       "org.scalamacros" %% "quasiquotes" % "2.0.1",
-      "org.slf4j" % "slf4j-api" % "1.7.12",
-      "com.google.guava" % "guava" % "18.0"
+      "org.slf4j" % "slf4j-api" % "1.7.12"
     ),
 
     libraryDependencies ++= {
@@ -138,15 +139,13 @@ object EnsimeBuild extends Build with JdkResolver {
 
   ////////////////////////////////////////////////
   // common dependencies
-  lazy val pimpathon = "com.github.stacycurl" %% "pimpathon-core" % "1.5.0"
   lazy val shapeless = "com.chuusai" %% "shapeless" % "2.2.5"
-
   lazy val logback = Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.3",
     "org.slf4j" % "jul-to-slf4j" % "1.7.12",
     "org.slf4j" % "jcl-over-slf4j" % "1.7.12"
   )
-  val akkaVersion = "2.3.12"
+  val akkaVersion = "2.3.14"
   val streamsVersion = "1.0"
 
   ////////////////////////////////////////////////
@@ -173,25 +172,32 @@ object EnsimeBuild extends Build with JdkResolver {
 
   ////////////////////////////////////////////////
   // modules
-  lazy val sexpress = Project("sexpress", file("sexpress"), settings = commonSettings) settings (
+  lazy val util = Project("util", file("util"), settings = commonSettings) settings (
+    libraryDependencies ++= List(
+      "com.google.guava" % "guava" % "18.0",
+      "com.google.code.findbugs" % "jsr305" % "2.0.3" % "provided"
+    ) ++ testLibs(scalaVersion.value)
+  )
+
+  lazy val sexpress = Project("sexpress", file("sexpress"), settings = commonSettings) dependsOn (
+    util
+  ) settings (
     licenses := Seq("LGPL 3.0" -> url("http://www.gnu.org/licenses/lgpl-3.0.txt")),
     libraryDependencies ++= Seq(
       "org.parboiled" %% "parboiled-scala" % "1.1.7",
-      shapeless,
-      pimpathon,
-      "com.google.guava" % "guava" % "18.0" % "test"
+      shapeless
     ) ++ testLibs(scalaVersion.value)
   )
 
   lazy val api = Project("api", file("api"), settings = commonSettings) settings (
     libraryDependencies ++= Seq(
-      "org.scalariform" %% "scalariform" % "0.1.7" intransitive(),
-      pimpathon
+      "org.scalariform" %% "scalariform" % "0.1.7" intransitive()
     ) ++ testLibs(scalaVersion.value)
   )
 
   // the JSON protocol
   lazy val jerk = Project("jerk", file("jerk"), settings = commonSettings) dependsOn (
+    util,
     api,
     api % "test->test" // for the test data
   ) settings (
@@ -251,9 +257,9 @@ object EnsimeBuild extends Build with JdkResolver {
     commonItSettings
   ).settings(
     libraryDependencies ++= Seq(
-      "com.h2database" % "h2" % "1.4.188",
+      "com.h2database" % "h2" % "1.4.189",
       "com.typesafe.slick" %% "slick" % "2.1.0",
-      "com.jolbox" % "bonecp" % "0.8.0.RELEASE",
+      "com.jolbox" % "bonecp" % "0.8.0.RELEASE", // TODO: upgrade to https://github.com/brettwooldridge/HikariCP
       "org.apache.commons" % "commons-vfs2" % "2.0" intransitive(),
       // lucene 4.8+ needs Java 7: http://www.gossamer-threads.com/lists/lucene/general/225300
       "org.apache.lucene" % "lucene-core" % "4.7.2",
@@ -264,7 +270,7 @@ object EnsimeBuild extends Build with JdkResolver {
       "org.scala-lang" % "scalap" % scalaVersion.value,
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-      "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.6.2",
+      "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.7.0",
       "commons-lang" % "commons-lang" % "2.6",
       "commons-io" % "commons-io" % "2.4" % "test,it"
     ) ++ logback ++ testLibs(scalaVersion.value, "it,test")
@@ -299,7 +305,7 @@ object EnsimeBuild extends Build with JdkResolver {
 
   // manual root project so we can exclude the testing projects from publication
   lazy val root = Project(id = "ensime", base = file("."), settings = commonSettings) aggregate (
-    api, sexpress, jerk, swank, core, server
+    api, util, sexpress, jerk, swank, core, server
   ) dependsOn (server) settings (
     // e.g. `sbt ++2.11.7 ensime/assembly`
     test in assembly := {},
