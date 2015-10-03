@@ -3,6 +3,11 @@ package org.ensime.api
 import java.io.File
 import scalariform.formatter.preferences.FormattingPreferences
 
+// there is quite a lot of code in this file, when we clean up the
+// config file format so that a lot of these hacks are no longer
+// needed, we should move the functionality into a higher layer
+// RichConfig to keep the API clean.
+
 case class EnsimeConfig(
     rootDir: File,
     cacheDir: File,
@@ -15,7 +20,10 @@ case class EnsimeConfig(
     formattingPrefs: FormattingPreferences,
     sourceMode: Boolean,
     debugArgs: List[String],
-    javaLibs: List[File]
+    javaLibs: List[File],
+    // WORKAROUND: https://github.com/ensime/ensime-server/issues/1042
+    disableSourceMonitoring: Boolean = false,
+    disableClassMonitoring: Boolean = false
 ) {
   (rootDir :: cacheDir :: javaHome :: referenceSourceRoots ::: javaLibs).foreach { f =>
     require(f.exists, "" + f + " is required but does not exist")
@@ -47,6 +55,8 @@ case class EnsimeConfig(
   } ++ javaLibs
 
   def allDocJars: Set[File] = modules.values.flatMap(_.docJars).toSet
+
+  def scalaLibrary: Option[File] = allJars.find(_.getName.startsWith("scala-library"))
 }
 
 case class EnsimeModule(

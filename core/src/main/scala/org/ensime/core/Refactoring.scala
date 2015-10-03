@@ -285,6 +285,8 @@ trait RefactoringImpl { self: RichPresentationCompiler =>
     }
   }
 
+  // TODO: don't change files on the server side
+  // https://github.com/ensime/ensime-server/issues/996
   protected def execRefactor(
     procId: Int,
     refactorType: RefactorType,

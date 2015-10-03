@@ -10,6 +10,8 @@ import org.ensime.indexer._
 import scala.concurrent.duration._
 import scala.util.Try
 
+import org.ensime.util.file._
+
 /**
  * The Project actor simply forwards messages coming from the user to
  * the respective subcomponent.
@@ -21,7 +23,8 @@ class Project(
   import context.{ dispatcher, system }
 
   /* The main components of the ENSIME server */
-  private var analyzer: ActorRef = _
+  private var scalac: ActorRef = _
+  private var javac: ActorRef = _
   private var debugger: ActorRef = _
 
   // TODO consolidate search/indexer
@@ -53,7 +56,15 @@ class Project(
 
   override def preStart(): Unit = {
     indexer = context.actorOf(Indexer(searchService), "indexer")
-    analyzer = context.actorOf(Analyzer(broadcaster, indexer, searchService), "analyzer")
+
+    if (config.scalaLibrary.isDefined || Set("scala", "dotty")(config.name))
+      scalac = context.actorOf(Analyzer(broadcaster, indexer, searchService), "scalac")
+    else {
+      log.warning("Detected a pure Java project. Scala queries are not available.")
+      scalac = system.deadLetters
+    }
+
+    javac = context.actorOf(JavaAnalyzer(broadcaster), "javac")
     debugger = context.actorOf(DebugManager(broadcaster), "debugging")
     docs = context.actorOf(DocResolver(), "docs")
   }
@@ -78,14 +89,27 @@ class Project(
     case AskReTypecheck =>
       Option(rechecking).foreach(_.cancel())
       rechecking = system.scheduler.scheduleOnce(
-        5 seconds, analyzer, ReloadExistingFilesEvent
+        5 seconds, scalac, ReloadExistingFilesEvent
       )
   }
 
   def respondingToQueries: Receive = {
     case ConnectionInfoReq => sender() ! ConnectionInfo()
 
-    case m: RpcAnalyserRequest => analyzer forward m
+    // HACK: to expedite initial dev, Java requests use the Scala API
+    case m @ TypecheckFileReq(sfi) if sfi.file.isJava => javac forward m
+    case m @ CompletionsReq(sfi, _, _, _, _) if sfi.file.isJava => javac forward m
+    case m @ DocUriAtPointReq(file, _) if file.isJava => javac forward m
+    case m @ TypeAtPointReq(file, _) if file.isJava => javac forward m
+    case m @ SymbolDesignationsReq(file, _, _, _) if file.isJava => javac forward m
+
+    // mixed mode query
+    case TypecheckFilesReq(files) =>
+      val (javas, scalas) = files.partition(_.isJava)
+      if (javas.nonEmpty) javac forward TypecheckFilesReq(javas)
+      if (scalas.nonEmpty) scalac forward TypecheckFilesReq(scalas)
+
+    case m: RpcAnalyserRequest => scalac forward m
     case m: RpcDebuggerRequest => debugger forward m
     case m: RpcSearchRequest => indexer forward m
     case m: DocSigPair => docs forward m

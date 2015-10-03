@@ -28,7 +28,7 @@ class DocFindingSpec extends FlatSpec with Matchers
       config, cc,
       "package com.example",
       "import com.google.common.io.Files",
-      "import java.nio.charset.StandardCharsets",
+      "import com.google.common.base.Charsets",
       "import java.nio.channels.FileChannel._",
       "import java.io.File",
       "class Thing {",

@@ -115,7 +115,7 @@ class ClassfileWatcher(
     val root = vfs.vfile(config.root)
 
     // must remove then add to avoid leaks
-    for {
+    if (!config.disableClassMonitoring) for {
       d <- config.targetClasspath
       dir = vfs.vfile(d)
       _ = fm.removeFile(dir)
@@ -165,8 +165,11 @@ class SourceWatcher(
   fm.setRecursive(true)
   fm.start()
 
-  config.modules.values.foreach { m =>
-    m.sourceRoots foreach { r => fm.addFile(vfs.vfile(r)) }
+  if (!config.disableSourceMonitoring) for {
+    module <- config.modules.values
+    root <- module.sourceRoots
+  } {
+    fm.addFile(vfs.vfile(root))
   }
 
   def shutdown(): Unit = {

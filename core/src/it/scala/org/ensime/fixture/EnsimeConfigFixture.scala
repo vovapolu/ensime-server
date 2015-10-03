@@ -20,11 +20,14 @@ trait EnsimeConfigFixture {
   def withEnsimeConfig(testCode: EnsimeConfig => Any): Any
 
   // convenience method
-  def scalaMain(implicit config: EnsimeConfig): File =
+  def main(lang: String)(implicit config: EnsimeConfig): File =
     config.subprojects.head.sourceRoots.filter { dir =>
       val sep = JFile.separator
-      dir.getPath.endsWith(s"${sep}main${sep}scala")
+      dir.getPath.endsWith(s"${sep}main${sep}${lang}")
     }.head
+  def scalaMain(implicit config: EnsimeConfig): File = main("scala")
+  def javaMain(implicit config: EnsimeConfig): File = main("java")
+
 }
 
 object EnsimeConfigFixture {
@@ -51,6 +54,9 @@ object EnsimeConfigFixture {
   )
   lazy val DocsTestProject: EnsimeConfig = EnsimeTestProject.copy(
     subprojects = EnsimeTestProject.subprojects.filter(_.name == "testingDocs")
+  )
+  lazy val JavaTestProject: EnsimeConfig = EnsimeTestProject.copy(
+    subprojects = EnsimeTestProject.subprojects.filter(_.name == "testingJava")
   )
 
   // generates an empty single module project in a temporary directory
