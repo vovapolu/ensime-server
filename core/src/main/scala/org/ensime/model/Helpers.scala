@@ -102,13 +102,18 @@ trait Helpers { self: Global =>
       }
     }
 
-    if (sym.isType) {
+    val name = if (sym.isType) {
       typeIndexerName(sym)
     } else if (sym.isModule) {
       typeIndexerName(sym) + "$"
     } else {
       symbolIndexerName(sym.owner) + "." + sym.encodedName
     }
+    name.replaceAll("\\.package\\$\\$", ".")
+      .replaceAll("\\.package\\$\\.", ".")
+      .replaceAll("\\.package\\$(?!$)", ".")
+      .replaceAll("\\.package\\.", ".")
+      .replaceAll("\\.package$", ".package\\$")
   }
 
   /**
@@ -122,6 +127,7 @@ trait Helpers { self: Global =>
         case None => typeShortName(sym)
       }
     }
+
     val typeSym = tpe.typeSymbol
     val prefix =
       if (typeSym.enclosingPackage == NoSymbol)

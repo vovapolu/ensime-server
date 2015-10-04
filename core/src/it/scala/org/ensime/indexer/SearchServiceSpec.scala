@@ -81,6 +81,11 @@ class SearchServiceSpec extends WordSpec with Matchers
       )
 
       searchesClasses(
+        "org.example.Blue$",
+        "o e blue"
+      )
+
+      searchesClasses(
         "org.example.CaseClassWithCamelCaseName",
         "CaseClassWith", "caseclasswith",
         "o e Case", "o.e.caseclasswith",
@@ -90,10 +95,14 @@ class SearchServiceSpec extends WordSpec with Matchers
 
     "return results from package objects" in withSearchService { implicit service =>
       searchClasses(
-        "org.example.Blip",
+        "org.example.Blip$",
         "Blip"
       )
 
+      searchClasses(
+        "org.example.Blop",
+        "Blop"
+      )
     }
   }
 
