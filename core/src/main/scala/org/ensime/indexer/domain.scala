@@ -43,12 +43,7 @@ case class ClassName(pack: PackageName, name: String) extends FullyQualifiedName
 
   def fqnString =
     if (pack.path.isEmpty) name
-    else {
-      // remove "package" string from fqn in package objects
-      val nameParts = name.split("\\$")
-      pack.fqnString + "." +
-        (if (nameParts.size == 2 && nameParts(0) == "package") nameParts(1) else name)
-    }
+    else ClassName.cleanupPackage(pack.fqnString + "." + name)
 
   def internalString =
     "L" + (if (pack.path.isEmpty) name else pack.path.mkString("/") + "/" + name) + ";"
@@ -86,6 +81,12 @@ object ClassName {
     val (before, after) = parts.splitAt(parts.length - 1)
     ClassName(PackageName(before.toList), after(0))
   }
+
+  def cleanupPackage(name: String): String = {
+    name.replaceAll("\\.package\\$?\\.", ".")
+      .replaceAll("\\.package\\$(?!$)", ".")
+      .replaceAll("\\.package$", ".package\\$")
+  }
 }
 
 case class MemberName(
@@ -93,7 +94,7 @@ case class MemberName(
     name: String
 ) extends FullyQualifiedName {
   def contains(o: FullyQualifiedName) = this == o
-  def fqnString = owner.fqnString + "." + name
+  def fqnString = ClassName.cleanupPackage(owner.fqnString + "." + name)
 }
 
 sealed trait DescriptorType {
@@ -131,9 +132,11 @@ case class RawSource(
 )
 
 case class RawType(
-  fqn: String,
-  access: Access
-)
+    fqn: String,
+    access: Access
+) {
+  def fqnString = ClassName.cleanupPackage(fqn)
+}
 
 case class RawField(
   name: MemberName,

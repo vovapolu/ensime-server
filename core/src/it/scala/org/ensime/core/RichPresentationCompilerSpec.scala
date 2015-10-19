@@ -405,9 +405,16 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
         "}",
         "trait  /*3*/C { ",
         "   val /*3.1*/z: Int = 1",
-        "   class /*3.2*/Z {} ",
+        "   class /*3.2*/Z {}",
         "}",
-        "class /*4*/D extends C { }"
+        "class /*4*/D extends C { }",
+        "package object /*5.0*/pkg {",
+        "   type /*5.1*/A  = java.lang.Error",
+        "   def /*5.2*/B = 1",
+        "   val /*5.3*/C = 2",
+        "   class /*5.4*/D {}",
+        "   object /*5.5*/E {}",
+        "}"
       ), write = true)
       val usesFile = srcFile(config, "com/example/uses.scala", contents(
         "package com.example",
@@ -422,6 +429,12 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
         "   val x_3: C/*3*/ = new D/*4*/",
         "   val x_3_1 = x_3.z/*3.1*/",
         "   val x_3_2 = new x_3.Z/*3.2*/",
+        "   val x_5_0 = pkg.`package`/*5.0*/",
+        "   var x_5_1: pkg.A/*5.1*/ = null",
+        "   val x_5_2 = pkg.B/*5.2*/",
+        "   val x_5_3 = pkg.C/*5.3*/",
+        "   val x_5_4 = new pkg.D/*5.4*/",
+        "   val x_5_5 = pkg.E/*5.5*/",
         "}"
       ))
 
@@ -430,7 +443,9 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
         val defPos = defsFile.content.mkString.indexOf(comment) + comment.length
         val usePos = usesFile.content.mkString.indexOf(comment) - 1
 
-        // Create a fresh pres. compiler unaffected by previous tests
+        // Create a fresh pres. compiler unaffected by previous tests:
+        // finding a symbol's position loads the source into the compiler
+        // which changes its state.
 
         implicit val ensimeVFS = EnsimeVFS()
         val cc1 = new RichPresentationCompiler(cc.config, cc.settings, cc.reporter, cc.parent, cc.indexer, cc.search)
@@ -463,7 +478,18 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
       cc.search.refreshResolver()
       Await.result(cc.search.refresh(), 180.seconds)
 
-      List("1", "1.1", "1.2", "2", "2.1", "2.2", "2.3", "3", "3.1", "3.2", "4").
+      val scalaVersion = scala.util.Properties.versionNumberString
+      val parts = scalaVersion.split("\\.").map { _.toInt }
+      if (parts(0) > 2 || (parts(0) == 2 && parts(1) > 10)) {
+        /* in Scala 2.10, the declaration position of "pacakge object" is
+           different so we just skip this test */
+        test("5.0", cc)
+      }
+
+      List(
+        "1", "1.1", "1.2", "2", "2.1", "2.2", "2.3", "3", "3.1", "3.2", "4",
+        "5.1", "5.2", "5.3", "5.4", "5.5"
+      ).
         foreach(test(_, cc))
     }
   }

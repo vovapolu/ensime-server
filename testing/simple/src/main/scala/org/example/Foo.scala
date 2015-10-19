@@ -20,3 +20,4 @@ object Foo extends App {
 // for SearchServiceSpec
 case class CaseClassWithCamelCaseName()
 case class Bloo()
+case object Blue

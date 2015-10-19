@@ -171,7 +171,7 @@ class SearchService(
             val internal = field.clazz.internalString
             FqnSymbol(None, name, path, field.name.fqnString, None, Some(internal), sourceUri, clazz.source.line)
           } ::: depickler.getTypeAliases.toList.filter(_.access == Public).map { rawType =>
-            FqnSymbol(None, name, path, rawType.fqn, None, None, sourceUri, None)
+            FqnSymbol(None, name, path, rawType.fqnString, None, None, sourceUri, None)
           }
 
     }
