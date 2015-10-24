@@ -7,6 +7,7 @@ import org.ensime.api._
 import org.ensime.core.debug.DebugManager
 import org.ensime.indexer._
 
+import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -73,7 +74,7 @@ class Project(
     // make sure the "reliable" dependencies are cleaned up
     Try(classfileWatcher.shutdown())
     Try(sourceWatcher.shutdown())
-    Try(searchService.shutdown())
+    searchService.shutdown() // async
     Try(vfs.close())
   }
 
