@@ -20,14 +20,17 @@ class DatabaseService(dir: File) extends SLF4JLogging {
     // MVCC plus connection pooling speeds up the tests ~10%
     val url = "jdbc:h2:file:" + dir.getAbsolutePath + "/db;MVCC=TRUE"
     val driver = "org.h2.Driver"
-    //Database.forURL(url, driver = driver)
 
     // http://jolbox.com/benchmarks.html
     val ds = new BoneCPDataSource()
     ds.setDriverClass(driver)
     ds.setJdbcUrl(url)
     ds.setStatementsCacheSize(50)
-    (ds, Database.forDataSource(ds))
+    ds.setUsername("")
+    ds.setPassword("")
+    val threads = ds.getMaxConnectionsPerPartition()
+    val executor = AsyncExecutor("Slick", numThreads = threads, queueSize = -1)
+    (ds, Database.forDataSource(ds, executor = executor))
   }
 
   def shutdown()(implicit ec: ExecutionContext): Future[Unit] = for {
@@ -54,7 +57,7 @@ class DatabaseService(dir: File) extends SLF4JLogging {
   // TODO reverse lookup table
 
   // file with last modified time
-  def knownFiles(): Future[List[FileCheck]] = db.run(fileChecks.to[List].result)
+  def knownFiles(): Future[Seq[FileCheck]] = db.run(fileChecks.result)
 
   def removeFiles(files: List[FileObject])(implicit ec: ExecutionContext): Future[Int] =
     db.run {
@@ -68,23 +71,17 @@ class DatabaseService(dir: File) extends SLF4JLogging {
     }
 
   private val timestampsQuery = Compiled {
-    filename: Rep[String] => fileChecks.filter(_.filename === filename).map(_.timestamp).take(1)
+    filename: Rep[String] => fileChecks.filter(_.filename === filename).take(1)
   }
 
-  def outOfDate(f: FileObject)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def outOfDate(f: FileObject)(implicit vfs: EnsimeVFS, ec: ExecutionContext): Future[Boolean] = {
     val uri = f.getName.getURI
     val modified = f.getContent.getLastModifiedTime
 
     db.run(
       for {
-        checked <- timestampsQuery(uri).result.headOption
-      } yield {
-        checked match {
-          case Some(timestamp) if timestamp.getTime < modified => true
-          case Some(_) => false
-          case _ => true
-        }
-      }
+        check <- timestampsQuery(uri).result.headOption
+      } yield check.map(_.changed).getOrElse(true)
     )
   }
 
