@@ -67,76 +67,72 @@ class SearchService(
 
     val jarUris = config.allJars.map(vfs.vfile).map(_.getName.getURI)
 
-    // remove stale entries: must be before index or INSERT/DELETE races
-    val stale = db.knownFiles().map { knownFiles =>
-      val stale = for {
-        known <- knownFiles
-        f = known.file
-        name = f.getName.getURI
-        if !f.exists || known.changed ||
-          (name.endsWith(".jar") && !jarUris(name))
-      } yield f
-
-      log.info(s"removing ${stale.size} stale files from the index")
-      if (log.isTraceEnabled)
-        log.trace(s"STALE = $stale")
-
-      stale
-    }
-
-    // individual DELETEs in H2 are really slow
-    val removed = for {
-      all <- stale
-      _ <- Future.sequence(
-        all.grouped(1000).map(delete)
-      )
-    } yield all.size
-
-    val bases = {
-      config.modules.flatMap {
-        case (name, m) =>
-          m.targetDirs.flatMap { d => scan(vfs.vfile(d)) } ::: m.testTargetDirs.flatMap { d => scan(vfs.vfile(d)) } :::
-            m.compileJars.map(vfs.vfile) ::: m.testJars.map(vfs.vfile)
-      }
-    }.toSet ++ config.javaLibs.map(vfs.vfile)
-
-    // start indexing after all deletes have completed (not pretty)
-    val indexing = removed.map { _ =>
-      // could potentially do the db lookup in parallel
-      bases.filter(db.outOfDate).toList map {
-        case classfile if classfile.getName.getExtension == "class" => Future[Unit] {
-          val check = FileCheck(classfile)
-          val symbols = extractSymbols(classfile, classfile)
-          persist(check, symbols)
-        }(workerEC)
-
-        case jar => Future[Unit] {
-          try {
-            log.debug(s"indexing $jar")
-            val check = FileCheck(jar)
-            val symbols = scan(vfs.vjar(jar)) flatMap (extractSymbols(jar, _))
-            persist(check, symbols)
-          } catch {
-            case e: Exception =>
-              log.error(s"Failed to index $jar", e)
-          }
-        }(workerEC)
-      }
-    }
-
-    val indexed = indexing.flatMap { w => Future.sequence(w) }.map(_.size)
-    val indexedAndCommitted = indexed map { count =>
-      // delayed commits speedup initial indexing time
-      log.debug("committing index to disk...")
-      index.commit()
-      log.debug("...done committing index")
-      count
-    }
-
     for {
-      r <- removed
-      i <- indexedAndCommitted
-    } yield (r, i)
+      // remove stale entries: must be before index or INSERT/DELETE races
+      stale <- db.knownFiles().map { knownFiles =>
+        for {
+          known <- knownFiles
+          f = known.file
+          name = f.getName.getURI
+          if !f.exists || known.changed ||
+            (name.endsWith(".jar") && !jarUris(name))
+        } yield f
+      }
+
+      _ = {
+        log.info(s"removing ${stale.size} stale files from the index")
+        if (log.isTraceEnabled)
+          log.trace(s"STALE = $stale")
+      }
+
+      _ <- Future.sequence(
+        // individual DELETEs in H2 are really slow
+        stale.grouped(1000).map(delete)
+      )
+
+      // start indexing after all deletes have completed (not pretty)
+
+      bases = {
+        config.modules.flatMap {
+          case (name, m) =>
+            m.targetDirs.flatMap { d => scan(vfs.vfile(d)) } ::: m.testTargetDirs.flatMap { d => scan(vfs.vfile(d)) } :::
+              m.compileJars.map(vfs.vfile) ::: m.testJars.map(vfs.vfile)
+        }
+      }.toSet ++ config.javaLibs.map(vfs.vfile)
+
+      basesWithOutOfDateInfo <- Future.sequence(bases.map(b => db.outOfDate(b).map((b, _))))
+      persisted <- Future.sequence(
+        basesWithOutOfDateInfo.collect { // is there a simpler way to do this, rather than collect after sequence?
+          case (base, outOfDate) if outOfDate => base
+        }.map {
+          case classfile if classfile.getName.getExtension == "class" => Future[Unit] {
+            val check = FileCheck(classfile)
+            val symbols = extractSymbols(classfile, classfile)
+            persist(check, symbols)
+          }
+
+          case jar => Future[Unit] {
+            try {
+              log.debug(s"indexing $jar")
+              val check = FileCheck(jar)
+              val symbols = scan(vfs.vjar(jar)) flatMap (extractSymbols(jar, _))
+              persist(check, symbols)
+            } catch {
+              case e: Exception =>
+                log.error(s"Failed to index $jar", e)
+            }
+          }
+        }
+      )
+
+      _ = {
+        // delayed commits speedup initial indexing time
+        log.debug("committing index to disk...")
+        index.commit()
+        log.debug("...done committing index")
+      }
+
+    } yield (stale.size, persisted.size)
   }
 
   def refreshResolver(): Unit = resolver.update()

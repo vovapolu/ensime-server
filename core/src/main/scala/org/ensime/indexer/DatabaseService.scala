@@ -73,22 +73,20 @@ class DatabaseService(dir: File) extends SLF4JLogging {
     filename: Rep[String] => fileChecks.filter(_.filename === filename).map(_.timestamp).take(1)
   }
 
-  def outOfDate(f: FileObject)(implicit ec: ExecutionContext): Boolean = {
+  def outOfDate(f: FileObject)(implicit ec: ExecutionContext): Future[Boolean] = {
     val uri = f.getName.getURI
     val modified = f.getContent.getLastModifiedTime
 
-    await(
-      db.run(
-        for {
-          checked <- timestampsQuery(uri).result.headOption
-        } yield {
-          checked match {
-            case Some(timestamp) if timestamp.getTime < modified => true
-            case Some(_) => false
-            case _ => true
-          }
+    db.run(
+      for {
+        checked <- timestampsQuery(uri).result.headOption
+      } yield {
+        checked match {
+          case Some(timestamp) if timestamp.getTime < modified => true
+          case Some(_) => false
+          case _ => true
         }
-      )
+      }
     )
   }
 
