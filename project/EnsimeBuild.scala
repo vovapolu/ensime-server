@@ -4,7 +4,9 @@ import com.typesafe.sbt.SbtScalariform._
 import sbt.Keys._
 import sbt.{IntegrationTest => It, _}
 import scoverage.ScoverageKeys
-import sbtassembly.AssemblyKeys._
+
+import sbtassembly.{ AssemblyKeys, MergeStrategy, PathList }
+import AssemblyKeys._
 
 import scala.util.{Properties, Try}
 
@@ -58,6 +60,10 @@ object EnsimeBuild extends Build with JdkResolver {
 
   lazy val commonSettings = scalariformSettings ++ basicSettings ++ Seq(
     //resolvers += Resolver.sonatypeRepo("snapshots"),
+    // sbt sometimes has jcenter https://github.com/sbt/sbt/issues/2253
+    // but we only want to hit maven central and the official NetBeans repos
+    fullResolvers -= Resolver.jcenterRepo,
+    resolvers += "NetBeans" at "http://bits.netbeans.org/nexus/content/groups/netbeans",
     scalacOptions in Compile ++= Seq(
       // uncomment to debug implicit resolution compilation problems
       //"-Xlog-implicits",
@@ -241,6 +247,13 @@ object EnsimeBuild extends Build with JdkResolver {
     )
   )
 
+  // java project with no scala-library
+  lazy val testingJava = Project("testingJava", file("testing/java"), settings = basicSettings).settings(
+    crossPaths := false,
+    autoScalaLibrary := false,
+    ScoverageKeys.coverageExcludedPackages := ".*"
+  )
+
   lazy val core = Project("core", file("core")).dependsOn(
     api, sexpress,
     api % "test->test", // for the interpolator
@@ -248,7 +261,8 @@ object EnsimeBuild extends Build with JdkResolver {
     // https://github.com/sbt/sbt/issues/1888
     testingEmpty % "test,it",
     testingSimple % "test,it",
-    testingDebug % "test,it"
+    testingDebug % "test,it",
+    testingJava % "test,it"
   ).configs(It).settings (
     commonSettings
   ).settings (
@@ -258,6 +272,9 @@ object EnsimeBuild extends Build with JdkResolver {
   ).settings(
     libraryDependencies ++= Seq(
       "com.h2database" % "h2" % "1.4.189",
+      // Netbeans 7.4+ needs Java 7 (7.3 only needs it at runtime)
+      "org.netbeans.api" % "org-netbeans-api-java" % "RELEASE731",
+      "org.netbeans.api" % "org-netbeans-modules-java-source" % "RELEASE731",
       "com.typesafe.slick" %% "slick" % "2.1.0",
       "com.jolbox" % "bonecp" % "0.8.0.RELEASE", // TODO: upgrade to https://github.com/brettwooldridge/HikariCP
       "org.apache.commons" % "commons-vfs2" % "2.0" intransitive(),
@@ -310,6 +327,13 @@ object EnsimeBuild extends Build with JdkResolver {
     // e.g. `sbt ++2.11.7 ensime/assembly`
     test in assembly := {},
     aggregate in assembly := false,
+    assemblyMergeStrategy in assembly := {
+      case PathList("META-INF", "namedservices", xs @ _*) => MergeStrategy.filterDistinctLines
+      case "META-INF/netbeans/translate.names"            => MergeStrategy.filterDistinctLines
+      case "META-INF/namedservices.index"                 => MergeStrategy.filterDistinctLines
+      case "META-INF/generated-layer.xml"                 => MergeStrategy.rename
+      case other                                          => MergeStrategy.defaultMergeStrategy(other)
+    },
     assemblyExcludedJars in assembly := List(Attributed.blank(JavaTools)),
     assemblyJarName in assembly := s"ensime_${scalaVersion.value}-${version.value}-assembly.jar"
   )

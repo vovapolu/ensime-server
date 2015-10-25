@@ -61,9 +61,9 @@ class Analyzer(
     settings.YpresentationVerbose.value = presCompLog.isDebugEnabled
     settings.verbose.value = presCompLog.isDebugEnabled
     settings.usejavacp.value = false
-    config.allJars.find(_.getName.contains("scala-library")) match {
+    config.scalaLibrary match {
       case Some(scalaLib) => settings.bootclasspath.value = scalaLib.getAbsolutePath
-      case None => log.warning("scala-library.jar was not present")
+      case None => log.warning("scala-library.jar not present, enabling Odersky mode")
     }
     settings.classpath.value = config.compileClasspath.mkString(JFile.pathSeparator)
     settings.processArguments(config.compilerArgs, processAll = false)
@@ -229,21 +229,16 @@ class Analyzer(
       sender ! scalaCompiler.askTypeInfoByNameAt(name, p)
     case CallCompletionReq(id: Int) =>
       sender ! scalaCompiler.askCallCompletionInfoById(id)
+
+    case SymbolDesignationsReq(f, start, end, Nil) =>
+      sender ! SymbolDesignations(f, List.empty)
     case SymbolDesignationsReq(f, start, end, tpes) =>
-      if (!FileUtils.isScalaSourceFile(f)) {
-        sender ! SymbolDesignations(f, List.empty)
-      } else {
-        val sf = createSourceFile(f)
-        if (tpes.nonEmpty) {
-          val clampedEnd = math.max(end, start)
-          val pos = new RangePosition(sf, start, start, clampedEnd)
-          scalaCompiler.askLoadedTyped(pos.source)
-          val syms = scalaCompiler.askSymbolDesignationsInRegion(pos, tpes)
-          sender ! syms
-        } else {
-          sender ! SymbolDesignations(File(sf.path), List.empty)
-        }
-      }
+      val sf = createSourceFile(f)
+      val clampedEnd = math.max(end, start)
+      val pos = new RangePosition(sf, start, start, clampedEnd)
+      scalaCompiler.askLoadedTyped(pos.source)
+      val syms = scalaCompiler.askSymbolDesignationsInRegion(pos, tpes)
+      sender ! syms
 
     case ImplicitInfoReq(file: File, range: OffsetRange) =>
       val p = pos(file, range)

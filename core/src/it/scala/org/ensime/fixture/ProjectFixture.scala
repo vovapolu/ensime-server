@@ -24,6 +24,7 @@ object ProjectFixture extends Matchers {
       case e: SendBackgroundMessageEvent => true
       case e: DebugOutputEvent => true
       case ClearAllScalaNotesEvent => true
+      case ClearAllJavaNotesEvent => true
     }
 
     val project = TestActorRef[Project](Project(probe.ref), "project")
@@ -31,11 +32,14 @@ object ProjectFixture extends Matchers {
     project ! ConnectionInfoReq
     expectMsg(ConnectionInfo())
 
-    probe.receiveN(3) should contain only (
-      Broadcaster.Persist(AnalyzerReadyEvent),
-      Broadcaster.Persist(FullTypeCheckCompleteEvent),
-      Broadcaster.Persist(IndexerReadyEvent)
-    )
+    if (config.scalaLibrary.isEmpty)
+      probe.expectMsg(Broadcaster.Persist(IndexerReadyEvent))
+    else
+      probe.receiveN(3) should contain only (
+        Broadcaster.Persist(AnalyzerReadyEvent),
+        Broadcaster.Persist(FullTypeCheckCompleteEvent),
+        Broadcaster.Persist(IndexerReadyEvent)
+      )
 
     (project, probe)
   }

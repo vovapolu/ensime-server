@@ -90,6 +90,11 @@ class FileSpec extends FlatSpec with Matchers {
     file.readLines shouldBe abc
   }
 
+  it should "write a string" in withTempFile { file =>
+    file.writeString("abc\ndef")
+    file.readLines shouldBe List("abc", "def")
+  }
+
   it should "read a UNIX File as a String" in withTempFile { file =>
     val out = file.outputStream()
     out.write(unix)

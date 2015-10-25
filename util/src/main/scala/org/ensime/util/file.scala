@@ -54,6 +54,10 @@ package object file {
 
     def /(sub: String): File = new File(file, sub)
 
+    def isScala: Boolean = file.getName.toLowerCase.endsWith(".scala")
+
+    def isJava: Boolean = file.getName.toLowerCase.endsWith(".java")
+
     def parts: List[String] =
       file.getPath.split(
         Pattern.quote(JFile.separator)
@@ -73,6 +77,10 @@ package object file {
 
     def writeLines(lines: List[String])(implicit cs: Charset): Unit = {
       Files.write(lines.mkString("", "\n", "\n"), file, cs)
+    }
+
+    def writeString(contents: String)(implicit cs: Charset): Unit = {
+      Files.write(contents, file, cs)
     }
 
     def readString()(implicit cs: Charset): String = {
