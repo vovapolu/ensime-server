@@ -16,8 +16,6 @@ import scala.concurrent.duration._
 import slick.driver.H2Driver.api._
 
 class DatabaseService(dir: File) extends SLF4JLogging {
-  private def await[T](f: Future[T]): T = Await.result(f, Duration.Inf)
-
   lazy val (datasource, db) = {
     // MVCC plus connection pooling speeds up the tests ~10%
     val url = "jdbc:h2:file:" + dir.getAbsolutePath + "/db;MVCC=TRUE"
@@ -103,14 +101,14 @@ class DatabaseService(dir: File) extends SLF4JLogging {
   )
 
   import org.ensime.indexer.IndexService._
-  def find(fqns: List[FqnIndex]): List[FqnSymbol] = {
+  def find(fqns: List[FqnIndex])(implicit ec: ExecutionContext): Future[List[FqnSymbol]] = {
     val restrict = fqns.map(_.fqn)
-    val results = await(
-      db.run(
-        fqnSymbols.filter(_.fqn inSet restrict).result
-      )
-    ).groupBy(_.fqn)
-    restrict.flatMap(results.get(_).map(_.head))
+    db.run(
+      fqnSymbols.filter(_.fqn inSet restrict).result
+    ).map { results =>
+      val grouped = results.groupBy(_.fqn)
+      restrict.flatMap(grouped.get(_).map(_.head))
+    }
   }
 }
 
