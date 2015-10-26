@@ -53,7 +53,7 @@ class JavaCompilerSpec extends FlatSpec with Matchers
       "class Test1 {",
       "  public static final int MAX_VALUE = 10;",
       "  public static class TestInner {",
-      "  public int maxValue = 10;",
+      "    public int maxValue = 10;",
       "    private void main(String foo, String bar) {",
       "      File f = new File();",
       "      f.toSt@0@;",
@@ -66,6 +66,8 @@ class JavaCompilerSpec extends FlatSpec with Matchers
       "      System.out.println(maxV@10@);",
       "      System.out.println(MAX_@11@);",
       "      System.out.println(new Inte@12@);",
+      "      int testinner = 5;",
+      "      TestInn@13@",
       "    }",
       "  }",
       "}") { (sf, offset, label, cc) =>
@@ -85,6 +87,11 @@ class JavaCompilerSpec extends FlatSpec with Matchers
           case "10" => assert(info.completions.exists(_.name == "maxValue"))
           case "11" => assert(info.completions.exists(_.name == "MAX_VALUE"))
           case "12" => assert(info.completions.exists(_.name == "Integer"))
+
+          case "13" =>
+            // exact matches should be preferred
+            assert(info.completions(0).name == "TestInner")
+            assert(info.completions(1).name == "testinner")
         }
       }
   }

@@ -108,20 +108,15 @@ trait JavaDocFinding {
   // primitive param). 0 denotes type equality. 
   private def typeDeltas(info: CompilationInfo, m: MethodInvocationTree, c: ExecutableElement): (ExecutableElement, Array[Int]) = {
     val types = info.getTypes()
-    val args = m.getArguments
-    val params = c.getParameters
-    val result = new Array[Int](args.length)
-    for (i <- 0 to (args.length - 1)) {
-      val param = Option(params.get(i).asType);
-      val arg = typeMirror(info, args.get(i))
-      result(i) = (param, arg) match {
-        case (Some(p: TypeMirror), Some(a: TypeMirror)) if types.isSameType(p, a) => 0
-        case (Some(p: PrimitiveType), Some(a: PrimitiveType)) if types.isAssignable(a, p) => 1
-        case (Some(p: ReferenceType), Some(a: ReferenceType)) if types.isSubtype(a, p) => 1
-        case _ => Int.MaxValue
-      }
+    val args = m.getArguments.map(typeMirror(info, _))
+    val params = c.getParameters.map { p => Option(p.asType) }
+    val distances = args zip params map {
+      case (Some(p: TypeMirror), Some(a: TypeMirror)) if types.isSameType(p, a) => 0
+      case (Some(p: PrimitiveType), Some(a: PrimitiveType)) if types.isAssignable(a, p) => 1
+      case (Some(p: ReferenceType), Some(a: ReferenceType)) if types.isSubtype(a, p) => 1
+      case _ => Int.MaxValue
     }
-    (c, result)
+    (c, distances.toArray)
   }
 
 }

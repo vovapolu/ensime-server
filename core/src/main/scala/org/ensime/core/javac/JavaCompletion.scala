@@ -119,8 +119,12 @@ trait JavaCompletion { self: JavaCompiler =>
   }
 
   private def filterElement(info: CompilationInfo, e: Element, prefix: String, caseSense: Boolean,
-    typesOnly: Boolean, constructors: Boolean, relevance: Int = 0): List[CompletionInfo] = {
+    typesOnly: Boolean, constructors: Boolean, baseRelevance: Int = 0): List[CompletionInfo] = {
     val s = e.getSimpleName.toString
+
+    // reward case case-sensitive matches
+    val relevance = if (s.startsWith(prefix)) baseRelevance + 50 else baseRelevance
+
     if (matchesPrefix(s, prefix, matchEntire = false, caseSens = caseSense) && !s.contains("$")) {
       e match {
         case e: ExecutableElement if !typesOnly => List(methodInfo(e, relevance + 5))
