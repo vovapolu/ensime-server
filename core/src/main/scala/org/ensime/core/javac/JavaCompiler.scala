@@ -28,6 +28,7 @@ class JavaCompiler(
 
   private val listener = new JavaDiagnosticListener()
   private val silencer = new SilencedDiagnosticListener()
+  private val cp = config.allJars.mkString(File.pathSeparator)
 
   // needs to be recreated in JDK6. JDK7 seems more capable of reuse.
   def getTask(
@@ -39,8 +40,7 @@ class JavaCompiler(
     val compiler = ToolProvider.getSystemJavaCompiler()
     val fileManager = compiler.getStandardFileManager(listener, null, DefaultCharset)
     compiler.getTask(null, fileManager, listener, List(
-      "-cp", config.allJars.mkString(File.pathSeparator),
-      "-Xlint:" + lint, "-proc:none"
+      "-cp", cp, "-Xlint:" + lint, "-proc:none"
     ).asJava, null, files.asJava).asInstanceOf[JavacTask]
   }
 
