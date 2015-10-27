@@ -28,7 +28,7 @@ class JavaCompiler(
 
   private val listener = new JavaDiagnosticListener()
   private val silencer = new SilencedDiagnosticListener()
-  private val cp = config.allJars.mkString(File.pathSeparator)
+  private val cp = (config.allJars ++ config.targetClasspath).mkString(File.pathSeparator)
 
   // needs to be recreated in JDK6. JDK7 seems more capable of reuse.
   def getTask(

@@ -67,7 +67,7 @@ class SearchService(
         check <- checks
         name = check.file.getName.getURI
         if !check.file.exists || check.changed ||
-          (name.endsWith(".jar") && !jarUris(name))
+          (!name.endsWith(".class") && !jarUris(name))
       } yield check
     }.toList
 

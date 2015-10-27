@@ -10,6 +10,8 @@ import AssemblyKeys._
 
 import scala.util.{Properties, Try}
 
+import org.ensime.Imports.EnsimeKeys
+
 object EnsimeBuild extends Build with JdkResolver {
   /*
    WARNING: When running `server/it:test` be aware that the tests may
@@ -103,6 +105,11 @@ object EnsimeBuild extends Build with JdkResolver {
     javaOptions in run ++= yourkitAgent,
     javaOptions in Test += "-Dlogback.configurationFile=../logback-test.xml",
     testOptions in Test ++= noColorIfEmacs,
+    // tools.jar sources are not distributed with the JDK. Get sources
+    // from http://download.java.net/openjdk/jdk6/ extract and zip up
+    // the langtools/src/classes directory, and set the environment
+    // variable referenced here
+    EnsimeKeys.unmanagedSourceArchives := sys.env.get("JDK_LANGTOOLS_SRC").map(file).filter(_.exists()).toSeq,
     // updateCaching is still missing things --- e.g. shapeless in core/it:test
     //updateOptions := updateOptions.value.withCachedResolution(true),
     licenses := Seq("BSD 3 Clause" -> url("http://opensource.org/licenses/BSD-3-Clause")),
