@@ -171,9 +171,9 @@ class RefactoringHandlerSpec extends WordSpec with Matchers
       val formatted = readSrcFile(file, encoding)
 
       val expectedContents = contents(
-        "import java.lang.Integer.{valueOf => vo}",
         "import java.lang.Integer.toBinaryString",
         "import java.lang.String.valueOf",
+        "import java.lang.Integer.{valueOf => vo}",
         "",
         "trait Temp {",
         "  valueOf(5)",
