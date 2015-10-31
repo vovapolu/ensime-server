@@ -1,4 +1,4 @@
-// License: see the LICENSE file
+// License: GPL 3.0
 package org.ensime.core.javac;
 
 import com.sun.source.tree.*;

@@ -1,5 +1,5 @@
-// Copyright (C) 2015 Sam Halliday
-// License: see the LICENSE file
+// Copyright (C) 2015 ENSIME Authors
+// License: GPL 3.0
 package org.ensime
 
 import java.io.File

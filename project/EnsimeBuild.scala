@@ -112,7 +112,7 @@ object EnsimeBuild extends Build with JdkResolver {
     EnsimeKeys.unmanagedSourceArchives := sys.env.get("JDK_LANGTOOLS_SRC").map(file).filter(_.exists()).toSeq,
     // updateCaching is still missing things --- e.g. shapeless in core/it:test
     //updateOptions := updateOptions.value.withCachedResolution(true),
-    licenses := Seq("BSD 3 Clause" -> url("http://opensource.org/licenses/BSD-3-Clause")),
+    licenses := Seq("GPL 3.0" -> url("http://opensource.org/licenses/GPL-3.0")),
     homepage := Some(url("http://github.com/ensime/ensime-server")),
     publishTo <<= version { v: String =>
       val nexus = "https://oss.sonatype.org/"
@@ -195,7 +195,7 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val sexpress = Project("sexpress", file("sexpress"), settings = commonSettings) dependsOn (
     util
   ) settings (
-    licenses := Seq("LGPL 3.0" -> url("http://www.gnu.org/licenses/lgpl-3.0.txt")),
+    licenses := Seq("LGPL 3.0" -> url("http://www.gnu.org/licenses/LGPL-3.0")),
     libraryDependencies ++= Seq(
       "org.parboiled" %% "parboiled-scala" % "1.1.7",
       shapeless
@@ -205,7 +205,8 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val api = Project("api", file("api"), settings = commonSettings) settings (
     libraryDependencies ++= Seq(
       "org.scalariform" %% "scalariform" % "0.1.7" intransitive()
-    ) ++ testLibs(scalaVersion.value)
+    ) ++ testLibs(scalaVersion.value),
+    licenses := Seq("Apache 2.0" -> url("http://opensource.org/licenses/Apache-2.0"))
   )
 
   // the JSON protocol

@@ -1,4 +1,14 @@
-// License: see the LICENSE file
+/*
+ * This file contains derivative works.
+ *
+ * You may not use this file except in compliance with the License.
+ * You can obtain a copy of the License at
+ * http://www.netbeans.org/cddl-gplv2.html
+ *
+ * Copyright 1997-2010 Oracle and/or its affiliates.
+ *
+ * ENSIME elects to include this software under the GPL.
+ */
 package org.ensime.core.javac;
 
 import com.sun.source.tree.*;
