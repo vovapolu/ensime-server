@@ -1,7 +1,7 @@
 # ENSIME
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ensime/ensime-server)
-[![Build Status](http://fommil.com/api/badge/github.com/ensime/ensime-server/status.svg?branch=master)](http://fommil.com/github.com/ensime/ensime-server)
+[![Build Status](http://fommil.com/api/badges/ensime/ensime-server/status.svg)](http://fommil.com/ensime/ensime-server)
 
 ENhanced Scala Interaction Mode for text Editors:
 
