@@ -1,6 +1,9 @@
 // ensime-sbt is needed for the integration tests
 addSbtPlugin("org.ensime" % "ensime-sbt" % "0.2.1")
 
+// BUG https://github.com/sbt/sbt-header/issues/31
+//addSbtPlugin("de.heikoseeberger" % "sbt-header" % "1.5.0")
+
 // not working on Windows https://github.com/sbt/sbt/issues/1952
 //addMavenResolverPlugin
 
