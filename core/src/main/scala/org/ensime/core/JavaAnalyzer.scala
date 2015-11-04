@@ -33,8 +33,10 @@ class JavaAnalyzer(
 
     // legacy clients expect to see AnalyzerReady and a
     // FullTypeCheckCompleteEvent on connection.
-    broadcaster ! Broadcaster.Persist(AnalyzerReadyEvent)
-    broadcaster ! Broadcaster.Persist(FullTypeCheckCompleteEvent)
+
+    // TODO re-enable when elisp tests go green
+    //broadcaster ! Broadcaster.Persist(AnalyzerReadyEvent)
+    //broadcaster ! Broadcaster.Persist(FullTypeCheckCompleteEvent)
   }
 
   override def postStop(): Unit = {
