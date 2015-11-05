@@ -32,17 +32,10 @@ object ProjectFixture extends Matchers {
     project ! ConnectionInfoReq
     expectMsg(ConnectionInfo())
 
-    // NOTE: the probe is the broadcaster, so it deduplicates
     if (config.scalaLibrary.isEmpty)
-      probe.receiveN(3) should contain only (
-        Broadcaster.Persist(AnalyzerReadyEvent),
-        Broadcaster.Persist(FullTypeCheckCompleteEvent),
-        Broadcaster.Persist(IndexerReadyEvent)
-      )
+      probe.expectMsg(Broadcaster.Persist(IndexerReadyEvent))
     else
-      probe.receiveN(5) should contain theSameElementsAs List(
-        Broadcaster.Persist(AnalyzerReadyEvent),
-        Broadcaster.Persist(FullTypeCheckCompleteEvent),
+      probe.receiveN(3) should contain only (
         Broadcaster.Persist(AnalyzerReadyEvent),
         Broadcaster.Persist(FullTypeCheckCompleteEvent),
         Broadcaster.Persist(IndexerReadyEvent)
