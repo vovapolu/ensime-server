@@ -2,6 +2,7 @@ package org.ensime.core
 
 import akka.actor._
 import akka.event.LoggingReceive
+import akka.event.LoggingReceive.withLabel
 import org.apache.commons.vfs2.FileObject
 import org.ensime.api._
 import org.ensime.core.debug.DebugManager
@@ -37,17 +38,6 @@ class Project(
   private implicit val vfs: EnsimeVFS = EnsimeVFS()
   private val resolver = new SourceResolver(config)
   private val searchService = new SearchService(config, resolver)
-  searchService.refresh().onComplete {
-    case Success((deletes, inserts)) =>
-      // legacy clients expect to see IndexerReady on connection.
-      // we could also just blindly send this on each connection.
-      broadcaster ! Broadcaster.Persist(IndexerReadyEvent)
-      log.debug(s"created $inserts and removed $deletes searchable rows")
-    case Failure(problem) =>
-      log.warning(problem.toString)
-      throw problem
-  }(context.dispatcher)
-
   private val sourceWatcher = new SourceWatcher(config, resolver :: Nil)
   private val reTypecheck = new ClassfileListener {
     def reTypeCheck(): Unit = self ! AskReTypecheck
@@ -57,16 +47,36 @@ class Project(
   }
   private val classfileWatcher = new ClassfileWatcher(config, searchService :: reTypecheck :: Nil)
 
-  override def preStart(): Unit = {
-    indexer = context.actorOf(Indexer(searchService), "indexer")
+  def receive: Receive = awaitingConnectionInfoReq
 
+  def awaitingConnectionInfoReq: Receive = withLabel("awaitingConnectionInfoReq") {
+    case ConnectionInfoReq =>
+      sender() ! ConnectionInfo()
+      context.become(handleRequests)
+      init()
+      unstashAll()
+    case other =>
+      stash()
+  }
+
+  private def init(): Unit = {
+    searchService.refresh().onComplete {
+      case Success((deletes, inserts)) =>
+        // legacy clients expect to see IndexerReady on connection.
+        // we could also just blindly send this on each connection.
+        broadcaster ! Broadcaster.Persist(IndexerReadyEvent)
+        log.debug(s"created $inserts and removed $deletes searchable rows")
+      case Failure(problem) =>
+        log.warning(problem.toString)
+        throw problem
+    }(context.dispatcher)
+    indexer = context.actorOf(Indexer(searchService), "indexer")
     if (config.scalaLibrary.isDefined || Set("scala", "dotty")(config.name))
       scalac = context.actorOf(Analyzer(broadcaster, indexer, searchService), "scalac")
     else {
       log.warning("Detected a pure Java project. Scala queries are not available.")
       scalac = system.deadLetters
     }
-
     javac = context.actorOf(JavaAnalyzer(broadcaster), "javac")
     debugger = context.actorOf(DebugManager(broadcaster), "debugging")
     docs = context.actorOf(DocResolver(), "docs")
@@ -83,22 +93,12 @@ class Project(
   // debounces ReloadExistingFilesEvent
   private var rechecking: Cancellable = _
 
-  // not Receive, thanks to https://issues.scala-lang.org/browse/SI-8861
-  // (fixed in 2.11.7)
-  def receive: PartialFunction[Any, Unit] =
-    filesChanging orElse LoggingReceive { respondingToQueries }
-
-  def filesChanging: Receive = {
+  def handleRequests: Receive = withLabel("handleRequests") {
     case AskReTypecheck =>
       Option(rechecking).foreach(_.cancel())
       rechecking = system.scheduler.scheduleOnce(
         5 seconds, scalac, ReloadExistingFilesEvent
       )
-  }
-
-  def respondingToQueries: Receive = {
-    case ConnectionInfoReq => sender() ! ConnectionInfo()
-
     // HACK: to expedite initial dev, Java requests use the Scala API
     case m @ TypecheckFileReq(sfi) if sfi.file.isJava => javac forward m
     case m @ CompletionsReq(sfi, _, _, _, _) if sfi.file.isJava => javac forward m
