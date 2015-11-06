@@ -33,14 +33,16 @@ object ProjectFixture extends Matchers {
     expectMsg(ConnectionInfo())
 
     if (config.scalaLibrary.isEmpty)
-      probe.expectMsg(Broadcaster.Persist(IndexerReadyEvent))
+      probe.receiveN(2) should contain only (
+        Broadcaster.Persist(AnalyzerReadyEvent),
+        Broadcaster.Persist(IndexerReadyEvent)
+      )
     else
       probe.receiveN(3) should contain only (
         Broadcaster.Persist(AnalyzerReadyEvent),
         Broadcaster.Persist(FullTypeCheckCompleteEvent),
         Broadcaster.Persist(IndexerReadyEvent)
       )
-
     (project, probe)
   }
 }
