@@ -8,6 +8,7 @@ import org.ensime.api._
 import org.ensime.core.debug.DebugManager
 import org.ensime.indexer._
 
+import scala.collection.immutable.ListSet
 import scala.concurrent.duration._
 import scala.util._
 
@@ -71,13 +72,27 @@ class Project(
         throw problem
     }(context.dispatcher)
     indexer = context.actorOf(Indexer(searchService), "indexer")
-    if (config.scalaLibrary.isDefined || Set("scala", "dotty")(config.name))
-      scalac = context.actorOf(Analyzer(broadcaster, indexer, searchService), "scalac")
-    else {
+    if (config.scalaLibrary.isDefined || Set("scala", "dotty")(config.name)) {
+
+      // we merge scala and java AnalyzerReady messages into a single
+      // AnalyzerReady message, fired only after java *and* scala are ready
+      val merger = context.actorOf(Props(new Actor {
+        var senders = ListSet.empty[ActorRef]
+        def receive: Receive = {
+          case Broadcaster.Persist(AnalyzerReadyEvent) if senders.size == 1 =>
+            broadcaster ! Broadcaster.Persist(AnalyzerReadyEvent)
+          case Broadcaster.Persist(AnalyzerReadyEvent) => senders += sender()
+          case msg => broadcaster forward msg
+        }
+      }))
+
+      scalac = context.actorOf(Analyzer(merger, indexer, searchService), "scalac")
+      javac = context.actorOf(JavaAnalyzer(merger), "javac")
+    } else {
       log.warning("Detected a pure Java project. Scala queries are not available.")
       scalac = system.deadLetters
+      javac = context.actorOf(JavaAnalyzer(broadcaster), "javac")
     }
-    javac = context.actorOf(JavaAnalyzer(broadcaster), "javac")
     debugger = context.actorOf(DebugManager(broadcaster), "debugging")
     docs = context.actorOf(DocResolver(), "docs")
   }
