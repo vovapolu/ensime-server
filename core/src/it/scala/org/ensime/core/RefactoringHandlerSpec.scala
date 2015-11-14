@@ -96,6 +96,24 @@ class RefactoringHandlerSpec extends WordSpec with Matchers
       assert(formatted === expectedContents)
     }
 
+    "not format invalid files" in withAnalyzer { (config, analyzerRef) =>
+      val file = srcFile(config, "abc.scala", contents(
+        "package blah",
+        "invalid scala syntax"
+      ), write = true, encoding = encoding)
+
+      val analyzer = analyzerRef.underlyingActor
+
+      analyzer.handleFormatFiles(List(new File(file.path)))
+      val fileContents = readSrcFile(file, encoding)
+
+      val expectedContents = contents(
+        "package blah",
+        "invalid scala syntax"
+      )
+      assert(fileContents === expectedContents)
+    }
+
     //
     // core/src/main/scala/org/ensime/core/Refactoring.scala#L.239
     //

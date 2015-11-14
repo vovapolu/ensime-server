@@ -12,6 +12,7 @@ import scala.tools.refactoring._
 import scala.tools.refactoring.analysis.GlobalIndexes
 import scala.tools.refactoring.common.CompilerAccess
 import scala.tools.refactoring.implementations._
+import scala.util.{ Success, Failure, Try }
 import scalariform.astselect.AstSelector
 import scalariform.formatter.ScalaFormatter
 import scalariform.utils.Range
@@ -103,10 +104,12 @@ trait RefactoringHandler { self: Analyzer =>
     val changeList = files.map { f =>
       FileUtils.readFile(f, cs) match {
         case Right(contents) =>
-          val formatted = ScalaFormatter.format(contents, config.formattingPrefs)
-          TextEdit(f, 0, contents.length, formatted)
+          Try(ScalaFormatter.format(contents, config.formattingPrefs)).map((f, contents, _))
         case Left(e) => throw e
       }
+    }.collect {
+      case Success((f, contents, formatted)) =>
+        TextEdit(f, 0, contents.length, formatted)
     }
     FileUtils.writeChanges(changeList, cs)
   }
