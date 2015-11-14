@@ -56,7 +56,9 @@ class SemanticHighlighting(val global: RichPresentationCompiler) extends Compile
           }
           if (sym.hasFlag(ACCESSOR)) {
             val under = sym.accessed
-            if (under.isVariable) {
+            if (sym.hasFlag(LAZY)) {
+              add(ValFieldSymbol)
+            } else if (under.isVariable) {
               add(VarFieldSymbol)
             } else if (under.isValue) {
               add(ValFieldSymbol)
