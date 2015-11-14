@@ -56,6 +56,8 @@ class SemanticHighlighting(val global: RichPresentationCompiler) extends Compile
           }
           if (sym.hasFlag(ACCESSOR)) {
             val under = sym.accessed
+            // The compiler mis-reports lazy val fields
+            // as variables. Lazy can only be a val anyway.
             if (sym.hasFlag(LAZY)) {
               add(ValFieldSymbol)
             } else if (under.isVariable) {
