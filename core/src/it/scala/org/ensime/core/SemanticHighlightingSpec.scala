@@ -397,6 +397,27 @@ class SemanticHighlightingSpec extends WordSpec with Matchers
       ))
     }
 
+    "highlight lazy val fields correctly as vals" in withPresCompiler { (config, cc) =>
+      val sds = getSymbolDesignations(
+        config, cc, """
+            package com.example
+            class Test {
+              lazy val u= 1
+              lazy val v:Int   = 1
+              println( u )
+            }
+            class Test2 {
+              println((new Test).v)
+            }
+          """,
+        List(ValFieldSymbol)
+      )
+      assert(sds === List(
+        (ValFieldSymbol, "u"),
+        (ValFieldSymbol, "v")
+      ))
+    }
+
     "highlight setter operators" in withPresCompiler { (config, cc) =>
       val sds = getSymbolDesignations(
         config, cc, """
