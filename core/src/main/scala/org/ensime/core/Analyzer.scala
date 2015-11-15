@@ -256,7 +256,7 @@ class Analyzer(
   }
 
   def handleReloadFiles(files: List[SourceFileInfo]): RpcResponse = {
-    val missingFiles = files.filterNot(_.file.exists())
+    val missingFiles = files.filterNot(FileUtils.exists)
     if (missingFiles.nonEmpty) {
       val missingFilePaths = missingFiles.map { f => "\"" + f.file + "\"" }.mkString(",")
       EnsimeServerError(s"file(s): $missingFilePaths do not exist")
