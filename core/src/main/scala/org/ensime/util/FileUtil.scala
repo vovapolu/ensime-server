@@ -30,6 +30,14 @@ object RichFileObject {
 }
 
 object FileUtils {
+
+  def exists(f: SourceFileInfo) = f match {
+    case SourceFileInfo(f, _, _) if f.exists() => true
+    case SourceFileInfo(_, Some(c), _) => true
+    case SourceFileInfo(_, _, Some(f)) if f.exists() => true
+    case _ => false
+  }
+
   // prefer file.readString()
   def readFile(f: File, cs: Charset): Either[IOException, String] =
     try Right(f.readString()(cs))
