@@ -36,22 +36,19 @@ trait StandardFormats extends ThreadLocalSupport {
     }
   }
 
-  private val LeftS = SexpSymbol(":left")
-  private val RightS = SexpSymbol(":right")
+  import scala.util.Success
+  import scala.util.Failure
+  import SexpFormatUtils._
   implicit def eitherFormat[L: SexpFormat, R: SexpFormat]: SexpFormat[Either[L, R]] =
     new SexpFormat[Either[L, R]] {
       def write(either: Either[L, R]) = either match {
-        case Left(b) => SexpData(LeftS -> b.toSexp)
-        case Right(a) => SexpData(RightS -> a.toSexp)
+        case Left(b) => b.toSexp
+        case Right(a) => a.toSexp
       }
-      def read(value: Sexp) = value match {
-        case SexpData(contents) =>
-          (contents.get(LeftS), contents.get(RightS)) match {
-            case (Some(left), None) => Left(left.convertTo[L])
-            case (None, Some(right)) => Right(right.convertTo[R])
-            case x => deserializationError(value)
-          }
-        case x => deserializationError(x)
+      def read(value: Sexp) = (value.convertTo(safeReader[L]), value.convertTo(safeReader[R])) match {
+        case (Success(l), Failure(_)) => Left(l)
+        case (Failure(l), Success(r)) => Right(r)
+        case (_, _) => deserializationError(value)
       }
     }
 

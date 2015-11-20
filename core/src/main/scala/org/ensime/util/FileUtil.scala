@@ -39,6 +39,9 @@ object RichFileObject {
 
 object FileUtils {
 
+  implicit def toSourceFileInfo(f: Either[File, SourceFileInfo]): SourceFileInfo =
+    f.fold(l => SourceFileInfo(l, None, None), r => r)
+
   def exists(f: SourceFileInfo) = f match {
     case SourceFileInfo(f, _, _) if f.exists() => true
     case SourceFileInfo(_, Some(c), _) => true

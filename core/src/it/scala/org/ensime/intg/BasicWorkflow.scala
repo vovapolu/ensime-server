@@ -27,7 +27,7 @@ class BasicWorkflow extends WordSpec with Matchers
             val fooFilePath = fooFile.getAbsolutePath
 
             // trigger typeCheck
-            project ! TypecheckFilesReq(List(fooFile))
+            project ! TypecheckFilesReq(List(Left(fooFile)))
             expectMsg(VoidResponse)
 
             asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
@@ -36,12 +36,12 @@ class BasicWorkflow extends WordSpec with Matchers
 
             val missingFile = sourceRoot / "missing.scala"
             val missingFilePath = missingFile.getAbsolutePath
-            project ! TypecheckFilesReq(List(missingFile))
+            project ! TypecheckFilesReq(List(Left(missingFile)))
             expectMsg(EnsimeServerError(s"""file(s): "$missingFilePath" do not exist"""))
 
             //-----------------------------------------------------------------------------------------------
             // semantic highlighting
-            project ! SymbolDesignationsReq(fooFile, -1, 299, SourceSymbol.allSymbols)
+            project ! SymbolDesignationsReq(Left(fooFile), -1, 299, SourceSymbol.allSymbols)
             val designations = expectMsgType[SymbolDesignations]
             designations.file shouldBe fooFile
             designations.syms should contain(SymbolDesignation(12, 19, PackageSymbol))
@@ -50,7 +50,7 @@ class BasicWorkflow extends WordSpec with Matchers
 
             //-----------------------------------------------------------------------------------------------
             // symbolAtPoint
-            project ! SymbolAtPointReq(fooFile, 128)
+            project ! SymbolAtPointReq(Left(fooFile), 128)
             val symbolAtPointOpt: Option[SymbolInfo] = expectMsgType[Option[SymbolInfo]]
 
             val intTypeId = symbolAtPointOpt match {
@@ -129,7 +129,7 @@ class BasicWorkflow extends WordSpec with Matchers
             val intDocSig = DocSigPair(DocSig(DocFqn("scala", "Int"), None), DocSig(DocFqn("", "int"), None))
 
             // NOTE these are handled as multi-phase queries in requesthandler
-            project ! DocUriAtPointReq(fooFile, OffsetRange(128))
+            project ! DocUriAtPointReq(Left(fooFile), OffsetRange(128))
             expectMsg(Some(intDocSig))
 
             project ! DocUriForSymbolReq("scala.Int", None, None)
@@ -144,12 +144,12 @@ class BasicWorkflow extends WordSpec with Matchers
             log.info("------------------------------------222-")
 
             // FIXME: doing a fresh typecheck is needed to pass the next few tests. Why?
-            project ! TypecheckFilesReq(List(fooFile))
+            project ! TypecheckFilesReq(List(Left(fooFile)))
             expectMsg(VoidResponse)
 
             asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
 
-            project ! UsesOfSymbolAtPointReq(fooFile, 119) // point on testMethod
+            project ! UsesOfSymbolAtPointReq(Left(fooFile), 119) // point on testMethod
             expectMsgPF() {
               case ERangePositions(List(ERangePosition(`fooFilePath`, 114, 110, 172), ERangePosition(`fooFilePath`, 273, 269, 283))) =>
             }
@@ -159,13 +159,13 @@ class BasicWorkflow extends WordSpec with Matchers
             // note that the line numbers appear to have been stripped from the
             // scala library classfiles, so offset/line comes out as zero unless
             // loaded by the pres compiler
-            project ! SymbolAtPointReq(fooFile, 276)
+            project ! SymbolAtPointReq(Left(fooFile), 276)
             expectMsgPF() {
               case Some(SymbolInfo("testMethod", "testMethod", Some(OffsetSourcePosition(`fooFile`, 114)), ArrowTypeInfo("(i: Int, s: String)Int", 126, BasicTypeInfo("Int", 1, DeclaredAs.Class, "scala.Int", List(), List(), None, None), List(ParamSectionInfo(List((i, BasicTypeInfo("Int", 1, DeclaredAs.Class, "scala.Int", List(), List(), None, None)), (s, BasicTypeInfo("String", 39, DeclaredAs.Class, "java.lang.String", List(), List(), None, None))), false))), true, Some(_))) =>
             }
 
             // M-.  external symbol
-            project ! SymbolAtPointReq(fooFile, 190)
+            project ! SymbolAtPointReq(Left(fooFile), 190)
             expectMsgPF() {
               case Some(SymbolInfo("apply", "apply", Some(_),
                 ArrowTypeInfo("[A, B](elems: (A, B)*)CC[A,B]", _,
