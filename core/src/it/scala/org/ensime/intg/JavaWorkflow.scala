@@ -26,10 +26,10 @@ class JavaWorkflow extends WordSpec with Matchers
             val fooFile = sourceRoot / "pure/NoScalaHere.java"
             val fooFilePath = fooFile.getAbsolutePath
 
-            project ! TypecheckFilesReq(List(fooFile))
+            project ! TypecheckFilesReq(List(Left(fooFile)))
             expectMsg(VoidResponse)
 
-            project ! TypeAtPointReq(fooFile, OffsetRange(30))
+            project ! TypeAtPointReq(Left(fooFile), OffsetRange(30))
             expectMsg(Some(BasicTypeInfo("pure.NoScalaHere", -1, DeclaredAs.Class, "pure.NoScalaHere", Nil, Nil, Some(EmptySourcePosition()), None)))
           }
         }
