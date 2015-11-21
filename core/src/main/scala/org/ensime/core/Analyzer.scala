@@ -182,6 +182,7 @@ class Analyzer(
     case req: CancelRefactorReq =>
       sender ! handleRefactorCancel(req)
     case CompletionsReq(fileInfo, point, maxResults, caseSens, reload) =>
+      reporter.disable()
       sender ! scalaCompiler.askCompletionsAt(pos(fileInfo, point), maxResults, caseSens)
     case UsesOfSymbolAtPointReq(file, point) =>
       val p = pos(file, point)
