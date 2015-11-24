@@ -32,8 +32,8 @@ class CanonSpec extends FlatSpec with Matchers {
   }
 
   it should "canon an RpcRequest" in {
-    val request = TypeAtPointReq(Left(file), OffsetRange(100)): RpcRequest
-    val expected = TypeAtPointReq(Left(canon), OffsetRange(100))
+    val request = TypeAtPointReq(file, OffsetRange(100)): RpcRequest
+    val expected = TypeAtPointReq(canon, OffsetRange(100))
     Canonised(request) shouldBe expected
   }
 

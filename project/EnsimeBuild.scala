@@ -26,9 +26,6 @@ object EnsimeBuild extends Build with JdkResolver {
     scalaVersion := "2.11.7",
     version := "0.9.10-SNAPSHOT",
 
-    // sbt, STFU...
-    ivyLoggingLevel := UpdateLogging.Quiet,
-
     dependencyOverrides ++= Set(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-library" % scalaVersion.value,

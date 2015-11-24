@@ -7,17 +7,9 @@ import java.nio.charset.Charset
 import org.apache.commons.vfs2.FileObject
 
 import scala.collection.mutable
-import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 
 import org.ensime.api._
 import org.ensime.util.file._
-
-/**
- *  Wrap BatchSourceFile to allow access to only the (String, Array[Char])
- *  constructor, which creates an in-memory source file.
- */
-class InMemorySourceFile(path: String, content: Seq[Char])
-  extends BatchSourceFile(path, content.toArray) {}
 
 object RichFileObject {
   implicit class RichFileObject(val fo: FileObject) extends AnyVal {
@@ -38,9 +30,6 @@ object RichFileObject {
 }
 
 object FileUtils {
-
-  implicit def toSourceFileInfo(f: Either[File, SourceFileInfo]): SourceFileInfo =
-    f.fold(l => SourceFileInfo(l, None, None), r => r)
 
   def exists(f: SourceFileInfo) = f match {
     case SourceFileInfo(f, _, _) if f.exists() => true

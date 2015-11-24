@@ -6,7 +6,6 @@ import org.ensime.api._
 import org.ensime.core.javac._
 import org.ensime.indexer.EnsimeVFS
 import org.ensime.util.ReportHandler
-import org.ensime.util.FileUtils
 
 class JavaAnalyzer(
     broadcaster: ActorRef,
@@ -15,8 +14,6 @@ class JavaAnalyzer(
 ) extends Actor with Stash with ActorLogging {
 
   protected var javaCompiler: JavaCompiler = _
-
-  import FileUtils._
 
   override def preStart(): Unit = {
     javaCompiler = new JavaCompiler(
@@ -46,25 +43,25 @@ class JavaAnalyzer(
   // TODO: create a sealed family of requests / responses just for Java usage
   override def receive = {
     case TypecheckFileReq(sfi) =>
-      javaCompiler.askTypecheckFiles(sfi :: Nil)
+      javaCompiler.askTypecheckFiles(SourceFileInfo(sfi.file) :: Nil)
       sender() ! VoidResponse
 
     case TypecheckFilesReq(files) =>
-      javaCompiler.askTypecheckFiles(files.map(toSourceFileInfo))
+      javaCompiler.askTypecheckFiles(files.map(SourceFileInfo(_)))
       sender() ! VoidResponse
 
-    case CompletionsReq(file, point, maxResults, caseSens, _) =>
-      sender() ! javaCompiler.askCompletionsAtPoint(file, point, maxResults, caseSens)
+    case CompletionsReq(f, point, maxResults, caseSens, _) =>
+      sender() ! javaCompiler.askCompletionsAtPoint(f, point, maxResults, caseSens)
 
     case DocUriAtPointReq(file, range) =>
-      sender() ! javaCompiler.askDocSignatureAtPoint(file, range.from)
+      sender() ! javaCompiler.askDocSignatureAtPoint(SourceFileInfo(file, None, None), range.from)
 
     case TypeAtPointReq(file, range) =>
-      sender() ! javaCompiler.askTypeAtPoint(file, range.from)
+      sender() ! javaCompiler.askTypeAtPoint(SourceFileInfo(file, None, None), range.from)
 
     case SymbolDesignationsReq(f, start, end, tpes) =>
       // NOT IMPLEMENTED YET
-      sender ! SymbolDesignations(f.file, Nil)
+      sender ! SymbolDesignations(f, Nil)
   }
 
 }

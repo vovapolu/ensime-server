@@ -47,7 +47,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
 
     roundtrip(
-      ImportSuggestionsReq(Left(file1), 1, List("foo", "bar"), 10): RpcRequest,
+      ImportSuggestionsReq(file1, 1, List("foo", "bar"), 10): RpcRequest,
       s"""{"point":1,"maxResults":10,"names":["foo","bar"],"typehint":"ImportSuggestionsReq","file":"$file1"}"""
     )
   }
@@ -64,7 +64,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
 
     roundtrip(
-      TypecheckFilesReq(List(Left(file1), Left(file2))): RpcRequest,
+      TypecheckFilesReq(List(file1, file2)): RpcRequest,
       s"""{"typehint":"TypecheckFilesReq","files":["$file1","$file2"]}"""
     )
 
@@ -89,7 +89,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
 
     roundtrip(
-      DocUriAtPointReq(Left(file1), OffsetRange(1, 10)): RpcRequest,
+      DocUriAtPointReq(file1, OffsetRange(1, 10)): RpcRequest,
       s"""{"typehint":"DocUriAtPointReq","file":"$file1","point":{"from":1,"to":10}}"""
     )
 
@@ -114,7 +114,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
 
     roundtrip(
-      UsesOfSymbolAtPointReq(Left(file1), 100): RpcRequest,
+      UsesOfSymbolAtPointReq(file1, 100): RpcRequest,
       s"""{"typehint":"UsesOfSymbolAtPointReq","file":"$file1","point":100}"""
     )
 
@@ -129,17 +129,17 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
 
     roundtrip(
-      TypeByNameAtPointReq("foo.bar", Left(file1), OffsetRange(1, 10)): RpcRequest,
+      TypeByNameAtPointReq("foo.bar", file1, OffsetRange(1, 10)): RpcRequest,
       s"""{"typehint":"TypeByNameAtPointReq","name":"foo.bar","file":"$file1","range":{"from":1,"to":10}}"""
     )
 
     roundtrip(
-      TypeAtPointReq(Left(file1), OffsetRange(1, 100)): RpcRequest,
+      TypeAtPointReq(file1, OffsetRange(1, 100)): RpcRequest,
       s"""{"typehint":"TypeAtPointReq","file":"$file1","range":{"from":1,"to":100}}"""
     )
 
     roundtrip(
-      InspectTypeAtPointReq(Left(file1), OffsetRange(1, 100)): RpcRequest,
+      InspectTypeAtPointReq(file1, OffsetRange(1, 100)): RpcRequest,
       s"""{"typehint":"InspectTypeAtPointReq","file":"$file1","range":{"from":1,"to":100}}"""
     )
 
@@ -154,7 +154,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
 
     roundtrip(
-      SymbolAtPointReq(Left(file1), 101): RpcRequest,
+      SymbolAtPointReq(file1, 101): RpcRequest,
       s"""{"typehint":"SymbolAtPointReq","file":"$file1","point":101}"""
     )
 
@@ -185,18 +185,10 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       SymbolDesignationsReq(
-        Left(file1), 1, 100,
+        file1, 1, 100,
         List(ObjectSymbol, ValSymbol)
       ): RpcRequest,
       s"""{"requestedTypes":[{"typehint":"ObjectSymbol"},{"typehint":"ValSymbol"}],"typehint":"SymbolDesignationsReq","end":100,"file":"$file1","start":1}"""
-    )
-
-    roundtrip(
-      SymbolDesignationsReq(
-        Right(SourceFileInfo(file1, None, None)), 1, 100,
-        List(ObjectSymbol, ValSymbol)
-      ): RpcRequest,
-      s"""{"requestedTypes":[{"typehint":"ObjectSymbol"},{"typehint":"ValSymbol"}],"typehint":"SymbolDesignationsReq","file":{"file":"$file1"}, "end":100,"start":1}"""
     )
 
     roundtrip(
@@ -205,7 +197,7 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
 
     roundtrip(
-      ImplicitInfoReq(Left(file1), OffsetRange(0, 123)): RpcRequest,
+      ImplicitInfoReq(file1, OffsetRange(0, 123)): RpcRequest,
       s"""{"typehint":"ImplicitInfoReq","file":"$file1","range":{"from":0,"to":123}}"""
     )
   }

@@ -54,7 +54,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     unmarshal(
       s"""(swank:import-suggestions "$file1" 1 ("foo" "bar") 10)""",
-      ImportSuggestionsReq(Left(file1), 1, List("foo", "bar"), 10): RpcRequest
+      ImportSuggestionsReq(file1, 1, List("foo", "bar"), 10): RpcRequest
     )
   }
 
@@ -71,12 +71,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     unmarshal(
       s"""(swank:typecheck-files ("$file1" "$file2"))""",
-      TypecheckFilesReq(List(Left(file1), Left(file2))): RpcRequest
-    )
-
-    unmarshal(
-      s"""(swank:typecheck-files ((:file "$file1") (:file "$file2" :contents "xxx")))""",
-      TypecheckFilesReq(List(Right(SourceFileInfo(file1)), Right(SourceFileInfo(file2, Some("xxx"), None)))): RpcRequest
+      TypecheckFilesReq(List(file1, file2)): RpcRequest
     )
 
     unmarshal(
@@ -101,12 +96,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     unmarshal(
       s"""(swank:doc-uri-at-point "$file1" (1 10))""",
-      DocUriAtPointReq(Left(file1), OffsetRange(1, 10)): RpcRequest
-    )
-
-    unmarshal(
-      s"""(swank:doc-uri-at-point (:file "$file1" :contents-in "$file2") (1 10))""",
-      DocUriAtPointReq(Right(SourceFileInfo(file1, None, Some(file2))), OffsetRange(1, 10)): RpcRequest
+      DocUriAtPointReq(file1, OffsetRange(1, 10)): RpcRequest
     )
 
     unmarshal(
@@ -131,7 +121,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     unmarshal(
       s"""(swank:uses-of-symbol-at-point "$file1" 100)""",
-      UsesOfSymbolAtPointReq(Left(file1), 100): RpcRequest
+      UsesOfSymbolAtPointReq(file1, 100): RpcRequest
     )
 
     unmarshal(
@@ -146,17 +136,17 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     unmarshal(
       s"""(swank:type-by-name-at-point "foo.bar" "$file1" (1 10))""",
-      TypeByNameAtPointReq("foo.bar", Left(file1), OffsetRange(1, 10)): RpcRequest
+      TypeByNameAtPointReq("foo.bar", file1, OffsetRange(1, 10)): RpcRequest
     )
 
     unmarshal(
       s"""(swank:type-at-point "$file1" (1 100))""",
-      TypeAtPointReq(Left(file1), OffsetRange(1, 100)): RpcRequest
+      TypeAtPointReq(file1, OffsetRange(1, 100)): RpcRequest
     )
 
     unmarshal(
       s"""(swank:inspect-type-at-point "$file1" (1 100))""",
-      InspectTypeAtPointReq(Left(file1), OffsetRange(1, 100)): RpcRequest
+      InspectTypeAtPointReq(file1, OffsetRange(1, 100)): RpcRequest
     )
 
     unmarshal(
@@ -171,7 +161,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     unmarshal(
       s"""(swank:symbol-at-point "$file1" 101)""",
-      SymbolAtPointReq(Left(file1), 101): RpcRequest
+      SymbolAtPointReq(file1, 101): RpcRequest
     )
 
     unmarshal(
@@ -202,15 +192,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     unmarshal(
       s"""(swank:symbol-designations "$file1" 1 100 (object val))""",
       SymbolDesignationsReq(
-        Left(file1), 1, 100,
-        List(ObjectSymbol, ValSymbol)
-      ): RpcRequest
-    )
-
-    unmarshal(
-      s"""(swank:symbol-designations (:file "$file1") 1 100 (object val))""",
-      SymbolDesignationsReq(
-        Right(SourceFileInfo(file1, None, None)), 1, 100,
+        file1, 1, 100,
         List(ObjectSymbol, ValSymbol)
       ): RpcRequest
     )
@@ -222,7 +204,7 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     unmarshal(
       s"""(swank:implicit-info "$file1" (0 123))""",
-      ImplicitInfoReq(Left(file1), OffsetRange(0, 123))
+      ImplicitInfoReq(file1, OffsetRange(0, 123))
     )
 
   }
