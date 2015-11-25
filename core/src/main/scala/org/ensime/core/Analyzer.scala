@@ -46,6 +46,8 @@ class Analyzer(
     implicit val vfs: EnsimeVFS
 ) extends Actor with Stash with ActorLogging with RefactoringHandler {
 
+  import FileUtils._
+
   private var allFilesMode = false
 
   private var settings: Settings = _
@@ -172,7 +174,7 @@ class Analyzer(
     case TypecheckFileReq(fileInfo) =>
       sender ! handleReloadFiles(List(fileInfo))
     case TypecheckFilesReq(files) =>
-      sender ! handleReloadFiles(files.map(SourceFileInfo(_)))
+      sender ! handleReloadFiles(files.map(toSourceFileInfo))
     case req: PrepareRefactorReq =>
       sender ! handleRefactorPrepareRequest(req)
     case req: ExecRefactorReq =>
@@ -180,11 +182,8 @@ class Analyzer(
     case req: CancelRefactorReq =>
       sender ! handleRefactorCancel(req)
     case CompletionsReq(fileInfo, point, maxResults, caseSens, reload) =>
-      val sourcefile = createSourceFile(fileInfo)
       reporter.disable()
-      val p = new OffsetPosition(sourcefile, point)
-      val info = scalaCompiler.askCompletionsAt(p, maxResults, caseSens)
-      sender ! info
+      sender ! scalaCompiler.askCompletionsAt(pos(fileInfo, point), maxResults, caseSens)
     case UsesOfSymbolAtPointReq(file, point) =>
       val p = pos(file, point)
       scalaCompiler.askLoadedTyped(p.source)
@@ -193,7 +192,7 @@ class Analyzer(
     case PackageMemberCompletionReq(path: String, prefix: String) =>
       val members = scalaCompiler.askCompletePackageMember(path, prefix)
       sender ! members
-    case InspectTypeAtPointReq(file: File, range: OffsetRange) =>
+    case InspectTypeAtPointReq(file, range: OffsetRange) =>
       val p = pos(file, range)
       scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askInspectTypeAt(p)
@@ -201,13 +200,13 @@ class Analyzer(
       sender ! scalaCompiler.askInspectTypeById(id)
     case InspectTypeByNameReq(name: String) =>
       sender ! scalaCompiler.askInspectTypeByName(name)
-    case SymbolAtPointReq(file: File, point: Int) =>
+    case SymbolAtPointReq(file, point: Int) =>
       val p = pos(file, point)
       scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askSymbolInfoAt(p)
     case SymbolByNameReq(typeFullName: String, memberName: Option[String], signatureString: Option[String]) =>
       sender ! scalaCompiler.askSymbolByName(typeFullName, memberName, signatureString)
-    case DocUriAtPointReq(file: File, range: OffsetRange) =>
+    case DocUriAtPointReq(file, range: OffsetRange) =>
       val p = pos(file, range)
       scalaCompiler.askLoadedTyped(p.source)
       sender() ! scalaCompiler.askDocSignatureAtPoint(p)
@@ -215,7 +214,7 @@ class Analyzer(
       sender() ! scalaCompiler.askDocSignatureForSymbol(typeFullName, memberName, signatureString)
     case InspectPackageByPathReq(path: String) =>
       sender ! scalaCompiler.askPackageByPath(path)
-    case TypeAtPointReq(file: File, range: OffsetRange) =>
+    case TypeAtPointReq(file, range: OffsetRange) =>
       val p = pos(file, range)
       scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askTypeInfoAt(p)
@@ -223,7 +222,7 @@ class Analyzer(
       sender ! scalaCompiler.askTypeInfoById(id)
     case TypeByNameReq(name: String) =>
       sender ! scalaCompiler.askTypeInfoByName(name)
-    case TypeByNameAtPointReq(name: String, file: File, range: OffsetRange) =>
+    case TypeByNameAtPointReq(name: String, file, range: OffsetRange) =>
       val p = pos(file, range)
       scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askTypeInfoByNameAt(name, p)
@@ -231,7 +230,7 @@ class Analyzer(
       sender ! scalaCompiler.askCallCompletionInfoById(id)
 
     case SymbolDesignationsReq(f, start, end, Nil) =>
-      sender ! SymbolDesignations(f, List.empty)
+      sender ! SymbolDesignations(f.file, List.empty)
     case SymbolDesignationsReq(f, start, end, tpes) =>
       val sf = createSourceFile(f)
       val clampedEnd = math.max(end, start)
@@ -240,7 +239,7 @@ class Analyzer(
       val syms = scalaCompiler.askSymbolDesignationsInRegion(pos, tpes)
       sender ! syms
 
-    case ImplicitInfoReq(file: File, range: OffsetRange) =>
+    case ImplicitInfoReq(file, range: OffsetRange) =>
       val p = pos(file, range)
       scalaCompiler.askLoadedTyped(p.source)
       sender() ! scalaCompiler.askImplicitInfoInRegion(p)
@@ -256,16 +255,12 @@ class Analyzer(
   }
 
   def handleReloadFiles(files: List[SourceFileInfo]): RpcResponse = {
-    val missingFiles = files.filterNot(FileUtils.exists)
+    val (existing, missingFiles) = files.partition(FileUtils.exists)
     if (missingFiles.nonEmpty) {
       val missingFilePaths = missingFiles.map { f => "\"" + f.file + "\"" }.mkString(",")
       EnsimeServerError(s"file(s): $missingFilePaths do not exist")
     } else {
-
-      val (javas, scalas) = files.filter(_.file.exists).partition(
-        _.file.getName.endsWith(".java")
-      )
-
+      val (javas, scalas) = existing.partition(_.file.getName.endsWith(".java"))
       if (scalas.nonEmpty) {
         val sourceFiles = scalas.map(createSourceFile)
         scalaCompiler.askReloadFiles(sourceFiles)
@@ -275,24 +270,28 @@ class Analyzer(
     }
   }
 
-  def pos(file: File, range: OffsetRange): OffsetPosition = {
-    val f = scalaCompiler.createSourceFile(file.canon.getPath)
+  def pos(file: File, range: OffsetRange): OffsetPosition =
+    pos(createSourceFile(file), range)
+  def pos(file: File, offset: Int): OffsetPosition =
+    pos(createSourceFile(file), offset)
+
+  def pos(file: SourceFileInfo, range: OffsetRange): OffsetPosition =
+    pos(createSourceFile(file), range)
+  def pos(file: SourceFileInfo, offset: Int): OffsetPosition =
+    pos(createSourceFile(file), offset)
+
+  def pos(f: SourceFile, range: OffsetRange): OffsetPosition = {
     if (range.from == range.to) new OffsetPosition(f, range.from)
     else new RangePosition(f, range.from, range.from, range.to)
   }
 
-  def pos(file: File, offset: Int): OffsetPosition = {
-    val f = scalaCompiler.createSourceFile(file.canon.getPath)
-    new OffsetPosition(f, offset)
-  }
+  def pos(f: SourceFile, offset: Int): OffsetPosition = new OffsetPosition(f, offset)
 
-  def createSourceFile(file: File): SourceFile = {
+  def createSourceFile(file: File): SourceFile =
     scalaCompiler.createSourceFile(file.canon.getPath)
-  }
 
-  def createSourceFile(file: SourceFileInfo): SourceFile = {
+  def createSourceFile(file: SourceFileInfo): SourceFile =
     scalaCompiler.createSourceFile(file)
-  }
 
 }
 object Analyzer {

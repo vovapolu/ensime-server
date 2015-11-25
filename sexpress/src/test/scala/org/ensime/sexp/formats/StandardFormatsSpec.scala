@@ -20,11 +20,11 @@ class StandardFormatsSpec extends FormatSpec with StandardFormats with BasicForm
       val right = Right("thirteen")
       assertFormat(
         left: Either[Int, String],
-        SexpData(SexpSymbol(":left") -> SexpNumber(13))
+        SexpNumber(13)
       )
       assertFormat(
         right: Either[Int, String],
-        SexpData(SexpSymbol(":right") -> SexpString("thirteen"))
+        SexpString("thirteen")
       )
     }
 
