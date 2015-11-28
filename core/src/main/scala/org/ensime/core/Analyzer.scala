@@ -288,7 +288,7 @@ class Analyzer(
   def pos(f: SourceFile, offset: Int): OffsetPosition = new OffsetPosition(f, offset)
 
   def createSourceFile(file: File): SourceFile =
-    scalaCompiler.createSourceFile(file.canon.getPath)
+    scalaCompiler.createSourceFile(file.getPath)
 
   def createSourceFile(file: SourceFileInfo): SourceFile =
     scalaCompiler.createSourceFile(file)

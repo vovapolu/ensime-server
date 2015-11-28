@@ -12,13 +12,6 @@ import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 import org.ensime.api._
 import org.ensime.util.file._
 
-/**
- *  Wrap BatchSourceFile to allow access to only the (String, Array[Char])
- *  constructor, which creates an in-memory source file.
- */
-class InMemorySourceFile(path: String, content: Seq[Char])
-  extends BatchSourceFile(path, content.toArray) {}
-
 object RichFileObject {
   implicit class RichFileObject(val fo: FileObject) extends AnyVal {
     // None if the fo is not an entry in an archive

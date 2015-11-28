@@ -21,7 +21,7 @@ class CompileTimingTest extends WordSpec with Matchers
   val original = EnsimeConfigFixture.TimingTestProject
 
   "ensime-server" should {
-    "handle an sbt clean" in {
+    "handle multiple sbt clean / compile" in {
       withEnsimeConfig { implicit config =>
         withTestKit { implicit testkit =>
           withProject { (project, asyncHelper) =>
@@ -33,41 +33,49 @@ class CompileTimingTest extends WordSpec with Matchers
 
             val target = (mainTarget / "..").canon
             val targetBak = (target / "../scala-classes.bak").canon
+
             val exampleDiskInfo = SourceFileInfo(example, None, None)
+            val exampleMemory = SourceFileInfo(example, None, Some(example))
 
             FileUtils.copyDirectory(target, targetBak)
 
+            project ! TypecheckFileReq(exampleDiskInfo)
+            expectMsg(VoidResponse)
+            asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
+
+            // GUI usually responds to each typecheck by requesting symbols
+            project ! SymbolDesignationsReq(Right(exampleDiskInfo), 0, 70, SourceSymbol.allSymbols)
+            expectMsgType[SymbolDesignations]
+
+            // typecheck an in-memory version of the file
+            project ! TypecheckFileReq(exampleMemory)
+            expectMsg(VoidResponse)
+
+            asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
+            project ! SymbolDesignationsReq(Right(exampleMemory), 0, 70, SourceSymbol.allSymbols)
+            expectMsgType[SymbolDesignations]
+
             // simulate sbt clean https://github.com/sbt/sbt/issues/106
-            project ! TypecheckFileReq(exampleDiskInfo)
             FileUtils.deleteDirectory(target)
-            project ! TypecheckFileReq(exampleDiskInfo)
 
-            // intentionally after the deletion to encourage races
-            expectMsg(VoidResponse)
-            expectMsg(VoidResponse)
-
-            asyncHelper.receiveN(3) should contain theSameElementsAs (Seq(
-              // note we only get two of these events, you might have expected 3
-              FullTypeCheckCompleteEvent,
+            asyncHelper.receiveN(2) should contain theSameElementsAs (Seq(
               FullTypeCheckCompleteEvent,
               CompilerRestartedEvent
             ))
+
+            project ! SymbolDesignationsReq(Right(exampleDiskInfo), 0, 70, SourceSymbol.allSymbols)
+            expectMsgType[SymbolDesignations]
 
             // simulate sbt compile
-            project ! TypecheckFileReq(exampleDiskInfo)
             FileUtils.copyDirectory(targetBak, target)
-            project ! TypecheckFileReq(exampleDiskInfo)
 
-            expectMsg(VoidResponse)
-            expectMsg(VoidResponse)
-
-            asyncHelper.receiveN(3) should contain theSameElementsAs (Seq(
-              FullTypeCheckCompleteEvent,
+            asyncHelper.receiveN(2) should contain theSameElementsAs (Seq(
               FullTypeCheckCompleteEvent,
               CompilerRestartedEvent
             ))
 
-            asyncHelper.expectNoMsg()
+            project ! SymbolDesignationsReq(Right(exampleDiskInfo), 0, 70, SourceSymbol.allSymbols)
+            expectMsgType[SymbolDesignations]
           }
         }
       }

@@ -46,7 +46,6 @@ import akka.actor.ActorRef
 import org.ensime.indexer.{ EnsimeVFS, SearchService }
 import org.ensime.model._
 import org.ensime.util.FileUtils
-import org.ensime.util.InMemorySourceFile
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -54,6 +53,7 @@ import scala.reflect.internal.util.{ BatchSourceFile, RangePosition, SourceFile 
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interactive.{ CompilerControl, Global }
 import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.io.VirtualFile
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.util._
 import scala.tools.refactoring.analysis.GlobalIndexes
@@ -162,7 +162,7 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
     val all = {
       for {
         file <- config.scalaSourceFiles
-        source = getSourceFile(file.getAbsolutePath)
+        source = createSourceFile(file)
       } yield source
     }.toSet ++ activeUnits().map(_.source)
     askReloadFiles(all)
@@ -211,20 +211,33 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
 
   def askNotifyWhenReady(): Unit = ask(setNotifyWhenReady)
 
-  def createSourceFile(path: String) = getSourceFile(path)
-  def createSourceFile(file: AbstractFile) = getSourceFile(file)
-  def createSourceFile(file: SourceFileInfo) = file match {
-    case SourceFileInfo(f, None, None) => getSourceFile(f.canon.getPath)
-    case SourceFileInfo(f, Some(contents), None) => new InMemorySourceFile(f.canon.getPath, contents.toArray)
-    case SourceFileInfo(f, None, Some(contentsIn)) => {
-      new InMemorySourceFile(f.canon.getPath, contentsIn.readString()(charset).toArray)
-    }
-  }
-  def findSourceFile(path: String): Option[SourceFile] = allSources.find(
-    _.file.path == path
-  )
+  // WARNING: be really careful when creating BatchSourceFiles. there
+  // are multiple constructers which do weird things, best to be very
+  // explicit about what we're doing and only use the primary
+  // constructor. Note that scalac appears to have a bug in it whereby
+  // it is unable to tell that a VirtualFile (i.e. in-memory) and a
+  // non VirtualFile backed BatchSourceFile are actually referring to
+  // the same compilation unit. see
+  // https://github.com/ensime/ensime-server/issues/1160
+  def createSourceFile(file: File): BatchSourceFile =
+    createSourceFile(SourceFileInfo(file, None, None))
+  def createSourceFile(path: String): BatchSourceFile =
+    createSourceFile(new File(path))
+  def createSourceFile(file: AbstractFile): BatchSourceFile =
+    createSourceFile(file.file)
+  def createSourceFile(file: SourceFileInfo): BatchSourceFile = file match {
+    case SourceFileInfo(f, None, None) =>
+      new BatchSourceFile(
+        AbstractFile.getFile(f.getPath),
+        f.readString()(charset).toCharArray
+      )
 
-  // TODO: friends should not give friends other people's types (Position)
+    case SourceFileInfo(f, Some(contents), None) =>
+      new BatchSourceFile(new VirtualFile(f.getPath), contents.toCharArray)
+    case SourceFileInfo(f, None, Some(contentsIn)) =>
+      new BatchSourceFile(new VirtualFile(f.getPath), contentsIn.readString()(charset).toCharArray)
+  }
+
   def askLinkPos(sym: Symbol, path: AbstractFile): Option[Position] =
     askOption(linkPos(sym, createSourceFile(path)))
 }

@@ -41,12 +41,12 @@ import akka.pattern.Patterns
 import akka.util.Timeout
 import org.ensime.api._
 import org.ensime.util.Arrays
-import org.ensime.util.InMemorySourceFile
 
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
+import scala.tools.nsc.io.VirtualFile
 
 trait CompletionControl {
   self: RichPresentationCompiler =>
@@ -149,13 +149,16 @@ trait CompletionControl {
     }
   }
 
-  private def spliceSource(s: SourceFile, start: Int, end: Int,
-    replacement: String): SourceFile = {
-    new InMemorySourceFile(
-      s.file.path,
-      Arrays.splice(s.content, start, end, replacement.toArray)
-    )
-  }
+  private def spliceSource(
+    s: SourceFile,
+    start: Int,
+    end: Int,
+    replacement: String
+  ): BatchSourceFile = new BatchSourceFile(
+    // careful: uses a VirtualFile-backed SourceFile
+    new VirtualFile(s.file.path),
+    Arrays.splice(s.content, start, end, replacement.toArray)
+  )
 
   def fetchTypeSearchCompletions(prefix: String, maxResults: Int): Future[Option[List[CompletionInfo]]] = {
     val req = TypeCompletionsReq(prefix, maxResults)
