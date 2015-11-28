@@ -40,13 +40,12 @@ package org.ensime.core
 import akka.pattern.Patterns
 import akka.util.Timeout
 import org.ensime.api._
-import org.ensime.util.Arrays
 
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
-import scala.tools.nsc.io.VirtualFile
+import scala.tools.nsc.io.AbstractFile
 
 trait CompletionControl {
   self: RichPresentationCompiler =>
@@ -91,8 +90,18 @@ trait CompletionControl {
     val (src, p, patched) = if (defaultPrefix.isEmpty) {
       // Add a fake prefix if none was provided by the user. Otherwise the
       // compiler will give us a weird tree.
-      val src = spliceSource(inputP.source, inputP.endOrCursor, inputP.endOrCursor, "a")
-      //(src, inputP.withSourceShifted(src, 1), true)
+      val orig = inputP.source.content
+      val point = inputP.endOrCursor
+
+      // Uses array logic to minimise memory spikes of large Strings
+      val contents = Array.ofDim[Char](orig.length + 1)
+      System.arraycopy(orig, 0, contents, 0, point)
+      contents(point) = 'a'
+      System.arraycopy(orig, point, contents, point + 1, orig.length - point)
+
+      // uses the same VirtualFile as the original
+      val src = new BatchSourceFile(inputP.source.file, contents)
+
       (src, inputP.withSource(src).withShift(1), true)
     } else {
       (inputP.source, inputP, false)
@@ -148,17 +157,6 @@ trait CompletionControl {
       case _ => CompletionInfoList("", Nil)
     }
   }
-
-  private def spliceSource(
-    s: SourceFile,
-    start: Int,
-    end: Int,
-    replacement: String
-  ): BatchSourceFile = new BatchSourceFile(
-    // careful: uses a VirtualFile-backed SourceFile
-    new VirtualFile(s.file.path),
-    Arrays.splice(s.content, start, end, replacement.toArray)
-  )
 
   def fetchTypeSearchCompletions(prefix: String, maxResults: Int): Future[Option[List[CompletionInfo]]] = {
     val req = TypeCompletionsReq(prefix, maxResults)

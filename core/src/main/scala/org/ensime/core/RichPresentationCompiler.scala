@@ -53,7 +53,6 @@ import scala.reflect.internal.util.{ BatchSourceFile, RangePosition, SourceFile 
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interactive.{ CompilerControl, Global }
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.io.VirtualFile
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.util._
 import scala.tools.refactoring.analysis.GlobalIndexes
@@ -233,9 +232,16 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
       )
 
     case SourceFileInfo(f, Some(contents), None) =>
-      new BatchSourceFile(new VirtualFile(f.getPath), contents.toCharArray)
+      new BatchSourceFile(
+        AbstractFile.getFile(f.getPath),
+        contents.toCharArray
+      )
+
     case SourceFileInfo(f, None, Some(contentsIn)) =>
-      new BatchSourceFile(new VirtualFile(f.getPath), contentsIn.readString()(charset).toCharArray)
+      new BatchSourceFile(
+        AbstractFile.getFile(f.getPath),
+        contentsIn.readString()(charset).toCharArray
+      )
   }
 
   def askLinkPos(sym: Symbol, path: AbstractFile): Option[Position] =
