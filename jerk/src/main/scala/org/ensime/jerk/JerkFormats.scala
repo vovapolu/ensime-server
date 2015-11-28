@@ -9,7 +9,14 @@ import org.ensime.api._
 import org.ensime.util.file._
 
 private object JerkConversions extends DefaultJsonProtocol with FamilyFormats {
-  // wtf?? why is this needed, why does it even work? Miles??
+  // This part of the code is brought to you by the words "accidental"
+  // and "complexity".
+  //
+  // Lack of definition in scalac's implicit resolution rules means
+  // that we have to redefine some things here.
+  implicit override def eitherFormat[A: JsonFormat, B: JsonFormat]: JsonFormat[Either[A, B]] = super.eitherFormat[A, B]
+  // Note that its not possible to override an object in scala, so we
+  // just define a new one that wins the race.
   implicit val symbolFormat = SymbolJsonFormat
 
   // move to somewhere more general

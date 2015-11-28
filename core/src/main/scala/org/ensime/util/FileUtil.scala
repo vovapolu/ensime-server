@@ -7,6 +7,7 @@ import java.nio.charset.Charset
 import org.apache.commons.vfs2.FileObject
 
 import scala.collection.mutable
+import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 
 import org.ensime.api._
 import org.ensime.util.file._
@@ -30,6 +31,9 @@ object RichFileObject {
 }
 
 object FileUtils {
+
+  implicit def toSourceFileInfo(f: Either[File, SourceFileInfo]): SourceFileInfo =
+    f.fold(l => SourceFileInfo(l, None, None), r => r)
 
   def exists(f: SourceFileInfo) = f match {
     case SourceFileInfo(f, _, _) if f.exists() => true

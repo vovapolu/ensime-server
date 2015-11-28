@@ -161,7 +161,7 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
     val all = {
       for {
         file <- config.scalaSourceFiles
-        source = getSourceFile(file.getAbsolutePath)
+        source = createSourceFile(file)
       } yield source
     }.toSet ++ activeUnits().map(_.source)
     askReloadFiles(all)
@@ -210,23 +210,40 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
 
   def askNotifyWhenReady(): Unit = ask(setNotifyWhenReady)
 
-  def createSourceFile(path: String) = getSourceFile(path)
-  def createSourceFile(file: AbstractFile) = getSourceFile(file)
-  def createSourceFile(file: SourceFileInfo) = file match {
-    case SourceFileInfo(f, None, None) => getSourceFile(f.canon.getPath)
-    case SourceFileInfo(f, Some(contents), None) => new BatchSourceFile(AbstractFile.getFile(f.canon.getPath), contents)
-    case SourceFileInfo(f, None, Some(contentsIn)) =>
-      val contents = FileUtils.readFile(contentsIn, charset) match {
-        case Right(contentStr) => contentStr
-        case Left(e) => throw e
-      }
-      new BatchSourceFile(AbstractFile.getFile(f.canon), contents)
-  }
-  def findSourceFile(path: String): Option[SourceFile] = allSources.find(
-    _.file.path == path
-  )
+  // WARNING: be really careful when creating BatchSourceFiles. there
+  // are multiple constructers which do weird things, best to be very
+  // explicit about what we're doing and only use the primary
+  // constructor. Note that scalac appears to have a bug in it whereby
+  // it is unable to tell that a VirtualFile (i.e. in-memory) and a
+  // non VirtualFile backed BatchSourceFile are actually referring to
+  // the same compilation unit. see
+  // https://github.com/ensime/ensime-server/issues/1160
+  def createSourceFile(file: File): BatchSourceFile =
+    createSourceFile(SourceFileInfo(file, None, None))
+  def createSourceFile(path: String): BatchSourceFile =
+    createSourceFile(new File(path))
+  def createSourceFile(file: AbstractFile): BatchSourceFile =
+    createSourceFile(file.file)
+  def createSourceFile(file: SourceFileInfo): BatchSourceFile = file match {
+    case SourceFileInfo(f, None, None) =>
+      new BatchSourceFile(
+        AbstractFile.getFile(f.getPath),
+        f.readString()(charset).toCharArray
+      )
 
-  // TODO: friends should not give friends other people's types (Position)
+    case SourceFileInfo(f, Some(contents), None) =>
+      new BatchSourceFile(
+        AbstractFile.getFile(f.getPath),
+        contents.toCharArray
+      )
+
+    case SourceFileInfo(f, None, Some(contentsIn)) =>
+      new BatchSourceFile(
+        AbstractFile.getFile(f.getPath),
+        contentsIn.readString()(charset).toCharArray
+      )
+  }
+
   def askLinkPos(sym: Symbol, path: AbstractFile): Option[Position] =
     askOption(linkPos(sym, createSourceFile(path)))
 }

@@ -26,6 +26,9 @@ object EnsimeBuild extends Build with JdkResolver {
     scalaVersion := "2.11.7",
     version := "0.9.10-SNAPSHOT",
 
+    // sbt, STFU...
+    ivyLoggingLevel := UpdateLogging.Quiet,
+
     dependencyOverrides ++= Set(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-library" % scalaVersion.value,
@@ -241,6 +244,10 @@ object EnsimeBuild extends Build with JdkResolver {
     libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test" intransitive()
   )
 
+  lazy val testingTiming = Project("testingTiming", file("testing/timing"), settings = basicSettings).settings(
+    ScoverageKeys.coverageExcludedPackages := ".*"
+  )
+
   lazy val testingDebug = Project("testingDebug", file("testing/debug"), settings = basicSettings).settings(
     ScoverageKeys.coverageExcludedPackages := ".*"
   )
@@ -269,6 +276,7 @@ object EnsimeBuild extends Build with JdkResolver {
     // https://github.com/sbt/sbt/issues/1888
     testingEmpty % "test,it",
     testingSimple % "test,it",
+    testingTiming % "test,it",
     testingDebug % "test,it",
     testingJava % "test,it"
   ).configs(It).settings (
