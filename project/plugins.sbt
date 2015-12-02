@@ -1,5 +1,4 @@
 // ensime-sbt is needed for the integration tests
-resolvers += Resolver.sonatypeRepo("staging")
 addSbtPlugin("org.ensime" % "ensime-sbt" % "0.2.3")
 
 // BUG https://github.com/sbt/sbt-header/issues/31
