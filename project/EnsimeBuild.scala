@@ -37,7 +37,8 @@ object EnsimeBuild extends Build with JdkResolver {
       "org.scala-lang.modules" %% "scala-xml" % "1.0.4",
       "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
       "org.scalamacros" %% "quasiquotes" % "2.0.1",
-      "org.slf4j" % "slf4j-api" % "1.7.12"
+      "org.slf4j" % "slf4j-api" % "1.7.12",
+      "org.apache.lucene" % "lucene-core" % "4.7.2"
     ),
 
     libraryDependencies ++= {
@@ -113,6 +114,7 @@ object EnsimeBuild extends Build with JdkResolver {
     // the langtools/src/classes directory, and set the environment
     // variable referenced here
     EnsimeKeys.unmanagedSourceArchives := sys.env.get("JDK_LANGTOOLS_SRC").map(file).filter(_.exists()).toSeq,
+    EnsimeKeys.scalariform := ScalariformKeys.preferences.value,
     // updateCaching is still missing things --- e.g. shapeless in core/it:test
     //updateOptions := updateOptions.value.withCachedResolution(true),
     licenses := Seq("GPL 3.0" -> url("http://opensource.org/licenses/GPL-3.0")),
