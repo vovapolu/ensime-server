@@ -181,7 +181,7 @@ class Analyzer(
       sender ! handleRefactorExec(req)
     case req: CancelRefactorReq =>
       sender ! handleRefactorCancel(req)
-    case CompletionsReq(fileInfo, point, maxResults, caseSens, reload) =>
+    case CompletionsReq(fileInfo, point, maxResults, caseSens, _reload) =>
       reporter.disable()
       sender ! scalaCompiler.askCompletionsAt(pos(fileInfo, point), maxResults, caseSens)
     case UsesOfSymbolAtPointReq(file, point) =>

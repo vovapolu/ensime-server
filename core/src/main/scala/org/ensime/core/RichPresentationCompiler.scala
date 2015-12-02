@@ -50,6 +50,9 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.reflect.internal.util.{ BatchSourceFile, RangePosition, SourceFile }
+import scala.reflect.io.PlainFile
+import scala.reflect.io.VirtualFile
+
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interactive.{ CompilerControl, Global }
 import scala.tools.nsc.io.AbstractFile
@@ -227,19 +230,19 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
   def createSourceFile(file: SourceFileInfo): BatchSourceFile = file match {
     case SourceFileInfo(f, None, None) =>
       new BatchSourceFile(
-        AbstractFile.getFile(f.getPath),
+        new PlainFile(f.getPath),
         f.readString()(charset).toCharArray
       )
 
     case SourceFileInfo(f, Some(contents), None) =>
       new BatchSourceFile(
-        AbstractFile.getFile(f.getPath),
+        new PlainFile(f.getPath),
         contents.toCharArray
       )
 
     case SourceFileInfo(f, None, Some(contentsIn)) =>
       new BatchSourceFile(
-        AbstractFile.getFile(f.getPath),
+        new PlainFile(f.getPath),
         contentsIn.readString()(charset).toCharArray
       )
   }
