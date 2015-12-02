@@ -37,7 +37,7 @@ object EnsimeBuild extends Build with JdkResolver {
       "org.scala-lang.modules" %% "scala-xml" % "1.0.4",
       "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
       "org.scalamacros" %% "quasiquotes" % "2.0.1",
-      "org.slf4j" % "slf4j-api" % "1.7.12",
+      "org.slf4j" % "slf4j-api" % "1.7.13",
       "org.apache.lucene" % "lucene-core" % "4.7.2"
     ),
 
@@ -160,8 +160,8 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val shapeless = "com.chuusai" %% "shapeless" % "2.2.5"
   lazy val logback = Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.3",
-    "org.slf4j" % "jul-to-slf4j" % "1.7.12",
-    "org.slf4j" % "jcl-over-slf4j" % "1.7.12"
+    "org.slf4j" % "jul-to-slf4j" % "1.7.13",
+    "org.slf4j" % "jcl-over-slf4j" % "1.7.13"
   )
   val akkaVersion = "2.3.14"
   val streamsVersion = "1.0"
@@ -193,7 +193,7 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val util = Project("util", file("util"), settings = commonSettings) settings (
     libraryDependencies ++= List(
       "com.google.guava" % "guava" % "18.0",
-      "com.google.code.findbugs" % "jsr305" % "2.0.3" % "provided"
+      "com.google.code.findbugs" % "jsr305" % "3.0.1" % "provided"
     ) ++ testLibs(scalaVersion.value)
   )
 
@@ -305,7 +305,7 @@ object EnsimeBuild extends Build with JdkResolver {
       "org.scala-lang" % "scalap" % scalaVersion.value,
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-      "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.7.0",
+      "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.8.0",
       "commons-lang" % "commons-lang" % "2.6",
       "commons-io" % "commons-io" % "2.4" % "test,it"
     ) ++ logback ++ testLibs(scalaVersion.value, "it,test")
