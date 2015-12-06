@@ -67,7 +67,8 @@ class JavaCompilerSpec extends FlatSpec with Matchers
       "      System.out.println(MAX_@11@);",
       "      System.out.println(new Inte@12@);",
       "      int testinner = 5;",
-      "      TestInn@13@",
+      "      System.out.println(f.toStr@1@);",
+      "      System.out.@14@",
       "    }",
       "  }",
       "}") { (sf, offset, label, cc) =>
@@ -92,8 +93,19 @@ class JavaCompilerSpec extends FlatSpec with Matchers
             // exact matches should be preferred
             assert(info.completions(0).name == "TestInner")
             assert(info.completions(1).name == "testinner")
+
+          case "14" => assert(info.completions.exists(_.name == "println"))
         }
       }
+  }
+
+  it should "find completion at beginning of file" in withJavaCompiler { (_, config, cc, store) =>
+    runForPositionInCompiledSource(config, cc, "Sys@0@") { (sf, offset, label, cc) =>
+      val info = cc.askCompletionsAtPoint(sf, offset, 0, false)
+      label match {
+        case "0" => assert(info.completions.exists(_.name == "System"))
+      }
+    }
   }
 
   it should "find doc sig at point" in withJavaCompiler { (_, config, cc, store) =>

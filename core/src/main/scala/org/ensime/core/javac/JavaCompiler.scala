@@ -127,7 +127,7 @@ class JavaCompiler(
   private def getJavaFileObject(sf: SourceFileInfo): JavaFileObject = sf match {
     case SourceFileInfo(f, None, None) => new JavaObjectFromFile(f)
     case SourceFileInfo(f, Some(contents), None) => new JavaObjectWithContents(f, contents)
-    case SourceFileInfo(f, None, Some(contentsIn)) => new JavaObjectWithContents(f, f.readString)
+    case SourceFileInfo(f, None, Some(contentsIn)) => new JavaObjectWithContents(f, contentsIn.readString)
   }
 
   private class JavaDiagnosticListener extends DiagnosticListener[JavaFileObject] with ReportHandler {
