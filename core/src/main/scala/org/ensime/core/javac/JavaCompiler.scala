@@ -7,6 +7,7 @@ import java.io.{ File, FileInputStream, InputStream }
 import java.net.URI
 import java.nio.charset.Charset
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import javax.lang.model.`type`.TypeMirror
 import javax.tools._
 import org.ensime.api._
@@ -29,24 +30,34 @@ class JavaCompiler(
   private val listener = new JavaDiagnosticListener()
   private val silencer = new SilencedDiagnosticListener()
   private val cp = (config.allJars ++ config.targetClasspath).mkString(File.pathSeparator)
+  private var workingSet = new ConcurrentHashMap[String, JavaFileObject]()
 
   // needs to be recreated in JDK6. JDK7 seems more capable of reuse.
   def getTask(
     lint: String,
     listener: DiagnosticListener[JavaFileObject],
-    files: List[JavaFileObject]
+    files: java.lang.Iterable[JavaFileObject]
   ): JavacTask = {
     // TODO: take a charset for each invocation
     val compiler = ToolProvider.getSystemJavaCompiler()
     val fileManager = compiler.getStandardFileManager(listener, null, DefaultCharset)
     compiler.getTask(null, fileManager, listener, List(
       "-cp", cp, "-Xlint:" + lint, "-proc:none"
-    ).asJava, null, files.asJava).asInstanceOf[JavacTask]
+    ).asJava, null, files).asInstanceOf[JavacTask]
+  }
+
+  def internSource(sf: SourceFileInfo): JavaFileObject = {
+    val jfo = getJavaFileObject(sf)
+    workingSet.put(sf.file.getAbsolutePath, jfo)
+    jfo
   }
 
   def askTypecheckFiles(files: List[SourceFileInfo]): Unit = {
     reportHandler.clearAllJavaNotes()
-    typecheckAll(files.map(getJavaFileObject))
+    for (sf <- files) {
+      internSource(sf)
+    }
+    typecheckAll()
   }
 
   def askTypeAtPoint(file: SourceFileInfo, offset: Int): Option[TypeInfo] = {
@@ -70,7 +81,7 @@ class JavaCompiler(
   }
 
   protected def pathToPoint(file: SourceFileInfo, offset: Int): Option[(CompilationInfo, TreePath)] = {
-    val infos = typecheckForUnits(List(getJavaFileObject(file)))
+    val infos = typecheckForUnits(List(file))
     infos.headOption.flatMap { info =>
       val path = Option(new TreeUtilities(info).pathFor(offset))
       path.map { p => (info, p) }
@@ -78,7 +89,7 @@ class JavaCompiler(
   }
 
   protected def scopeForPoint(file: SourceFileInfo, offset: Int): Option[(CompilationInfo, Scope)] = {
-    val infos = typecheckForUnits(List(getJavaFileObject(file)))
+    val infos = typecheckForUnits(List(file))
     infos.headOption.flatMap { info =>
       val path = Option(new TreeUtilities(info).scopeFor(offset))
       path.map { p => (info, p) }
@@ -96,18 +107,22 @@ class JavaCompiler(
     path.flatMap { p => Option(info.getTrees().getTypeMirror(p)) }
   }
 
-  private def typecheckAll(files: List[JavaFileObject]): Unit = {
-    val task = getTask("all", listener, files)
+  private def typecheckAll(): Unit = {
+    val task = getTask("all", listener, workingSet.values)
     val t = System.currentTimeMillis()
     task.parse()
     task.analyze()
     log.info("Parsed and analyzed: " + (System.currentTimeMillis() - t) + "ms")
   }
 
-  private def typecheckForUnits(files: List[JavaFileObject]): Vector[CompilationInfo] = {
-    val task = getTask("none", silencer, files)
+  private def typecheckForUnits(inputs: List[SourceFileInfo]): Vector[CompilationInfo] = {
+    // We only want the compilation units for inputs, but we need to typecheck them w.r.t
+    // the full working set.
+    val inputJfos = inputs.map { sf => internSource(sf).toUri }.toSet
+    val task = getTask("none", silencer, workingSet.values)
     val t = System.currentTimeMillis()
-    val units = task.parse().asScala.map(new CompilationInfo(task, _)).toVector
+    val units = task.parse().asScala.filter { unit => inputJfos.contains(unit.getSourceFile.toUri) }
+      .map(new CompilationInfo(task, _)).toVector
     task.analyze()
     log.info("Parsed and analyzed for trees: " + (System.currentTimeMillis() - t) + "ms")
     units
