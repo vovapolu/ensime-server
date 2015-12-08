@@ -37,7 +37,7 @@ trait JavaCompletion { self: JavaCompiler =>
 
     log.info("CONSTRUCTING: " + constructing)
 
-    val indexAfterTarget = offset - defaultPrefix.length - 1
+    val indexAfterTarget = Math.max(0, offset - defaultPrefix.length - 1)
 
     val precedingChar = s(indexAfterTarget)
 
@@ -63,7 +63,7 @@ trait JavaCompletion { self: JavaCompiler =>
       // TODO how to avoid allocating a new string? buffer of immutable string slices?
       // Erase the trailing partial member (it breaks type resolution).
       val patched = s.substring(0, indexAfterTarget) + ".wait()" + s.substring(indexAfterTarget + defaultPrefix.length + 1);
-      (pathToPoint(SourceFileInfo(info.file, Some(patched), None), indexAfterTarget) flatMap {
+      (pathToPoint(SourceFileInfo(info.file, Some(patched), None), indexAfterTarget + 1) flatMap {
         case (info: CompilationInfo, path: TreePath) => {
           getEnclosingMemberSelectTree(path).map { m =>
             memberCandidates(info, m.getExpression(), defaultPrefix, false, caseSens)
