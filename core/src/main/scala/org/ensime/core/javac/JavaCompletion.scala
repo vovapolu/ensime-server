@@ -246,14 +246,6 @@ trait JavaCompletion { self: JavaCompiler =>
     if (back.isEmpty) s else back.mkString(".")
   }
 
-  private def typeMirror(info: CompilationInfo, t: Tree): Option[TypeMirror] = {
-    Option(info.getTrees().getTypeMirror(info.getTrees().getPath(info.getCompilationUnit(), t)))
-  }
-
-  private def typeElement(info: CompilationInfo, t: Tree): Option[Element] = {
-    typeMirror(info, t).map(info.getTypes().asElement)
-  }
-
   private def contentsAsString(sf: SourceFileInfo, charset: Charset) = sf match {
     case SourceFileInfo(f, None, None) => f.readString()
     case SourceFileInfo(f, Some(contents), None) => contents

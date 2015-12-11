@@ -3,20 +3,24 @@ package org.ensime.core
 import java.io.File
 
 import akka.event.slf4j.SLF4JLogging
+import org.ensime.api.OffsetSourcePosition
+import org.ensime.api.LineSourcePosition
 import org.ensime.core.javac.JavaCompiler
 import org.ensime.fixture._
 import org.ensime.indexer.EnsimeVFS
+import org.ensime.indexer.SearchServiceTestUtils
 import org.scalatest._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 class JavaCompilerSpec extends FlatSpec with Matchers
     with IsolatedJavaCompilerFixture
+    with SearchServiceTestUtils
     with SLF4JLogging {
 
   val original = EnsimeConfigFixture.SimpleTestProject
 
-  "JavaCompiler" should "generate compilation notes" in withJavaCompiler { (_, config, cc, store) =>
+  "JavaCompiler" should "generate compilation notes" in withJavaCompiler { (_, config, cc, store, search) =>
     runForPositionInCompiledSource(config, cc,
       "import java.io.File;",
       "class Test1 {",
@@ -26,7 +30,7 @@ class JavaCompilerSpec extends FlatSpec with Matchers
     assert(!(store.notes.isEmpty))
   }
 
-  it should "find type at point" in withJavaCompiler { (_, config, cc, store) =>
+  it should "find type at point" in withJavaCompiler { (_, config, cc, store, search) =>
     runForPositionInCompiledSource(config, cc,
       "import java.io.File;",
       "class Tes@0@t1 {",
@@ -44,7 +48,69 @@ class JavaCompilerSpec extends FlatSpec with Matchers
       }
   }
 
-  it should "find completions at point" in withJavaCompiler { (_, config, cc, store) =>
+  it should "find symbol at point" in withJavaCompiler { (_, config, cc, store, search) =>
+    implicit val searchService = search
+    refresh()
+
+    runForPositionInCompiledSource(config, cc,
+      "package org.example;",
+      "import java.io.File;",
+      "class Test1 {",
+      "  private class Foo { public Foo() {} }",
+      "  private void main(String[] args) {",
+      "    int foo = 1;",
+      "    System.out.println(fo@0@o);",
+      "    System.out.println(ar@1@gs);",
+      "    System.out.pr@3@intln(new Fo@2@o());",
+      "    System.out.println(new Fi@4@le(\".\"));",
+      "    System.out.println(Tes@5@t2.com@6@pute());",
+      "  }",
+      "}") { (sf, offset, label, cc) =>
+        val info = cc.askSymbolAtPoint(sf, offset).get
+        label match {
+          case "0" =>
+            info.name shouldBe "foo"
+            info.`type`.name shouldBe "int"
+            info.isCallable shouldBe false
+          case "1" =>
+            info.name shouldBe "args"
+            info.`type`.name shouldBe "java.lang.String[]"
+            info.isCallable shouldBe false
+          case "2" =>
+            info.name shouldBe "Foo"
+            info.`type`.name shouldBe "org.example.Test1.Foo"
+            info.isCallable shouldBe false
+            info.declPos should matchPattern { case Some(OffsetSourcePosition(_: File, 58)) => }
+          case "3" =>
+            info.name shouldBe "println"
+            info.`type`.name shouldBe "(java.lang.Object)void"
+            info.isCallable shouldBe true
+          case "4" =>
+            info.name shouldBe "File"
+            info.`type`.name shouldBe "java.io.File"
+            info.isCallable shouldBe false
+          case "5" =>
+            info.name shouldBe "Test2"
+            info.`type`.name shouldBe "org.example.Test2"
+            info.isCallable shouldBe false
+            info.declPos should matchPattern { case Some(LineSourcePosition(_: File, 3)) => }
+          case "6" =>
+            info.name shouldBe "compute"
+            info.`type`.name shouldBe "()int"
+            info.isCallable shouldBe true
+            // NOTE: we should find an OffsetSourcePosition here as the source enters
+            // the compiler's working set in case "5" above.
+            // TODO - However if the 'element' is not found, we'll fall through to indexer lookup.
+            // look into more exaustive ways of finding the element.
+            info.declPos should matchPattern {
+              case Some(LineSourcePosition(_: File, 8)) =>
+              case Some(OffsetSourcePosition(_: File, 48)) =>
+            }
+        }
+      }
+  }
+
+  it should "find completions at point" in withJavaCompiler { (_, config, cc, store, search) =>
     runForPositionInCompiledSource(config, cc,
       "import java.io.File;",
       "import java.lang.Str@5@;",
@@ -99,7 +165,7 @@ class JavaCompilerSpec extends FlatSpec with Matchers
       }
   }
 
-  it should "find completion at beginning of file" in withJavaCompiler { (_, config, cc, store) =>
+  it should "find completion at beginning of file" in withJavaCompiler { (_, config, cc, store, search) =>
     runForPositionInCompiledSource(config, cc, "Sys@0@") { (sf, offset, label, cc) =>
       val info = cc.askCompletionsAtPoint(sf, offset, 0, false)
       label match {
@@ -108,7 +174,7 @@ class JavaCompilerSpec extends FlatSpec with Matchers
     }
   }
 
-  it should "find doc sig at point" in withJavaCompiler { (_, config, cc, store) =>
+  it should "find doc sig at point" in withJavaCompiler { (_, config, cc, store, search) =>
     runForPositionInCompiledSource(config, cc,
       "import java.io.Fi@5@le;",
       "class Test1 {",

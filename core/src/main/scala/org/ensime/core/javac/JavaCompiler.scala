@@ -2,16 +2,21 @@ package org.ensime.core.javac
 
 import akka.event.slf4j.SLF4JLogging
 import com.sun.source.tree.Scope
+import com.sun.source.tree.Tree
+import com.sun.source.tree.{ IdentifierTree, MemberSelectTree }
 import com.sun.source.util.{ JavacTask, TreePath, Trees }
 import java.io.{ File, FileInputStream, InputStream }
 import java.net.URI
 import java.nio.charset.Charset
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import javax.lang.model.`type`.TypeKind
 import javax.lang.model.`type`.TypeMirror
 import javax.tools._
 import org.ensime.api._
 import org.ensime.core.DocSigPair
+import org.ensime.model.LineSourcePositionHelper
+import org.ensime.indexer.{ EnsimeVFS, SearchService }
 import org.ensime.util.ReportHandler
 import org.ensime.util.file._
 import scala.collection.JavaConverters._
@@ -21,11 +26,16 @@ import scala.tools.nsc.interactive.CompilerControl
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.refactoring.analysis.GlobalIndexes
+import javax.lang.model.element.ElementKind
+import javax.lang.model.element.ExecutableElement
+import javax.lang.model.element.TypeElement
 
 class JavaCompiler(
     val config: EnsimeConfig,
-    val reportHandler: ReportHandler
-) extends JavaDocFinding with JavaCompletion with SLF4JLogging {
+    val reportHandler: ReportHandler,
+    val search: SearchService,
+    val vfs: EnsimeVFS
+) extends JavaDocFinding with JavaCompletion with Helpers with SLF4JLogging {
 
   private val listener = new JavaDiagnosticListener()
   private val silencer = new SilencedDiagnosticListener()
@@ -60,10 +70,70 @@ class JavaCompiler(
     typecheckAll()
   }
 
+  def askLinkPos(fqn: String, file: SourceFileInfo): Option[OffsetSourcePosition] = {
+    val infos = typecheckForUnits(List(file))
+    infos.headOption.flatMap { info =>
+      // TODO: walk the tree, find fqn, return the start position
+      None
+    }
+  }
+
   def askTypeAtPoint(file: SourceFileInfo, offset: Int): Option[TypeInfo] = {
     pathToPoint(file, offset) flatMap {
       case (info: CompilationInfo, path: TreePath) =>
         getTypeMirror(info, offset).map(typeMirrorToTypeInfo)
+    }
+  }
+
+  def askSymbolAtPoint(file: SourceFileInfo, offset: Int): Option[SymbolInfo] = {
+    pathToPoint(file, offset) flatMap {
+      case (info: CompilationInfo, path: TreePath) =>
+        val leaf = path.getLeaf
+        def withName(name: String): Option[SymbolInfo] = {
+          val tpeMirror = Option(info.getTrees().getTypeMirror(path))
+          val element = tpeMirror.flatMap { tm => Option(info.getTypes.asElement(tm)) }
+          val pos: Option[SourcePosition] = (element.flatMap { el =>
+            // if we can get a tree for the element, determining start position
+            // is easy
+            Option(info.getTrees.getTree(el)).map { elTree =>
+              OffsetSourcePosition(
+                file.file,
+                info.getTrees.getSourcePositions
+                .getStartPosition(info.getCompilationUnit, elTree).toInt
+              )
+            }
+          }).orElse {
+            // otherwise we'll look it up in the indexer
+            def indexerName(t: Tree): String = t match {
+              case t: MemberSelectTree =>
+                indexerName(t.getExpression) + "." + t.getIdentifier.toString
+              case _ => fqn(info, t).map(_.productIterator.mkString(".")).getOrElse("NA")
+            }
+            val query = indexerName(leaf)
+            val hit = search.findUnique(query)
+            log.debug(s"search: $query = $hit")
+            hit.flatMap(LineSourcePositionHelper.fromFqnSymbol(_)(config, vfs)).flatMap { sourcePos =>
+              if (sourcePos.file.getName.endsWith(".java") && sourcePos.file.exists)
+                askLinkPos(query, SourceFileInfo(sourcePos.file, None, None)).orElse(Some(sourcePos))
+              else
+                Some(sourcePos)
+            }
+          }
+          val nullTpe = new BasicTypeInfo("NA", -1, DeclaredAs.Nil, "NA", List.empty, List.empty, None, None)
+          Some(SymbolInfo(
+            name,
+            name,
+            pos,
+            tpeMirror.map(typeMirrorToTypeInfo).getOrElse(nullTpe),
+            tpeMirror.map(_.getKind == TypeKind.EXECUTABLE).getOrElse(false),
+            None
+          ))
+        }
+        leaf match {
+          case t: IdentifierTree => withName(t.getName.toString)
+          case t: MemberSelectTree => withName(t.getIdentifier.toString)
+          case _ => None
+        }
     }
   }
 

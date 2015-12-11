@@ -4,12 +4,13 @@ import akka.actor._
 import akka.event.LoggingReceive.withLabel
 import org.ensime.api._
 import org.ensime.core.javac._
-import org.ensime.indexer.EnsimeVFS
+import org.ensime.indexer.{ EnsimeVFS, SearchService }
 import org.ensime.util.ReportHandler
 import org.ensime.util.FileUtils
 
 class JavaAnalyzer(
     broadcaster: ActorRef,
+    search: SearchService,
     implicit val config: EnsimeConfig,
     implicit val vfs: EnsimeVFS
 ) extends Actor with Stash with ActorLogging {
@@ -31,7 +32,9 @@ class JavaAnalyzer(
         override def reportJavaNotes(notes: List[Note]): Unit = {
           broadcaster ! NewJavaNotesEvent(isFull = false, notes)
         }
-      }
+      },
+      search,
+      vfs
     )
 
     // JavaAnalyzer is always 'ready', but legacy clients expect to see
@@ -65,15 +68,20 @@ class JavaAnalyzer(
     case SymbolDesignationsReq(f, start, end, tpes) =>
       // NOT IMPLEMENTED YET
       sender ! SymbolDesignations(f.file, Nil)
+
+    case SymbolAtPointReq(file, point) =>
+      sender() ! javaCompiler.askSymbolAtPoint(file, point)
+
   }
 
 }
 object JavaAnalyzer {
   def apply(
-    broadcaster: ActorRef
+    broadcaster: ActorRef,
+    search: SearchService
   )(
     implicit
     config: EnsimeConfig,
     vfs: EnsimeVFS
-  ) = Props(new JavaAnalyzer(broadcaster, config, vfs))
+  ) = Props(new JavaAnalyzer(broadcaster, search, config, vfs))
 }

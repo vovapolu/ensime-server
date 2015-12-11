@@ -8,7 +8,7 @@ import javax.lang.model.util.{ ElementFilter, Elements }
 import org.ensime.core.{ DocFqn, DocSig, DocSigPair }
 import scala.collection.JavaConversions._
 
-trait JavaDocFinding {
+trait JavaDocFinding extends Helpers {
 
   def docSignature(info: CompilationInfo, p: TreePath): Option[DocSigPair] = {
     val leaf = p.getLeaf
@@ -17,13 +17,13 @@ trait JavaDocFinding {
       case (t: MemberSelectTree, Some(m: MethodInvocationTree)) => {
         val name = t.getIdentifier().toString()
         fqn(info, t.getExpression()).map { fqn =>
-          val sig = DocSig(fqn, memberSig(info, m, candidates(info, t.getExpression, name), name))
+          val sig = DocSig(DocFqn.tupled(fqn), memberSig(info, m, candidates(info, t.getExpression, name), name))
           DocSigPair(sig, sig)
         }
       }
       case (t: Tree, _) => {
         fqn(info, p).map { fqn =>
-          val sig = DocSig(fqn, None)
+          val sig = DocSig(DocFqn.tupled(fqn), None)
           DocSigPair(sig, sig)
         }
       }
@@ -55,51 +55,8 @@ trait JavaDocFinding {
     val sorted = compatible.sortWith { (c1, c2) => c1._2.sum < c2._2.sum }
     sorted.headOption.map {
       case (c, deltas) =>
-        val args = c.getParameters.map { p => fqn(info, p.asType).map(_.mkString).getOrElse("NA") }.mkString(",")
+        val args = c.getParameters.map { p => fqn(info, p.asType).map(DocFqn.tupled(_).mkString).getOrElse("NA") }.mkString(",")
         s"$name($args)"
-    }
-  }
-
-  private def typeMirror(info: CompilationInfo, t: Tree): Option[TypeMirror] = {
-    Option(info.getTrees().getTypeMirror(info.getTrees().getPath(info.getCompilationUnit(), t)))
-  }
-
-  private def typeElement(info: CompilationInfo, t: Tree): Option[Element] = {
-    typeMirror(info, t).map(info.getTypes().asElement)
-  }
-
-  private def fqn(info: CompilationInfo, p: TreePath): Option[DocFqn] = {
-    val tm = Option(info.getTrees().getTypeMirror(p))
-    tm.flatMap { tm => fqn(info, tm) }
-  }
-
-  private def fqn(info: CompilationInfo, t: Tree): Option[DocFqn] = {
-    Option(info.getTrees().getPath(info.getCompilationUnit(), t)).flatMap { p => fqn(info, p) }
-  }
-
-  private def fqn(info: CompilationInfo, tm: TypeMirror): Option[DocFqn] = {
-
-    def parseFqn(qualifiedName: String) = {
-      val (front, back) = qualifiedName.split("\\.").partition { s => s.forall(Character.isLowerCase) }
-      DocFqn(front.mkString("."), back.mkString("."))
-    }
-
-    // "Using instanceof is not necessarily a reliable idiom for
-    // determining the effective class of an object in this modeling
-    // hierarchy since an implementation may choose to have a single
-    // object implement multiple TypeMirror subinterfaces." --
-    // TypeMirror docs
-    tm match {
-      case tm: DeclaredType if tm.getKind == TypeKind.DECLARED => {
-        tm.asElement match {
-          case te: TypeElement => Some(parseFqn(te.getQualifiedName.toString))
-          case _ => {
-            None
-          }
-        }
-      }
-      case tm: PrimitiveType if tm.getKind.isPrimitive => Some(DocFqn("", tm.toString))
-      case _ => None
     }
   }
 
