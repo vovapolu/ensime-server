@@ -90,11 +90,11 @@ class Project(
       }))
 
       scalac = context.actorOf(Analyzer(merger, indexer, searchService), "scalac")
-      javac = context.actorOf(JavaAnalyzer(merger), "javac")
+      javac = context.actorOf(JavaAnalyzer(merger, searchService), "javac")
     } else {
       log.warning("Detected a pure Java project. Scala queries are not available.")
       scalac = system.deadLetters
-      javac = context.actorOf(JavaAnalyzer(broadcaster), "javac")
+      javac = context.actorOf(JavaAnalyzer(broadcaster, searchService), "javac")
     }
     debugger = context.actorOf(DebugManager(broadcaster), "debugging")
     docs = context.actorOf(DocResolver(), "docs")
@@ -123,6 +123,7 @@ class Project(
     case m @ DocUriAtPointReq(sfi, _) if sfi.file.isJava => javac forward m
     case m @ TypeAtPointReq(sfi, _) if sfi.file.isJava => javac forward m
     case m @ SymbolDesignationsReq(sfi, _, _, _) if sfi.file.isJava => javac forward m
+    case m @ SymbolAtPointReq(sfi, _) if sfi.file.isJava => javac forward m
 
     // mixed mode query
     case TypecheckFilesReq(files) =>
