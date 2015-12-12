@@ -15,16 +15,12 @@ object SexpParser extends ParboiledParser[Sexp] {
   def flatParse(el: String): Sexp = parse("(" + el + "\n)")
 
   private lazy val SexpP: Rule1[Sexp] = rule("Sexp") {
-    SexpAtomP | SexpListP | SexpConsP | SexpQuotedP
+    SexpAtomP | SexpListP | SexpEmptyList | SexpConsP | SexpQuotedP
   }
 
   private lazy val SexpAtomP: Rule1[SexpAtom] = rule("Atom") {
-    SexpNilP | SexpCharP | SexpStringP | SexpNaNP | SexpNumberP | SexpSymbolP
+    SexpCharP | SexpStringP | SexpNaNP | SexpNumberP | SexpSymbolP
   }
-
-  private lazy val SexpNilP: Rule1[SexpAtom] = rule("nil") {
-    "nil" | (LeftBrace ~ RightBrace)
-  } ~> { _ => SexpNil }
 
   private lazy val SexpCharP: Rule1[SexpChar] = rule("Char") {
     ch('?') ~ NormalChar
@@ -46,10 +42,17 @@ object SexpParser extends ParboiledParser[Sexp] {
       (optional("-") ~ "0.0e+NaN" ~> { _ => SexpNaN })
   }
 
-  private lazy val SexpSymbolP: Rule1[SexpSymbol] = rule("Symbol") {
+  private lazy val SexpSymbolP: Rule1[SexpAtom] = rule("Symbol") {
     // ? allowed at the end of symbol names
     oneOrMore(Alpha | Digit | SymbolSpecial) ~ zeroOrMore(Alpha | Digit | SymbolSpecial | ".") ~ optional("?")
-  } ~> SexpSymbol.apply
+  } ~> { sym =>
+    if (sym == "nil") SexpNil
+    else SexpSymbol(sym)
+  }
+
+  private lazy val SexpEmptyList: Rule1[SexpNil.type] = rule("List(empty)") {
+    (LeftBrace ~ RightBrace)
+  } ~> { _ => SexpNil }
 
   private lazy val SexpListP: Rule1[Sexp] = rule("List") {
     LeftBrace ~ (SexpP ~ zeroOrMore(Whitespace ~ SexpP)) ~ RightBrace
