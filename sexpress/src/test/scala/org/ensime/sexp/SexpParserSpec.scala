@@ -86,5 +86,9 @@ class SexpParserSpec extends WordSpec with Matchers {
       parse("foo.bar") shouldBe SexpSymbol("foo.bar")
       parse(":foo.bar") shouldBe SexpSymbol(":foo.bar")
     }
+
+    "parse symbols starting with nil in their name" in {
+      parse("nilsamisanidiot") shouldBe SexpSymbol("nilsamisanidiot")
+    }
   }
 }
