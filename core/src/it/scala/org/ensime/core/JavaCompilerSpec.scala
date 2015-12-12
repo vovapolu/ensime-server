@@ -80,7 +80,7 @@ class JavaCompilerSpec extends FlatSpec with Matchers
             info.name shouldBe "Foo"
             info.`type`.name shouldBe "org.example.Test1.Foo"
             info.isCallable shouldBe false
-            info.declPos should matchPattern { case Some(OffsetSourcePosition(_: File, 58)) => }
+            info.declPos should matchPattern { case Some(OffsetSourcePosition(f, 58)) if f.getName == "Test1.java" => }
           case "3" =>
             info.name shouldBe "println"
             info.`type`.name shouldBe "(java.lang.Object)void"
@@ -93,7 +93,7 @@ class JavaCompilerSpec extends FlatSpec with Matchers
             info.name shouldBe "Test2"
             info.`type`.name shouldBe "org.example.Test2"
             info.isCallable shouldBe false
-            info.declPos should matchPattern { case Some(LineSourcePosition(_: File, 3)) => }
+            info.declPos should matchPattern { case Some(OffsetSourcePosition(f, 22)) if f.getName == "Test2.java" => }
           case "6" =>
             info.name shouldBe "compute"
             info.`type`.name shouldBe "()int"
@@ -101,10 +101,10 @@ class JavaCompilerSpec extends FlatSpec with Matchers
             // NOTE: we should find an OffsetSourcePosition here as the source enters
             // the compiler's working set in case "5" above.
             // TODO - However if the 'element' is not found, we'll fall through to indexer lookup.
-            // look into more exaustive ways of finding the element.
+            // look into more exhaustive ways of finding the element.
             info.declPos should matchPattern {
-              case Some(LineSourcePosition(_: File, 8)) =>
-              case Some(OffsetSourcePosition(_: File, 48)) =>
+              case Some(LineSourcePosition(f, 8)) if f.getName == "Test2.java" =>
+              case Some(OffsetSourcePosition(f, 48)) if f.getName == "Test2.java" =>
             }
         }
       }
