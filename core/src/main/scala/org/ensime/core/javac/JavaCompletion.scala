@@ -1,5 +1,6 @@
 package org.ensime.core.javac
 
+import akka.event.slf4j.SLF4JLogging
 import com.sun.source.tree.{ MemberSelectTree, MethodInvocationTree, Tree, IdentifierTree }
 import com.sun.source.util.TreePath
 import javax.lang.model.`type`.{ DeclaredType, PrimitiveType, ReferenceType, TypeKind, TypeMirror }
@@ -14,9 +15,12 @@ import com.sun.source.tree.Scope
 import scala.collection.mutable.HashSet;
 import scala.collection.mutable.ArrayBuffer;
 
-trait JavaCompletion { self: JavaCompiler =>
+trait JavaCompletion extends Helpers with SLF4JLogging {
 
   import CompletionUtil._
+
+  protected def scopeForPoint(file: SourceFileInfo, offset: Int): Option[(CompilationInfo, Scope)]
+  protected def pathToPoint(file: SourceFileInfo, offset: Int): Option[(CompilationInfo, TreePath)]
 
   def completionsAt(info: SourceFileInfo, offset: Int, maxResultsArg: Int, caseSens: Boolean): CompletionInfoList = {
     val maxResults = if (maxResultsArg == 0) Int.MaxValue else maxResultsArg

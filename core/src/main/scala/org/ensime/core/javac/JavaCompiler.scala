@@ -70,7 +70,7 @@ class JavaCompiler(
     typecheckAll()
   }
 
-  def askLinkPos(fqn: String, file: SourceFileInfo): Option[SourcePosition] = {
+  def askLinkPos(fqn: JavaFqn, file: SourceFileInfo): Option[SourcePosition] = {
     val infos = typecheckForUnits(List(file))
     infos.headOption.flatMap { info => findInCompiledUnit(info, fqn) }
   }
@@ -89,7 +89,7 @@ class JavaCompiler(
           val tpeMirror = Option(info.getTrees().getTypeMirror(path))
           val nullTpe = new BasicTypeInfo("NA", -1, DeclaredAs.Nil, "NA", List.empty, List.empty, None, None)
           Some(SymbolInfo(
-            name,
+            fqn(info, path).map(_.toFqnString).getOrElse(name),
             name,
             findDeclPos(info, path),
             tpeMirror.map(typeMirrorToTypeInfo).getOrElse(nullTpe),
