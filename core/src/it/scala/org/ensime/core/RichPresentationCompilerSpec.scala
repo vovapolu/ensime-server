@@ -126,6 +126,23 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
         }
     }
 
+    "jump to function definition instead of Function1.apply" in withPresCompiler { (config, cc) =>
+      import ReallyRichPresentationCompilerFixture._
+      runForPositionInCompiledSource(config, cc,
+        "package com.example",
+        "object Bla { val fn: String => Int = str => str.lenght }",
+        "object Abc { def main { Bla.f@@n(\"bal\" } }") { (p, label, cc) =>
+          val sym = cc.askSymbolInfoAt(p).get
+          assert(sym.name == "fn")
+          assert(sym.localName == "fn")
+          assert(sym.declPos.isDefined)
+          assert(sym.declPos.get match {
+            case OffsetSourcePosition(f, i) => i > 0
+            case _ => false
+          })
+        }
+    }
+
     "get symbol info by name" in withPresCompiler { (config, cc) =>
       def verify(
         fqn: String, member: Option[String], sig: Option[String], expectedLocalName: String,
