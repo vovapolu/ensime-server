@@ -475,7 +475,16 @@ class RichPresentationCompiler(
           List(atp.symbol)
         case st: SymTree =>
           logger.debug("using symbol of " + tree.getClass + " tree")
-          List(tree.symbol)
+          val treeSymbol =
+            st match {
+              case Select(qualifier, name) if name.decoded == "apply" && qualifier.pos.includes(pos) =>
+                specificOwnerOfSymbolAt(pos) match {
+                  case Some(ownerSymbol) if ownerSymbol.fullName.startsWith("scala.Function") => qualifier.symbol
+                  case _ => tree.symbol
+                }
+              case _ => tree.symbol
+            }
+          List(treeSymbol)
         case _ =>
           logger.warn("symbolAt for " + tree.getClass + ": " + tree)
           Nil

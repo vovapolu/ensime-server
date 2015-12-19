@@ -15,9 +15,18 @@ object Foo extends App {
   val foo = new Foo()
   println("Hello, " + foo.x)
   println(foo.testMethod(7, "seven"))
+
+  val fn: String => Int = str => str.size
+
+  println(fn.apply("foobar"))
+  println(Baz.fn("foobar"))
 }
 
 // for SearchServiceSpec
 case class CaseClassWithCamelCaseName()
 case class Bloo()
 case object Blue
+
+object Baz {
+  val fn: String => Int = str => str.size
+}
