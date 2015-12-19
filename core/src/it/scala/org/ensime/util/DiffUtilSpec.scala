@@ -20,8 +20,8 @@ class DiffUtilSpec extends WordSpec with Matchers {
       val a = new File("a").getAbsolutePath()
       val b = new File("b").getAbsolutePath()
       val expectedDiff =
-        s"""|--- $a
-            |+++ $b
+        s"""|--- $a	1970-01-01 12:00:00 +0000
+            |+++ $b	1970-01-01 12:00:00 +0000
             |@@ -1,3 +1,3 @@
             | line1
             |-line2
