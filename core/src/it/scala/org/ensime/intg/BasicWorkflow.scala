@@ -25,6 +25,7 @@ class BasicWorkflow extends WordSpec with Matchers
             val sourceRoot = scalaMain(config)
             val fooFile = sourceRoot / "org/example/Foo.scala"
             val fooFilePath = fooFile.getAbsolutePath
+            val barFile = sourceRoot / "org/example/Bar.scala"
             val function1File = config.cacheDir / "dep-src/source-jars/scala/Function1.scala"
 
             // trigger typeCheck
@@ -195,10 +196,24 @@ class BasicWorkflow extends WordSpec with Matchers
               case Some(SymbolInfo("fn", "fn", Some(OffsetSourcePosition(`fooFile`, 522)), BasicTypeInfo("Function1", _, DeclaredAs.Trait, "scala.Function1", List(BasicTypeInfo("String", _, DeclaredAs.Class, "java.lang.String", List(), List(), None, None), BasicTypeInfo("Int", _, DeclaredAs.Class, "scala.Int", List(), List(), None, None)), List(), Some(OffsetSourcePosition(`function1File`, _)), None), false, Some(_))) =>
             }
 
+            project ! SymbolAtPointReq(Left(barFile), 150)
+
+            expectMsgPF() {
+              case Some(SymbolInfo("org.example.Bar$$Foo$", "Foo", Some(OffsetSourcePosition(`barFile`, 59)), BasicTypeInfo("Foo$", 142, DeclaredAs.Object, "org.example.Bar$$Foo$", List(), List(), Some(OffsetSourcePosition(`barFile`, 59)), Some(_)), false, Some(_))) =>
+            }
+
+            project ! SymbolAtPointReq(Left(barFile), 193)
+
+            expectMsgPF() {
+              case Some(SymbolInfo("org.example.Bar$$Foo", "Foo", Some(OffsetSourcePosition(`barFile`, 59)), BasicTypeInfo("Foo", 143, DeclaredAs.Class, "org.example.Bar$$Foo", List(), List(), Some(OffsetSourcePosition(`barFile`, 59)), Some(_)), false, Some(_))) =>
+            }
+
             // C-c C-v p Inspect source of current package
             project ! InspectPackageByPathReq("org.example")
             expectMsgPF() {
               case Some(PackageInfo("example", "org.example", List(
+                BasicTypeInfo("Bar", _: Int, DeclaredAs.Class, "org.example.Bar", List(), List(), Some(_), None),
+                BasicTypeInfo("Bar$", _: Int, DeclaredAs.Object, "org.example.Bar$", List(), List(), Some(_), None),
                 BasicTypeInfo("Baz", _: Int, DeclaredAs.Class, "org.example.Baz", List(), List(), Some(_), None),
                 BasicTypeInfo("Baz$", _: Int, DeclaredAs.Object, "org.example.Baz$", List(), List(), Some(_), None),
                 BasicTypeInfo("Bloo", _: Int, DeclaredAs.Class, "org.example.Bloo", List(), List(), Some(_), None),
