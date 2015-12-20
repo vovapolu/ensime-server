@@ -132,12 +132,8 @@ object EnsimeConfigFixture {
  */
 trait IsolatedEnsimeConfigFixture extends Suite
     with EnsimeConfigFixture {
-  //    with ParallelTestExecution {
-  // careful: ParallelTestExecution is causing weird failures:
-  //   https://github.com/sbt/sbt/issues/1890
-  //
-  // also, Jenkins doesn't like it:
-  //   https://github.com/scoverage/sbt-scoverage/issues/97
+  //running in parallel actually slows things down
+  //with ParallelTestExecution {
   import EnsimeConfigFixture._
 
   override def withEnsimeConfig(testCode: EnsimeConfig => Any): Any = withTempDir {
