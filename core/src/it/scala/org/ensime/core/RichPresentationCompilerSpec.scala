@@ -143,6 +143,51 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
         }
     }
 
+    "jump to case class definition when symbol under cursor is name of case class field" in withPresCompiler { (config, cc) =>
+      import ReallyRichPresentationCompilerFixture._
+      runForPositionInCompiledSource(config, cc,
+        "package com.example",
+        "case class Foo(bar: String, baz: Int)",
+        "object Bla {",
+        "  val foo = Foo(",
+        "    b@@ar = \"Bar\",",
+        "    baz = 123",
+        "  )",
+        "}") { (p, label, cc) =>
+          val sym = cc.askSymbolInfoAt(p).get
+          assert(sym.name == "com.example.Foo$")
+          assert(sym.localName == "Foo")
+          assert(sym.declPos.isDefined)
+          assert(sym.declPos.get match {
+            case OffsetSourcePosition(f, i) => i > 0
+            case _ => false
+          })
+        }
+    }
+
+    "jump to case class definition when symbol under cursor is name of case class field in copy method" in withPresCompiler { (config, cc) =>
+      import ReallyRichPresentationCompilerFixture._
+      runForPositionInCompiledSource(config, cc,
+        "package com.example",
+        "case class Foo(bar: String, baz: Int)",
+        "object Bla {",
+        "  val foo = Foo(",
+        "    bar = \"Bar\",",
+        "    baz = 123",
+        "  )",
+        " val fooUpd = foo.copy(b@@ar = foo.bar.reverse)",
+        "}") { (p, label, cc) =>
+          val sym = cc.askSymbolInfoAt(p).get
+          assert(sym.name == "com.example.Foo")
+          assert(sym.localName == "Foo")
+          assert(sym.declPos.isDefined)
+          assert(sym.declPos.get match {
+            case OffsetSourcePosition(f, i) => i > 0
+            case _ => false
+          })
+        }
+    }
+
     "get symbol info by name" in withPresCompiler { (config, cc) =>
       def verify(
         fqn: String, member: Option[String], sig: Option[String], expectedLocalName: String,

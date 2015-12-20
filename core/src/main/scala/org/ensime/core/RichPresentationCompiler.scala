@@ -449,6 +449,11 @@ class RichPresentationCompiler(
       && !sym.nameString.contains("$"))
   }
 
+  private def noDefinitionFound(tree: Tree) = {
+    logger.warn("No definition found. Please report to https://github.com/ensime/ensime-server/issues/492 with description of what did you expected. symbolAt for " + tree.getClass + ": " + tree)
+    Nil
+  }
+
   protected def symbolAt(pos: Position): Option[Symbol] = {
     val tree = wrapTypedTreeAt(pos)
     // This code taken mostly verbatim from Scala IDE sources. Licensed
@@ -485,9 +490,22 @@ class RichPresentationCompiler(
               case _ => tree.symbol
             }
           List(treeSymbol)
+        case applyTree @ Apply(Select(qualifier, sym), args) =>
+          sym.decoded match {
+            case "apply" =>
+              List(qualifier.symbol)
+            case "copy" =>
+              typeOfTree(applyTree) match {
+                case Some(treeType) =>
+                  List(treeType.typeSymbol)
+                case None =>
+                  noDefinitionFound(tree)
+              }
+            case _ =>
+              noDefinitionFound(tree)
+          }
         case _ =>
-          logger.warn("symbolAt for " + tree.getClass + ": " + tree)
-          Nil
+          noDefinitionFound(tree)
       }
     wannabes.find(_.exists)
   }
