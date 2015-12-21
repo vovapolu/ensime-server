@@ -13,7 +13,7 @@ trait IsolatedSearchServiceFixture extends IsolatedSourceResolverFixture {
     try {
       testCode(config, searchService)
     } finally {
-      searchService.shutdown()
+      Await.ready(searchService.shutdown(), Duration.Inf)
       actorSystem.shutdown()
       actorSystem.awaitTermination(10.seconds)
     }
@@ -34,7 +34,7 @@ trait SharedSearchServiceFixture
   }
 
   override def afterAll(): Unit = {
-    Await.ready(_search.shutdown(), 10.seconds)
+    Await.ready(_search.shutdown(), Duration.Inf)
     super.afterAll()
   }
 

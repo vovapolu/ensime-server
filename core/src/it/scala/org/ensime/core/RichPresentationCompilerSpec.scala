@@ -30,7 +30,7 @@ class RichPresentationCompilerThatNeedsJavaLibsSpec extends WordSpec with Matche
       import ReallyRichPresentationCompilerFixture._
 
       cc.search.refreshResolver()
-      Await.result(cc.search.refresh(), 180.seconds)
+      Await.result(cc.search.refresh(), Duration.Inf)
 
       runForPositionInCompiledSource(config, cc,
         "package com.example",
@@ -111,7 +111,7 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
       import ReallyRichPresentationCompilerFixture._
 
       cc.search.refreshResolver()
-      Await.result(cc.search.refresh(), 180.seconds)
+      Await.result(cc.search.refresh(), Duration.Inf)
 
       runForPositionInCompiledSource(config, cc,
         "package com.example",
@@ -538,7 +538,7 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
       )
 
       cc.search.refreshResolver()
-      Await.result(cc.search.refresh(), 180.seconds)
+      Await.result(cc.search.refresh(), Duration.Inf)
 
       val scalaVersion = scala.util.Properties.versionNumberString
       val parts = scalaVersion.split("\\.").map { _.toInt }
