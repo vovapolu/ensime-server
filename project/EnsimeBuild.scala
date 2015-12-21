@@ -207,7 +207,7 @@ object EnsimeBuild extends Build with JdkResolver {
 
   lazy val api = Project("api", file("api"), settings = commonSettings) settings (
     libraryDependencies ++= Seq(
-      "org.scalariform" %% "scalariform" % "0.1.7" intransitive ()
+      "org.scalariform" %% "scalariform" % "0.1.8" intransitive ()
     ) ++ testLibs(scalaVersion.value),
       licenses := Seq(Apache2)
   )
