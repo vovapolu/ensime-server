@@ -135,6 +135,10 @@ class Project(
     case m: RpcDebuggerRequest => debugger forward m
     case m: RpcSearchRequest => indexer forward m
     case m: DocSigPair => docs forward m
+
+    // added here to prevent errors when client sends this repeatedly (e.g. as a keepalive
+    case ConnectionInfoReq =>
+      sender() ! ConnectionInfo()
   }
 
 }

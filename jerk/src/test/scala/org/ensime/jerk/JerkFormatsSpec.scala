@@ -1,6 +1,5 @@
 package org.ensime.jerk
 
-import java.io.File
 import org.scalatest._
 import org.ensime.api._
 
