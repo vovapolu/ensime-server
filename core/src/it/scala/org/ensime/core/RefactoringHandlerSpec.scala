@@ -244,6 +244,40 @@ class RefactoringHandlerSpec extends WordSpec with Matchers
 
       assert(formatted === expectedContents)
     }
+
+    "rename a function id with params' opening/closing parenthesis on different lines" ignore withAnalyzer { (dir, analyzerRef) =>
+
+      val file = srcFile(dir, "tmp-contents", contents(
+        "package org.ensime.testing",
+        "trait Foo {",
+        "def doIt(",
+        ") = \"\"",
+        "}",
+        ""
+      ), write = true, encoding = encoding)
+
+      val analyzer = analyzerRef.underlyingActor
+
+      val procId = 1
+      analyzer.handleRefactorPrepareRequest(
+        new PrepareRefactorReq(
+          procId, 'rename, RenameRefactorDesc("doItNow", new File(file.path), 43, 47), false
+        )
+      )
+      analyzer.handleRefactorExec(
+        new ExecRefactorReq(procId, RefactorType.Rename)
+      )
+      val formatted = readSrcFile(file, encoding)
+      val expectedContents = contents(
+        "package org.ensime.testing",
+        "trait Foo {",
+        "def doItNow(",
+        ") = \"\"",
+        "}",
+        ""
+      )
+      assert(formatted === expectedContents)
+    }
   }
 
   "RefactoringHandler" should {
