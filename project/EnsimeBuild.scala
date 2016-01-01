@@ -45,28 +45,7 @@ object EnsimeBuild extends Build with JdkResolver {
       else Nil
     },
 
-    // 4 x 1GB = 4GB
-    concurrentRestrictions in Global := Seq(Tags.limitAll(4))
-  )
-
-  // e.g. YOURKIT_AGENT=/opt/yourkit/bin/linux-x86-64/libyjpagent.so
-  val yourkitAgent = Properties.envOrNone("YOURKIT_AGENT").map { name =>
-    val agent = file(name)
-    require(agent.exists(), s"Yourkit agent specified ($agent) does not exist")
-    Seq(s"-agentpath:${agent.getCanonicalPath}")
-  }.getOrElse(Nil)
-
-  lazy val commonSettings = scalariformSettings ++ Seq(
-    //resolvers += Resolver.sonatypeRepo("snapshots"),
-    // sbt sometimes has jcenter https://github.com/sbt/sbt/issues/2253
-    // but we only want to hit maven central and the official NetBeans repos
-    fullResolvers -= Resolver.jcenterRepo,
-    resolvers += "NetBeans" at "http://bits.netbeans.org/nexus/content/groups/netbeans",
     scalacOptions in Compile ++= Seq(
-      // uncomment to debug implicit resolution compilation problems
-      //"-Xlog-implicits",
-      // break in case of emergency
-      //"-Ytyper-debug",
       "-encoding", "UTF-8",
       "-target:jvm-1.6",
       "-feature",
@@ -93,8 +72,26 @@ object EnsimeBuild extends Build with JdkResolver {
       "-Xlint:-options", "-Xlint:-path", "-Xlint:-processing"
     ),
     javacOptions in doc ++= Seq("-source", "1.6"),
+
     maxErrors := 1,
     fork := true,
+
+    // 4 x 1GB = 4GB
+    concurrentRestrictions in Global := Seq(Tags.limitAll(4))
+  )
+
+  // e.g. YOURKIT_AGENT=/opt/yourkit/bin/linux-x86-64/libyjpagent.so
+  val yourkitAgent = Properties.envOrNone("YOURKIT_AGENT").map { name =>
+    val agent = file(name)
+    require(agent.exists(), s"Yourkit agent specified ($agent) does not exist")
+    Seq(s"-agentpath:${agent.getCanonicalPath}")
+  }.getOrElse(Nil)
+
+  lazy val commonSettings = scalariformSettings ++ Seq(
+    //resolvers += Resolver.sonatypeRepo("snapshots"),
+    // WORKAROUND https://github.com/sbt/sbt/issues/2253
+    fullResolvers -= Resolver.jcenterRepo,
+    resolvers += "NetBeans" at "http://bits.netbeans.org/nexus/content/groups/netbeans",
     testForkedParallel in Test := true,
     javaOptions := Seq("-Xss2m", "-XX:MaxPermSize=256m", "-Xms1g", "-Xmx1g"),
     // disabling shared memory gives a small performance boost to tests
@@ -241,6 +238,7 @@ object EnsimeBuild extends Build with JdkResolver {
 
   lazy val testingSimple = Project("testingSimple", file("testing/simple")) settings (
     ScoverageKeys.coverageExcludedPackages := ".*",
+    scalacOptions in Compile := Seq(),
     libraryDependencies += "org.scalatest" %% "scalatest" % scalatestVersion % "test" intransitive ()
   )
 
@@ -254,7 +252,8 @@ object EnsimeBuild extends Build with JdkResolver {
   )
 
   lazy val testingDebug = Project("testingDebug", file("testing/debug")).settings(
-    ScoverageKeys.coverageExcludedPackages := ".*"
+    ScoverageKeys.coverageExcludedPackages := ".*",
+    scalacOptions in Compile := Seq()
   )
 
   lazy val testingDocs = Project("testingDocs", file("testing/docs")).settings(
