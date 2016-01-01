@@ -360,8 +360,14 @@ object EnsimeBuild extends Build with JdkResolver {
         case "META-INF/generated-layer.xml" => MergeStrategy.rename
         case other => MergeStrategy.defaultMergeStrategy(other)
       },
-      assemblyExcludedJars in assembly := List(Attributed.blank(JavaTools)),
-      assemblyJarName in assembly := s"ensime_${scalaVersion.value}-${version.value}-assembly.jar"
+      assemblyExcludedJars in assembly <<= (fullClasspath in assembly).map { everything =>
+        everything.filter { attr =>
+          val n = attr.data.getName
+          n.startsWith("scala-library") | n.startsWith("scala-compiler") |
+          n.startsWith("scala-reflect") | n.startsWith("scalap")
+        } :+ Attributed.blank(JavaTools)
+      },
+      assemblyJarName in assembly := s"ensime_${scalaBinaryVersion.value}-${version.value}-assembly.jar"
     )
 }
 
