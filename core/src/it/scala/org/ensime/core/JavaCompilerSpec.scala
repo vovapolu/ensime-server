@@ -73,13 +73,15 @@ class JavaCompilerSpec extends FlatSpec with Matchers
       "  public static final int CONST = 2;",
       "  private void main(String[] args) {",
       "    int foo = 1;",
-      "    System.out.println(fo@0@o);",
       "    System.out.println(ar@1@gs);",
       "    System.out.pr@3@intln(new Fo@2@o());",
       "    System.out.println(new Fi@4@le(\".\"));",
       "    System.out.println(Tes@5@t2.com@6@pute());",
       "    System.out.println(comp@7@ute(2, 3));",
       "    System.out.println(CO@8@NST);",
+      "    System.out.println(@11@fo@0@o@12@);",
+      "    int k = 2;",
+      "    System.out.println( @13@k@14@ );",
       "  }",
       "  private static int compute(int a, int b) {",
       "    return a + b;",
@@ -92,7 +94,7 @@ class JavaCompilerSpec extends FlatSpec with Matchers
       "}") { (sf, offset, label, cc) =>
         val info = cc.askSymbolAtPoint(sf, offset).get
         label match {
-          case "0" =>
+          case "0" | "11" | "12" =>
             info.name shouldBe "foo"
             info.localName shouldBe "foo"
             info.`type`.name shouldBe "int"
@@ -145,7 +147,7 @@ class JavaCompilerSpec extends FlatSpec with Matchers
             info.localName shouldBe "compute"
             info.`type`.name shouldBe "(int,int)int"
             info.isCallable shouldBe true
-            info.declPos should matchPattern { case Some(OffsetSourcePosition(f, 437)) if f.getName == "Test1.java" => }
+            info.declPos should matchPattern { case Some(OffsetSourcePosition(f, 481)) if f.getName == "Test1.java" => }
           case "8" =>
             info.name shouldBe "org.example.Test1.CONST"
             info.localName shouldBe "CONST"
@@ -157,7 +159,7 @@ class JavaCompilerSpec extends FlatSpec with Matchers
             info.localName shouldBe "Day"
             info.`type`.name shouldBe "org.example.Test1.Day"
             info.isCallable shouldBe false
-            info.declPos should matchPattern { case Some(OffsetSourcePosition(f, 609)) if f.getName == "Test1.java" => }
+            info.declPos should matchPattern { case Some(OffsetSourcePosition(f, 653)) if f.getName == "Test1.java" => }
           case "10" =>
             info.name shouldBe "org.example.Test1.Day.MON"
             info.localName shouldBe "MON"
@@ -165,6 +167,10 @@ class JavaCompilerSpec extends FlatSpec with Matchers
             info.isCallable shouldBe false
             // Don't specify offset pos here as Java 6 seems to have a problem locating enums
             info.declPos should matchPattern { case Some(OffsetSourcePosition(f, i: Int)) if f.getName == "Test1.java" => }
+          case "13" | "14" =>
+            info.name shouldBe "k"
+            info.`type`.name shouldBe "int"
+            info.isCallable shouldBe false
         }
       }
   }
