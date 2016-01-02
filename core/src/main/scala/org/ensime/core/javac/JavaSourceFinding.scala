@@ -1,17 +1,22 @@
 package org.ensime.core.javac
 
 import akka.event.slf4j.SLF4JLogging
-import com.sun.source.tree.{ MemberSelectTree, Tree }
 import com.sun.source.util.TreePath
 import java.io.File
 import javax.lang.model.element.Element
 import org.ensime.api._
 import org.ensime.model.LineSourcePositionHelper
+import org.ensime.indexer.{ EnsimeVFS, SearchService }
 
-trait JavaSourceFinding extends SLF4JLogging { self: JavaCompiler =>
+trait JavaSourceFinding extends Helpers with SLF4JLogging {
 
-  protected def findInCompiledUnit(info: CompilationInfo, fqn: String): Option[SourcePosition] = {
-    Option(info.getElements().getTypeElement(fqn)).flatMap(elementPosition(info, _))
+  def askLinkPos(fqn: JavaFqn, file: SourceFileInfo): Option[SourcePosition]
+  def search: SearchService
+  def vfs: EnsimeVFS
+  def config: EnsimeConfig
+
+  protected def findInCompiledUnit(info: CompilationInfo, fqn: JavaFqn): Option[SourcePosition] = {
+    Option(info.getElements().getTypeElement(fqn.toFqnString)).flatMap(elementPosition(info, _))
   }
 
   private def elementPosition(info: CompilationInfo, el: Element): Option[SourcePosition] = {
@@ -27,26 +32,17 @@ trait JavaSourceFinding extends SLF4JLogging { self: JavaCompiler =>
   }
 
   protected def findDeclPos(info: CompilationInfo, path: TreePath): Option[SourcePosition] = {
-    val tpeMirror = Option(info.getTrees().getTypeMirror(path))
-    // TODO behavior of Element discovery seems to vary between jvm versions.
-    val element =
-      tpeMirror.flatMap { tm => Option(info.getTypes.asElement(tm)) }
-        .orElse(Option(info.getTrees.getElement(path)))
-    element.flatMap(elementPosition(info, _)).orElse(findInIndexer(info, path))
+    element(info, path).flatMap(elementPosition(info, _)).orElse(findInIndexer(info, path))
   }
 
   private def findInIndexer(info: CompilationInfo, path: TreePath): Option[SourcePosition] = {
-    def indexerName(t: Tree): String = t match {
-      case t: MemberSelectTree =>
-        indexerName(t.getExpression) + "." + t.getIdentifier.toString
-      case _ => fqn(info, t).map(_.productIterator.mkString(".")).getOrElse("NA")
-    }
-    val query = indexerName(path.getLeaf)
+    val javaFqn = fqn(info, path)
+    val query = javaFqn.map(_.toFqnString).getOrElse("")
     val hit = search.findUnique(query)
-    log.debug(s"search: $query = $hit")
+    log.debug(s"search: '$query' = $hit")
     hit.flatMap(LineSourcePositionHelper.fromFqnSymbol(_)(config, vfs)).flatMap { sourcePos =>
       if (sourcePos.file.getName.endsWith(".java") && sourcePos.file.exists)
-        askLinkPos(query, SourceFileInfo(sourcePos.file, None, None)).orElse(Some(sourcePos))
+        javaFqn.flatMap(askLinkPos(_, SourceFileInfo(sourcePos.file, None, None))).orElse(Some(sourcePos))
       else
         Some(sourcePos)
     }
