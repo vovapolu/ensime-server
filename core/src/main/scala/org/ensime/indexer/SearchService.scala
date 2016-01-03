@@ -29,7 +29,7 @@ class SearchService(
   actorSystem: ActorSystem,
   vfs: EnsimeVFS
 ) extends ClassfileIndexer
-    with ClassfileListener
+    with FileChangeListener
     with SLF4JLogging {
 
   private val QUERY_TIMEOUT = 30 seconds
@@ -226,13 +226,13 @@ class SearchService(
     iwork.flatMap(_ => dwork)
   }
 
-  def classfileAdded(f: FileObject): Unit = classfileChanged(f)
+  def fileAdded(f: FileObject): Unit = fileChanged(f)
 
-  def classfileRemoved(f: FileObject): Unit = {
+  def fileRemoved(f: FileObject): Unit = {
     backlogActor ! FileUpdate(f, Nil)
   }
 
-  def classfileChanged(f: FileObject): Unit = Future {
+  def fileChanged(f: FileObject): Unit = Future {
     val symbols = extractSymbols(f, f)
     backlogActor ! FileUpdate(f, symbols)
   }(workerEC)

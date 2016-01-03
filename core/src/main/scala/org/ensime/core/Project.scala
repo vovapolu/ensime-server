@@ -43,11 +43,11 @@ class Project(
   private val resolver = new SourceResolver(config)
   private val searchService = new SearchService(config, resolver)
   private val sourceWatcher = new SourceWatcher(config, resolver :: Nil)
-  private val reTypecheck = new ClassfileListener {
+  private val reTypecheck = new FileChangeListener {
     def reTypeCheck(): Unit = self ! AskReTypecheck
-    def classfileAdded(f: FileObject): Unit = reTypeCheck()
-    def classfileChanged(f: FileObject): Unit = reTypeCheck()
-    def classfileRemoved(f: FileObject): Unit = reTypeCheck()
+    def fileAdded(f: FileObject): Unit = reTypeCheck()
+    def fileChanged(f: FileObject): Unit = reTypeCheck()
+    def fileRemoved(f: FileObject): Unit = reTypeCheck()
   }
   private val classfileWatcher = new ClassfileWatcher(config, searchService :: reTypecheck :: Nil)
 
