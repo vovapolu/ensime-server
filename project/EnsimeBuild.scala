@@ -89,9 +89,10 @@ object EnsimeBuild extends Build with JdkResolver {
 
   lazy val commonSettings = scalariformSettings ++ Seq(
     //resolvers += Resolver.sonatypeRepo("snapshots"),
-    // WORKAROUND https://github.com/sbt/sbt/issues/2253
-    fullResolvers -= Resolver.jcenterRepo,
-    resolvers += "NetBeans" at "http://bits.netbeans.org/nexus/content/groups/netbeans",
+    // RELATED https://github.com/sbt/sbt/issues/2253
+    // WORKAROUND https://github.com/ensime/ensime-emacs/issues/327
+    fullResolvers += Resolver.jcenterRepo,
+    //resolvers += "NetBeans" at "http://bits.netbeans.org/nexus/content/groups/netbeans",
     testForkedParallel in Test := true,
     javaOptions := Seq("-Xss2m", "-XX:MaxPermSize=256m", "-Xms1g", "-Xmx1g"),
     // disabling shared memory gives a small performance boost to tests
