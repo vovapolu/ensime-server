@@ -167,7 +167,7 @@ trait CompletionControl {
         s.syms.map { s =>
           CompletionInfo(
             s.localName, CompletionSignature(List.empty, s.name),
-            -1, isCallable = false, 40, Some(s.name)
+            -1, isCallable = false, 40, None
           )
         }
       case unknown =>
