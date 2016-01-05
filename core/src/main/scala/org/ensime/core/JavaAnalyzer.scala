@@ -10,6 +10,7 @@ import org.ensime.util.FileUtils
 
 class JavaAnalyzer(
     broadcaster: ActorRef,
+    indexer: ActorRef,
     search: SearchService,
     implicit val config: EnsimeConfig,
     implicit val vfs: EnsimeVFS
@@ -33,6 +34,7 @@ class JavaAnalyzer(
           broadcaster ! NewJavaNotesEvent(isFull = false, notes)
         }
       },
+      indexer,
       search,
       vfs
     )
@@ -78,10 +80,11 @@ class JavaAnalyzer(
 object JavaAnalyzer {
   def apply(
     broadcaster: ActorRef,
+    indexer: ActorRef,
     search: SearchService
   )(
     implicit
     config: EnsimeConfig,
     vfs: EnsimeVFS
-  ) = Props(new JavaAnalyzer(broadcaster, search, config, vfs))
+  ) = Props(new JavaAnalyzer(broadcaster, indexer, search, config, vfs))
 }

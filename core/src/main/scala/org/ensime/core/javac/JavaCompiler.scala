@@ -1,5 +1,6 @@
 package org.ensime.core.javac
 
+import akka.actor.ActorRef
 import akka.event.slf4j.SLF4JLogging
 import com.sun.source.tree.Scope
 import com.sun.source.tree.Tree
@@ -33,6 +34,7 @@ import javax.lang.model.element.TypeElement
 class JavaCompiler(
     val config: EnsimeConfig,
     val reportHandler: ReportHandler,
+    val indexer: ActorRef,
     val search: SearchService,
     val vfs: EnsimeVFS
 ) extends JavaDocFinding with JavaCompletion with JavaSourceFinding with Helpers with SLF4JLogging {
