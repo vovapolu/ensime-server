@@ -90,11 +90,11 @@ class Project(
       }))
 
       scalac = context.actorOf(Analyzer(merger, indexer, searchService), "scalac")
-      javac = context.actorOf(JavaAnalyzer(merger, searchService), "javac")
+      javac = context.actorOf(JavaAnalyzer(merger, indexer, searchService), "javac")
     } else {
       log.warning("Detected a pure Java project. Scala queries are not available.")
       scalac = system.deadLetters
-      javac = context.actorOf(JavaAnalyzer(broadcaster, searchService), "javac")
+      javac = context.actorOf(JavaAnalyzer(broadcaster, indexer, searchService), "javac")
     }
     debugger = context.actorOf(DebugManager(broadcaster), "debugging")
     docs = context.actorOf(DocResolver(), "docs")

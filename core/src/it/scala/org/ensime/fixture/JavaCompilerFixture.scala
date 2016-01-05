@@ -51,7 +51,7 @@ object JavaCompilerFixture {
   ): JavaCompiler = {
     val indexer = TestProbe()
     val parent = TestProbe()
-    new JavaCompiler(config, reportHandler, search, vfs)
+    new JavaCompiler(config, reportHandler, indexer.ref, search, vfs)
   }
 }
 

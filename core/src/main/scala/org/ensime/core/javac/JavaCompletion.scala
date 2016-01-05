@@ -1,5 +1,6 @@
 package org.ensime.core.javac
 
+import akka.actor.ActorRef
 import akka.event.slf4j.SLF4JLogging
 import com.sun.source.tree.{ MemberSelectTree, MethodInvocationTree, Tree, IdentifierTree }
 import com.sun.source.util.TreePath
@@ -14,6 +15,8 @@ import java.nio.charset.Charset
 import com.sun.source.tree.Scope
 import scala.collection.mutable.HashSet;
 import scala.collection.mutable.ArrayBuffer;
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 trait JavaCompletion extends Helpers with SLF4JLogging {
 
@@ -21,6 +24,7 @@ trait JavaCompletion extends Helpers with SLF4JLogging {
 
   protected def scopeForPoint(file: SourceFileInfo, offset: Int): Option[(CompilationInfo, Scope)]
   protected def pathToPoint(file: SourceFileInfo, offset: Int): Option[(CompilationInfo, TreePath)]
+  protected def indexer: ActorRef
 
   def completionsAt(info: SourceFileInfo, offset: Int, maxResultsArg: Int, caseSens: Boolean): CompletionInfoList = {
     val maxResults = if (maxResultsArg == 0) Int.MaxValue else maxResultsArg
@@ -47,7 +51,7 @@ trait JavaCompletion extends Helpers with SLF4JLogging {
 
     val isMemberAccess = precedingChar == '.'
 
-    val candidates = (if (ImportSubtypeRegexp.findFirstMatchIn(preceding).isDefined) {
+    val candidates: List[CompletionInfo] = (if (ImportSubtypeRegexp.findFirstMatchIn(preceding).isDefined) {
       // Erase the trailing partial subtype (it breaks type resolution).
       val patched = s.substring(0, indexAfterTarget) + " " + s.substring(indexAfterTarget + defaultPrefix.length + 1);
       (pathToPoint(SourceFileInfo(info.file, Some(patched), None), indexAfterTarget - 1) map {
@@ -75,11 +79,21 @@ trait JavaCompletion extends Helpers with SLF4JLogging {
         }
       })
     } else {
+
+      // Kick off an index search if the name looks like a type.
+      val typeSearch = if (TypeNameRegex.findFirstMatchIn(defaultPrefix).isDefined) {
+        Some(fetchTypeSearchCompletions(defaultPrefix, maxResults, indexer))
+      } else None
+
       (scopeForPoint(info, indexAfterTarget) map {
         case (info: CompilationInfo, s: Scope) => {
           scopeMemberCandidates(info, s, defaultPrefix, caseSens, constructing)
         }
-      })
+      }) map { scopeCandidates =>
+        val typeSearchResult = typeSearch.flatMap(Await.result(_, Duration.Inf)).getOrElse(List())
+        scopeCandidates ++ typeSearchResult
+      }
+
     }).getOrElse(List())
     CompletionInfoList(defaultPrefix, candidates.sortWith({ (c1, c2) =>
       c1.relevance > c2.relevance ||
