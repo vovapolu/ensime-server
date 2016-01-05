@@ -230,6 +230,11 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
       ImplicitInfoReq(Left(file1), OffsetRange(0, 123))
     )
 
+    unmarshal(
+      s"""(swank:structure-view (:file "$file1" :contents "{/* code here */}" :contents-in "$file2"))""",
+      StructureViewReq(sourceFileInfo): RpcRequest
+    )
+
   }
 
   it should "unmarshal RpcDebugRequests" in {
@@ -568,6 +573,11 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     marshal(
       new TypeInspectInfo(typeInfo, Some(1), List(interfaceInfo)): TypeInspectInfo,
       """(:type (:arrow-type nil :name "type1" :type-id 7 :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil :outer-type-id 8) :companion-id 1 :interfaces ((:type (:arrow-type nil :name "type1" :type-id 7 :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil :outer-type-id 8) :via-view "DEF")) :info-type typeInspect)"""
+    )
+
+    marshal(
+      structureView: StructureView,
+      s"""(:view ((:keyword "class" :name "StructureView" :position (:type line :file "$file1" :line 57) :members nil) (:keyword "object" :name "StructureView" :position (:type line :file "$file1" :line 59) :members ((:keyword "type" :name "BasicType" :position (:type offset :file "$file1" :offset 456) :members nil)))))"""
     )
   }
 
