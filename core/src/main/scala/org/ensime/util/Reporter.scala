@@ -40,6 +40,12 @@ class PresentationReporter(handler: ReportHandler) extends Reporter with Positio
           if (pos.isDefined) {
             val source = pos.source
             val f = source.file.absolute.path
+            val posColumn = if (pos.point == -1) {
+              0
+            } else {
+              pos.column
+            }
+
             val note = new Note(
               f,
               formatMessage(msg),
@@ -47,7 +53,7 @@ class PresentationReporter(handler: ReportHandler) extends Reporter with Positio
               pos.startOrCursor,
               pos.endOrCursor,
               pos.line,
-              pos.column
+              posColumn
             )
             handler.reportScalaNotes(List(note))
           }
