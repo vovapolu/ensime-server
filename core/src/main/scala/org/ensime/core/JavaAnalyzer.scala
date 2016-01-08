@@ -74,6 +74,10 @@ class JavaAnalyzer(
     case SymbolAtPointReq(file, point) =>
       sender() ! javaCompiler.askSymbolAtPoint(file, point)
 
+    case ImplicitInfoReq(file, range: OffsetRange) =>
+      // Implicit type conversion information is not applicable for Java, so we
+      // return an empty list.
+      sender() ! ImplicitInfos(Nil)
   }
 
 }
