@@ -119,4 +119,26 @@ trait EnsimeTestData {
   val sourceFileInfo = SourceFileInfo(file1, Some("{/* code here */}"), Some(file2))
   val dtid = DebugThreadId(13)
   val debugLocationArray = DebugArrayElement(DebugObjectId(13), 14)
+
+  val structureView = StructureView(List(
+    StructureViewMember(
+      keyword = "class",
+      name = "StructureView",
+      position = sourcePos1,
+      members = Nil
+    ),
+    StructureViewMember(
+      keyword = "object",
+      name = "StructureView",
+      position = sourcePos2,
+      members = List(
+        StructureViewMember(
+          keyword = "type",
+          name = "BasicType",
+          position = sourcePos4,
+          members = Nil
+        )
+      )
+    )
+  ))
 }
