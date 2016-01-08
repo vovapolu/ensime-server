@@ -18,15 +18,10 @@ object Foo extends App {
 
   val fn: String => Int = str => str.size
 
-  println(fn.apply("foobar"))
-  println(Baz.fn("foobar"))
+  fn("foobar")
 }
 
 // for SearchServiceSpec
 case class CaseClassWithCamelCaseName()
 case class Bloo()
 case object Blue
-
-object Baz {
-  val fn: String => Int = str => str.size
-}

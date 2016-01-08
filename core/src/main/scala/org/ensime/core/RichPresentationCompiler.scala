@@ -478,32 +478,14 @@ class RichPresentationCompiler(
           }
         case Annotated(atp, _) =>
           List(atp.symbol)
-        case st: SymTree =>
+        case ap @ Select(qualifier, nme.apply) =>
+          // If we would like to give user choice if to go to method apply or value
+          // like Eclipse is doing we would need to return:
+          // List(qualifier.symbol, ap.symbol)
+          List(qualifier.symbol)
+        case st if st.symbol ne null =>
           logger.debug("using symbol of " + tree.getClass + " tree")
-          val treeSymbol =
-            st match {
-              case Select(qualifier, name) if name.decoded == "apply" && qualifier.pos.includes(pos) =>
-                specificOwnerOfSymbolAt(pos) match {
-                  case Some(ownerSymbol) if ownerSymbol.fullName.startsWith("scala.Function") => qualifier.symbol
-                  case _ => tree.symbol
-                }
-              case _ => tree.symbol
-            }
-          List(treeSymbol)
-        case applyTree @ Apply(Select(qualifier, sym), args) =>
-          sym.decoded match {
-            case "apply" =>
-              List(qualifier.symbol)
-            case "copy" =>
-              typeOfTree(applyTree) match {
-                case Some(treeType) =>
-                  List(treeType.typeSymbol)
-                case None =>
-                  noDefinitionFound(tree)
-              }
-            case _ =>
-              noDefinitionFound(tree)
-          }
+          List(st.symbol)
         case _ =>
           noDefinitionFound(tree)
       }
