@@ -155,8 +155,8 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
         "  )",
         "}") { (p, label, cc) =>
           val sym = cc.askSymbolInfoAt(p).get
-          assert(sym.name == "com.example.Foo$")
-          assert(sym.localName == "Foo")
+          assert(sym.name == "apply")
+          assert(sym.localName == "apply")
           assert(sym.declPos.isDefined)
           assert(sym.declPos.get match {
             case OffsetSourcePosition(f, i) => i > 0
@@ -178,8 +178,8 @@ class RichPresentationCompilerSpec extends WordSpec with Matchers
         " val fooUpd = foo.copy(b@@ar = foo.bar.reverse)",
         "}") { (p, label, cc) =>
           val sym = cc.askSymbolInfoAt(p).get
-          assert(sym.name == "com.example.Foo")
-          assert(sym.localName == "Foo")
+          assert(sym.name == "copy")
+          assert(sym.localName == "copy")
           assert(sym.declPos.isDefined)
           assert(sym.declPos.get match {
             case OffsetSourcePosition(f, i) => i > 0
