@@ -318,7 +318,8 @@ class RefactoringHandlerSpec extends WordSpec with Matchers
                                    |-import java.lang.Integer.{valueOf => vo}
                                    |-import java.lang.Integer.toBinaryString
                                    |+import java.lang.Integer.{toBinaryString, valueOf => vo}
-                                   | import java.lang.String.valueOf""".stripMargin
+                                   | import java.lang.String.valueOf
+                                   |""".stripMargin
 
         assert(diffContents === expectedContents)
         diffFile.delete()
