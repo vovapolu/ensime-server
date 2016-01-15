@@ -111,18 +111,8 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
 
     roundtrip(
-      CallCompletionReq(13): RpcRequest,
-      """{"typehint":"CallCompletionReq","id":13}"""
-    )
-
-    roundtrip(
       UsesOfSymbolAtPointReq(Left(file1), 100): RpcRequest,
       s"""{"typehint":"UsesOfSymbolAtPointReq","file":"$file1","point":100}"""
-    )
-
-    roundtrip(
-      TypeByIdReq(13): RpcRequest,
-      """{"typehint":"TypeByIdReq","id":13}"""
     )
 
     roundtrip(
@@ -143,11 +133,6 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     roundtrip(
       InspectTypeAtPointReq(Left(file1), OffsetRange(1, 100)): RpcRequest,
       s"""{"typehint":"InspectTypeAtPointReq","file":"$file1","range":{"from":1,"to":100}}"""
-    )
-
-    roundtrip(
-      InspectTypeByIdReq(13): RpcRequest,
-      """{"typehint":"InspectTypeByIdReq","id":13}"""
     )
 
     roundtrip(
@@ -509,37 +494,37 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       completionInfo: EnsimeServerMessage,
-      """{"typehint":"CompletionInfo","name":"name","typeId":88,"typeSig":{"sections":[[["abc","def"],["hij","lmn"]]],"result":"ABC"},"relevance":90,"isCallable":false,"toInsert":"BAZ"}"""
+      """{"typehint":"CompletionInfo","name":"name","typeSig":{"sections":[[["abc","def"],["hij","lmn"]]],"result":"ABC", "hasImplicit": false},"relevance":90,"isCallable":false,"toInsert":"BAZ"}"""
     )
 
     roundtrip(
       completionInfo2: EnsimeServerMessage,
-      """{"typehint":"CompletionInfo","name":"name2","typeId":90,"typeSig":{"sections":[[["abc","def"]]],"result":"ABC"},"relevance":91,"isCallable":true}"""
+      """{"typehint":"CompletionInfo","name":"name2","typeSig":{"sections":[[["abc","def"]]],"result":"ABC", "hasImplicit": false},"relevance":91,"isCallable":true}"""
     )
 
     roundtrip(
       CompletionInfoList("fooBar", List(completionInfo)): EnsimeServerMessage,
-      """{"typehint":"CompletionInfoList","prefix":"fooBar","completions":[{"name":"name","typeId":88,"typeSig":{"sections":[[["abc","def"],["hij","lmn"]]],"result":"ABC"},"relevance":90,"isCallable":false,"toInsert":"BAZ"}]}"""
+      """{"typehint":"CompletionInfoList","prefix":"fooBar","completions":[{"name":"name","typeSig":{"sections":[[["abc","def"],["hij","lmn"]]],"result":"ABC", "hasImplicit": false},"relevance":90,"isCallable":false,"toInsert":"BAZ"}]}"""
     )
 
     roundtrip(
-      new SymbolInfo("name", "localName", None, typeInfo, false, Some(2)): EnsimeServerMessage,
-      """{"typehint":"SymbolInfo","name":"name","localName":"localName","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"isCallable":false,"ownerTypeId":2}"""
+      new SymbolInfo("name", "localName", None, typeInfo, false): EnsimeServerMessage,
+      """{"typehint":"SymbolInfo","name":"name","localName":"localName","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"isCallable":false}"""
     )
 
     roundtrip(
       new NamedTypeMemberInfo("typeX", typeInfo, None, None, DeclaredAs.Method): EnsimeServerMessage,
-      """{"typehint":"NamedTypeMemberInfo","name":"typeX","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"declAs":{"typehint":"Method"}}"""
+      """{"typehint":"NamedTypeMemberInfo","name":"typeX","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"declAs":{"typehint":"Method"}}"""
     )
 
     roundtrip(
       entityInfo: EnsimeServerMessage,
-      """{"resultType":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"name":"Arrow1","paramSections":[{"params":[["ABC",{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}}]],"isImplicit":false}],"typehint":"ArrowTypeInfo","typeId":8}"""
+      """{"resultType":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"name":"Arrow1","paramSections":[{"params":[["ABC",{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}}]],"isImplicit":false}],"typehint":"ArrowTypeInfo"}"""
     )
 
     roundtrip(
       typeInfo: EnsimeServerMessage,
-      """{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}}"""
+      """{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}}"""
     )
 
     roundtrip(
@@ -548,18 +533,13 @@ class JerkFormatsSpec extends FlatSpec with Matchers
     )
 
     roundtrip(
-      new CallCompletionInfo(typeInfo, List(paramSectionInfo)): EnsimeServerMessage,
-      """{"typehint":"CallCompletionInfo","resultType":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"paramSections":[{"params":[["ABC",{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}}]],"isImplicit":false}]}"""
-    )
-
-    roundtrip(
       interfaceInfo: EnsimeServerMessage,
-      """{"typehint":"InterfaceInfo","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"viaView":"DEF"}"""
+      """{"typehint":"InterfaceInfo","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"viaView":"DEF"}"""
     )
 
     roundtrip(
-      new TypeInspectInfo(typeInfo, Some(1), List(interfaceInfo)): EnsimeServerMessage,
-      """{"typehint":"TypeInspectInfo","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"companionId":1,"interfaces":[{"type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"viaView":"DEF"}],"infoType":"typeInspect"}"""
+      new TypeInspectInfo(typeInfo, List(interfaceInfo)): EnsimeServerMessage,
+      """{"typehint":"TypeInspectInfo","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"interfaces":[{"type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"viaView":"DEF"}],"infoType":"typeInspect"}"""
     )
   }
 
@@ -608,12 +588,12 @@ class JerkFormatsSpec extends FlatSpec with Matchers
 
     roundtrip(
       ImplicitInfos(List(ImplicitConversionInfo(5, 6, symbolInfo))): EnsimeServerMessage,
-      """{"typehint":"ImplicitInfos","infos":[{"typehint":"ImplicitConversionInfo","start":5,"end":6,"fun":{"name":"name","localName":"localName","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"isCallable":false,"ownerTypeId":2}}]}"""
+      """{"typehint":"ImplicitInfos","infos":[{"typehint":"ImplicitConversionInfo","start":5,"end":6,"fun":{"name":"name","localName":"localName","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"isCallable":false}}]}"""
     )
 
     roundtrip(
       ImplicitInfos(List(ImplicitParamInfo(5, 6, symbolInfo, List(symbolInfo, symbolInfo), true))): EnsimeServerMessage,
-      """{"typehint":"ImplicitInfos","infos":[{"params":[{"name":"name","localName":"localName","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"isCallable":false,"ownerTypeId":2},{"name":"name","localName":"localName","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"isCallable":false,"ownerTypeId":2}],"typehint":"ImplicitParamInfo","fun":{"name":"name","localName":"localName","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeId":7,"outerTypeId":8,"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"isCallable":false,"ownerTypeId":2},"funIsImplicit":true,"end":6,"start":5}]}"""
+      """{"typehint":"ImplicitInfos","infos":[{"params":[{"name":"name","localName":"localName","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"isCallable":false},{"name":"name","localName":"localName","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"isCallable":false}],"typehint":"ImplicitParamInfo","fun":{"name":"name","localName":"localName","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"isCallable":false},"funIsImplicit":true,"end":6,"start":5}]}"""
     )
 
   }

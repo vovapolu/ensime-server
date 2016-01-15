@@ -110,9 +110,6 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
   def askTypeInfoAt(p: Position): Option[TypeInfo] =
     askOption(typeAt(p).map(TypeInfo(_, PosNeededYes))).flatten
 
-  def askTypeInfoById(id: Int): Option[TypeInfo] =
-    askOption(typeById(id).map(TypeInfo(_, PosNeededYes))).flatten
-
   def askTypeInfoByName(name: String): Option[TypeInfo] =
     askOption(typeByName(name).map(TypeInfo(_, PosNeededYes))).flatten
 
@@ -133,9 +130,6 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
       }
     ) yield infos).flatten
   }
-
-  def askCallCompletionInfoById(id: Int): Option[CallCompletionInfo] =
-    askOption(typeById(id).map(CallCompletionInfo(_))).flatten
 
   def askPackageByPath(path: String): Option[PackageInfo] =
     askOption(PackageInfo.fromPath(path))
@@ -177,9 +171,6 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
   def askReloadExistingFiles() =
     askReloadFiles(loadedFiles)
 
-  def askInspectTypeById(id: Int): Option[TypeInspectInfo] =
-    askOption(typeById(id).map(inspectType)).flatten
-
   def askInspectTypeAt(p: Position): Option[TypeInspectInfo] =
     askOption(inspectTypeAt(p)).flatten
 
@@ -210,8 +201,6 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
         new ImplicitAnalyzer(this).implicitDetails(p)
       ).getOrElse(List.empty)
     )
-
-  def askClearTypeCache(): Unit = clearTypeCache()
 
   def askNotifyWhenReady(): Unit = ask(setNotifyWhenReady)
 
@@ -376,7 +365,6 @@ class RichPresentationCompiler(
     val parents = tpe.parents
     new TypeInspectInfo(
       TypeInfo(tpe, PosNeededAvail),
-      companionTypeOf(tpe).map(cacheType),
       prepareSortedInterfaceInfo(typePublicMembers(tpe.asInstanceOf[Type]), parents)
     )
   }
@@ -388,7 +376,6 @@ class RichPresentationCompiler(
       val preparedMembers = prepareSortedInterfaceInfo(members, parents)
       new TypeInspectInfo(
         TypeInfo(tpe, PosNeededAvail),
-        companionTypeOf(tpe).map(cacheType),
         preparedMembers
       )
     }).orElse {

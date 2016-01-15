@@ -232,24 +232,25 @@ trait JavaCompletion extends Helpers with SLF4JLogging {
     CompletionInfo(
       s,
       CompletionSignature(
-        List(e.getParameters().map { p => (p.getSimpleName.toString, localTypeName(p.asType)) }.toList),
-        localTypeName(e.getReturnType())
+        List(e.getParameters().map { p => (p.getSimpleName.toString, p.asType.toString) }.toList),
+        e.getReturnType.toString,
+        false
       ),
-      -1, true, relavence, None
+      true, relavence, None
     )
   }
 
   private def fieldInfo(e: VariableElement, relavence: Int): CompletionInfo = {
     val s = e.getSimpleName.toString
     CompletionInfo(
-      s, CompletionSignature(List(), localTypeName(e.asType())), -1, false, relavence, None
+      s, CompletionSignature(List(), e.asType.toString, false), false, relavence, None
     )
   }
 
   private def typeInfo(e: TypeElement, relavence: Int): CompletionInfo = {
     val s = e.getSimpleName.toString
     CompletionInfo(
-      s, CompletionSignature(List(), localTypeName(e.asType())), -1, false, relavence, None
+      s, CompletionSignature(List(), e.asType.toString, false), false, relavence, None
     )
   }
 

@@ -311,8 +311,7 @@ case class SymbolInfo(
     localName: String,
     declPos: Option[SourcePosition],
     `type`: TypeInfo,
-    isCallable: Boolean,
-    ownerTypeId: Option[Int]
+    isCallable: Boolean
 ) extends RpcResponse {
   def tpe = `type`
 }
@@ -333,13 +332,13 @@ case class MethodBytecode(
 
 case class CompletionSignature(
   sections: List[List[(String, String)]],
-  result: String
+  result: String,
+  hasImplicit: Boolean
 )
 
 case class CompletionInfo(
   name: String,
   typeSig: CompletionSignature,
-  typeId: Int,
   isCallable: Boolean,
   relevance: Int,
   toInsert: Option[String]
@@ -479,13 +478,11 @@ case class NamedTypeMemberInfo(
 
 sealed trait TypeInfo extends EntityInfo {
   def name: String
-  def typeId: Int
   def declAs: DeclaredAs
   def fullName: String
   def typeArgs: Iterable[TypeInfo]
   def members: Iterable[EntityInfo]
   def pos: Option[SourcePosition]
-  def outerTypeId: Option[Int]
 
   final def declaredAs = declAs
   final def args = typeArgs
@@ -493,18 +490,15 @@ sealed trait TypeInfo extends EntityInfo {
 
 case class BasicTypeInfo(
   name: String,
-  typeId: Int,
   declAs: DeclaredAs,
   fullName: String,
   typeArgs: Iterable[TypeInfo],
   members: Iterable[EntityInfo],
-  pos: Option[SourcePosition],
-  outerTypeId: Option[Int]
+  pos: Option[SourcePosition]
 ) extends TypeInfo
 
 case class ArrowTypeInfo(
     name: String,
-    typeId: Int,
     resultType: TypeInfo,
     paramSections: Iterable[ParamSectionInfo]
 ) extends TypeInfo {
@@ -513,13 +507,7 @@ case class ArrowTypeInfo(
   def typeArgs = List.empty
   def members = List.empty
   def pos = None
-  def outerTypeId = None
 }
-
-case class CallCompletionInfo(
-  resultType: TypeInfo,
-  paramSections: Iterable[ParamSectionInfo]
-) extends RpcResponse
 
 case class ParamSectionInfo(
   params: Iterable[(String, TypeInfo)],
@@ -535,7 +523,6 @@ case class InterfaceInfo(
 
 case class TypeInspectInfo(
     `type`: TypeInfo,
-    companionId: Option[Int],
     interfaces: Iterable[InterfaceInfo],
     infoType: scala.Symbol = 'typeInspect // redundant field in protocol
 ) extends RpcResponse {
@@ -554,7 +541,7 @@ case class EnsimeImplementation(
 case class ConnectionInfo(
   pid: Option[Int] = None,
   implementation: EnsimeImplementation = EnsimeImplementation("ENSIME"),
-  version: String = "0.8.19"
+  version: String = "0.8.20"
 ) extends RpcResponse
 
 sealed trait ImplicitInfo

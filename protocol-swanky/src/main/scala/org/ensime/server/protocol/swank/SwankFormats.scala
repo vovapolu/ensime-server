@@ -378,11 +378,12 @@ object SwankProtocolResponse {
   implicit object CompletionSignatureFormat extends SexpFormat[CompletionSignature] {
     private implicit val Tuple2Format = SexpFormat[(String, String)]
     def write(cs: CompletionSignature): Sexp =
-      SexpList(cs.sections.toSexp, cs.result.toSexp)
+      SexpList(cs.sections.toSexp, cs.result.toSexp, cs.hasImplicit.toSexp)
     def read(sexp: Sexp): CompletionSignature = sexp match {
-      case SexpList(a :: b :: Nil) => CompletionSignature(
+      case SexpList(a :: b :: c :: Nil) => CompletionSignature(
         a.convertTo[List[List[(String, String)]]],
-        b.convertTo[String]
+        b.convertTo[String],
+        c.convertTo[Boolean]
       )
       case _ => deserializationError(sexp)
     }
@@ -424,7 +425,6 @@ object SwankProtocolResponse {
   implicit def ParamSectionInfoFormat = SexpFormat[ParamSectionInfo]
   implicit def ArrowTypeInfoFormat = SexpFormat[ArrowTypeInfo]
   implicit def BasicTypeInfoFormat = SexpFormat[BasicTypeInfo]
-  implicit def CallCompletionInfoFormat = SexpFormat[CallCompletionInfo]
   implicit def SymbolInfoFormat = SexpFormat[SymbolInfo]
   implicit def InterfaceInfoFormat = SexpFormat[InterfaceInfo]
   implicit def TypeInspectInfoFormat = SexpFormat[TypeInspectInfo]
@@ -542,7 +542,6 @@ object SwankProtocolResponse {
       case value: CompletionInfo => value.toSexp
       case value: CompletionInfoList => value.toSexp
       case value: SymbolInfo => value.toSexp
-      case value: CallCompletionInfo => value.toSexp
       case value: InterfaceInfo => value.toSexp
       case value: TypeInspectInfo => value.toSexp
       case value: SymbolSearchResults => value.toSexp
@@ -622,14 +621,11 @@ object SwankProtocolRequest {
   implicit val DocUriForSymbolReqHint = TypeHint[DocUriForSymbolReq](SexpSymbol("swank:doc-uri-for-symbol"))
   implicit val CompletionsReqHint = TypeHint[CompletionsReq](SexpSymbol("swank:completions"))
   implicit val PackageMemberCompletionReqHint = TypeHint[PackageMemberCompletionReq](SexpSymbol("swank:package-member-completion"))
-  implicit val CallCompletionReqHint = TypeHint[CallCompletionReq](SexpSymbol("swank:call-completion"))
   implicit val UsesOfSymbolAtPointReqHint = TypeHint[UsesOfSymbolAtPointReq](SexpSymbol("swank:uses-of-symbol-at-point"))
-  implicit val TypeByIdReqHint = TypeHint[TypeByIdReq](SexpSymbol("swank:type-by-id"))
   implicit val TypeByNameReqHint = TypeHint[TypeByNameReq](SexpSymbol("swank:type-by-name"))
   implicit val TypeByNameAtPointReqHint = TypeHint[TypeByNameAtPointReq](SexpSymbol("swank:type-by-name-at-point"))
   implicit val TypeAtPointReqHint = TypeHint[TypeAtPointReq](SexpSymbol("swank:type-at-point"))
   implicit val InspectTypeAtPointReqHint = TypeHint[InspectTypeAtPointReq](SexpSymbol("swank:inspect-type-at-point"))
-  implicit val InspectTypeByIdReqHint = TypeHint[InspectTypeByIdReq](SexpSymbol("swank:inspect-type-by-id"))
   implicit val InspectTypeByNameReqHint = TypeHint[InspectTypeByNameReq](SexpSymbol("swank:inspect-type-by-name"))
   implicit val SymbolAtPointReqHint = TypeHint[SymbolAtPointReq](SexpSymbol("swank:symbol-at-point"))
   implicit val SymbolByNameReqHint = TypeHint[SymbolByNameReq](SexpSymbol("swank:symbol-by-name"))
@@ -774,14 +770,11 @@ object SwankProtocolRequest {
   implicit def DocUriForSymbolReqFormat = SexpFormat[DocUriForSymbolReq]
   implicit def CompletionsReqFormat = SexpFormat[CompletionsReq]
   implicit def PackageMemberCompletionReqFormat = SexpFormat[PackageMemberCompletionReq]
-  implicit def CallCompletionReqFormat = SexpFormat[CallCompletionReq]
   implicit def UsesOfSymbolAtPointReqFormat = SexpFormat[UsesOfSymbolAtPointReq]
-  implicit def TypeByIdReqFormat = SexpFormat[TypeByIdReq]
   implicit def TypeByNameReqFormat = SexpFormat[TypeByNameReq]
   implicit def TypeByNameAtPointReqFormat = SexpFormat[TypeByNameAtPointReq]
   implicit def TypeAtPointReqFormat = SexpFormat[TypeAtPointReq]
   implicit def InspectTypeAtPointReqFormat = SexpFormat[InspectTypeAtPointReq]
-  implicit def InspectTypeByIdReqFormat = SexpFormat[InspectTypeByIdReq]
   implicit def InspectTypeByNameReqFormat = SexpFormat[InspectTypeByNameReq]
   implicit def SymbolAtPointReqFormat = SexpFormat[SymbolAtPointReq]
   implicit def SymbolByNameReqFormat = SexpFormat[SymbolByNameReq]
@@ -828,14 +821,11 @@ object SwankProtocolRequest {
           case s if s == DocUriForSymbolReqHint.hint => value.convertTo[DocUriForSymbolReq]
           case s if s == CompletionsReqHint.hint => value.convertTo[CompletionsReq]
           case s if s == PackageMemberCompletionReqHint.hint => value.convertTo[PackageMemberCompletionReq]
-          case s if s == CallCompletionReqHint.hint => value.convertTo[CallCompletionReq]
           case s if s == UsesOfSymbolAtPointReqHint.hint => value.convertTo[UsesOfSymbolAtPointReq]
-          case s if s == TypeByIdReqHint.hint => value.convertTo[TypeByIdReq]
           case s if s == TypeByNameReqHint.hint => value.convertTo[TypeByNameReq]
           case s if s == TypeByNameAtPointReqHint.hint => value.convertTo[TypeByNameAtPointReq]
           case s if s == TypeAtPointReqHint.hint => value.convertTo[TypeAtPointReq]
           case s if s == InspectTypeAtPointReqHint.hint => value.convertTo[InspectTypeAtPointReq]
-          case s if s == InspectTypeByIdReqHint.hint => value.convertTo[InspectTypeByIdReq]
           case s if s == InspectTypeByNameReqHint.hint => value.convertTo[InspectTypeByNameReq]
           case s if s == SymbolAtPointReqHint.hint => value.convertTo[SymbolAtPointReq]
           case s if s == SymbolByNameReqHint.hint => value.convertTo[SymbolByNameReq]

@@ -109,14 +109,13 @@ class JavaCompiler(
       case (info: CompilationInfo, path: TreePath) =>
         def withName(name: String): Option[SymbolInfo] = {
           val tpeMirror = Option(info.getTrees().getTypeMirror(path))
-          val nullTpe = new BasicTypeInfo("NA", -1, DeclaredAs.Nil, "NA", List.empty, List.empty, None, None)
+          val nullTpe = new BasicTypeInfo("NA", DeclaredAs.Nil, "NA", List.empty, List.empty, None)
           Some(SymbolInfo(
             fqn(info, path).map(_.toFqnString).getOrElse(name),
             name,
             findDeclPos(info, path),
             tpeMirror.map(typeMirrorToTypeInfo).getOrElse(nullTpe),
-            tpeMirror.map(_.getKind == TypeKind.EXECUTABLE).getOrElse(false),
-            None
+            tpeMirror.map(_.getKind == TypeKind.EXECUTABLE).getOrElse(false)
           ))
         }
         path.getLeaf match {
@@ -157,7 +156,7 @@ class JavaCompiler(
   }
 
   private def typeMirrorToTypeInfo(tm: TypeMirror): TypeInfo = {
-    BasicTypeInfo(tm.toString, -1, DeclaredAs.Class, tm.toString, List(), List(), Some(EmptySourcePosition()), None)
+    BasicTypeInfo(tm.toString, DeclaredAs.Class, tm.toString, List(), List(), Some(EmptySourcePosition()))
   }
 
   private def getTypeMirror(info: CompilationInfo, offset: Int): Option[TypeMirror] = {

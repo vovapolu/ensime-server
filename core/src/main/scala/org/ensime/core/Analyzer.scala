@@ -112,7 +112,6 @@ class Analyzer(
   }
 
   override def postStop(): Unit = {
-    Try(scalaCompiler.askClearTypeCache())
     Try(scalaCompiler.askShutdown())
   }
 
@@ -201,8 +200,6 @@ class Analyzer(
       val p = pos(file, range)
       scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askInspectTypeAt(p)
-    case InspectTypeByIdReq(id: Int) =>
-      sender ! scalaCompiler.askInspectTypeById(id)
     case InspectTypeByNameReq(name: String) =>
       sender ! scalaCompiler.askInspectTypeByName(name)
     case SymbolAtPointReq(file, point: Int) =>
@@ -223,17 +220,12 @@ class Analyzer(
       val p = pos(file, range)
       scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askTypeInfoAt(p)
-    case TypeByIdReq(id: Int) =>
-      sender ! scalaCompiler.askTypeInfoById(id)
     case TypeByNameReq(name: String) =>
       sender ! scalaCompiler.askTypeInfoByName(name)
     case TypeByNameAtPointReq(name: String, file, range: OffsetRange) =>
       val p = pos(file, range)
       scalaCompiler.askLoadedTyped(p.source)
       sender ! scalaCompiler.askTypeInfoByNameAt(name, p)
-    case CallCompletionReq(id: Int) =>
-      sender ! scalaCompiler.askCallCompletionInfoById(id)
-
     case SymbolDesignationsReq(f, start, end, Nil) =>
       sender ! SymbolDesignations(f.file, List.empty)
     case SymbolDesignationsReq(f, start, end, tpes) =>
