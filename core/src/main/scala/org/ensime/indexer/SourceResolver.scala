@@ -16,13 +16,13 @@ class SourceResolver(
 )(
     implicit
     vfs: EnsimeVFS
-) extends SourceListener with SLF4JLogging {
+) extends FileChangeListener with SLF4JLogging {
 
   // it's not worth doing incremental updates - this is cheap
   // (but it would be nice to have a "debounce" throttler)
-  def sourceAdded(f: FileObject) = update()
-  def sourceRemoved(f: FileObject) = update()
-  def sourceChanged(f: FileObject) = {}
+  def fileAdded(f: FileObject) = update()
+  def fileRemoved(f: FileObject) = update()
+  def fileChanged(f: FileObject) = {}
 
   // we only support the case where RawSource has a Some(filename)
   def resolve(clazz: PackageName, source: RawSource): Option[FileObject] =
