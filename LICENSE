@@ -1,7 +1,5 @@
 The `api` module is licensed under the Apache 2.0 permissive license.
 
-The `sexpress` module is licensed under the LGPL.
-
 All remaining files are licensed under the GPLv3 (see below). Some files in `core` and `testing` are copied from external sources and carry additional license information.
 
                     GNU GENERAL PUBLIC LICENSE
