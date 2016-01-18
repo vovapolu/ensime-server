@@ -89,37 +89,39 @@ class SearchService(
       }
     }.toSet ++ config.javaLibs.map(vfs.vfile)
 
-    // if the filecheck is outdated, extract symbols and then persist.
-    def indexBase(base: FileObject): Future[Option[Int]] =
-      db.outOfDate(base).flatMap { outOfDate =>
-        if (!outOfDate) Future.successful(None)
-        else base match {
-          case classfile if classfile.getName.getExtension == "class" =>
-            // too noisy to log
-            val check = FileCheck(classfile)
-            val symbols = Future {
-              blocking {
-                extractSymbols(classfile, classfile)
-              }
+    def indexBase(base: FileObject, fileCheck: Option[FileCheck]): Future[Option[Int]] = {
+      val outOfDate = fileCheck.map(_.changed).getOrElse(true)
+      if (!outOfDate) Future.successful(None)
+      else base match {
+        case classfile if classfile.getName.getExtension == "class" =>
+          // too noisy to log
+          val check = FileCheck(classfile)
+          val symbols = Future {
+            blocking {
+              extractSymbols(classfile, classfile)
             }
-            symbols.flatMap(persist(check, _))
-
-          case jar =>
-            log.debug(s"indexing $jar")
-            val check = FileCheck(jar)
-            val symbols = Future {
-              blocking {
-                scan(vfs.vjar(jar)) flatMap (extractSymbols(jar, _))
-              }
+          }
+          symbols.flatMap(persist(check, _))
+        case jar =>
+          log.debug(s"indexing $jar")
+          val check = FileCheck(jar)
+          val symbols = Future {
+            blocking {
+              scan(vfs.vjar(jar)) flatMap (extractSymbols(jar, _))
             }
-            symbols.flatMap(persist(check, _))
-        }
+          }
+          symbols.flatMap(persist(check, _))
       }
+    }
 
     // index all the given bases and return number of rows written
-    def indexBases(bases: Set[FileObject]): Future[Int] = {
-      log.info("indexBases")
-      Future.sequence(bases.map(indexBase)).map(_.flatten.sum)
+    def indexBases(bases: Set[FileObject], checks: Seq[FileCheck]): Future[Int] = {
+      log.info("Indexing bases...")
+      val checksLookup: Map[String, FileCheck] = checks.map(check => (check.filename -> check)).toMap
+      val basesWithChecks: Set[(FileObject, Option[FileCheck])] = bases.map { base =>
+        (base, checksLookup.get(base.getName().getURI()))
+      }
+      Future.sequence(basesWithChecks.map { case (file, check) => indexBase(file, check) }).map(_.flatten.sum)
     }
 
     def commitIndex(): Future[Unit] = Future {
@@ -136,7 +138,7 @@ class SearchService(
       stale = findStaleFileChecks(checks)
       deletes <- deleteReferences(stale)
       bases = findBases()
-      added <- indexBases(bases)
+      added <- indexBases(bases, checks)
       _ <- commitIndex()
     } yield (deletes, added)
   }
