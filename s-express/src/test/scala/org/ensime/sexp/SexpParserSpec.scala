@@ -2,13 +2,10 @@
 // Licence: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.sexp
 
-import com.google.common.base.Charsets
-import com.google.common.io.Files
 import org.scalatest._
-import scala.util.Properties.userHome
 
 class SexpParserSpec extends WordSpec with Matchers {
-  import SexpParser.{ parse, flatParse }
+  import SexpParser.parse
 
   val foo = SexpString("foo")
   val bar = SexpString("bar")
