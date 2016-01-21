@@ -55,6 +55,10 @@ class DescriptorParserSpec extends FunSpec with Matchers with SLF4JLogging {
       assert(Try(parseType("not valid")).isFailure)
     }
 
+    it("should handle $_- in package names") {
+      assert(parseType("Lcom/-$random_/Foo;") === ClassName(PackageName(List("com", "-$random_")), "Foo"))
+    }
+
     it("should handle examples") {
       assert(parseType("Ljava/lang/String;") === S)
       assert(parseType("[Ljava/lang/String;") === A(S))
@@ -78,5 +82,4 @@ class DescriptorParserSpec extends FunSpec with Matchers with SLF4JLogging {
       invert("[[Ljava/lang/String;")
     }
   }
-
 }
