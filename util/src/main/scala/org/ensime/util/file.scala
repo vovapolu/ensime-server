@@ -57,6 +57,7 @@ package object file {
     def isScala: Boolean = file.getName.toLowerCase.endsWith(".scala")
     def isJava: Boolean = file.getName.toLowerCase.endsWith(".java")
     def isClassfile: Boolean = file.getName.toLowerCase.endsWith(".class")
+    def isJar: Boolean = file.getName.toLowerCase.endsWith(".jar")
 
     def parts: List[String] =
       file.getPath.split(
@@ -65,7 +66,7 @@ package object file {
 
     def outputStream(): OutputStream = new FileOutputStream(file)
 
-    def createWithParents(): Unit = {
+    def createWithParents(): Boolean = {
       Files.createParentDirs(file)
       file.createNewFile()
     }

@@ -5,7 +5,7 @@ import java.io.File
 import org.apache.commons.vfs2._
 import org.apache.commons.vfs2.impl._
 
-private[indexer] abstract class RecursiveExtSelector extends FileSelector {
+private[indexer] abstract class ExtSelector extends FileSelector {
   def includeFile(f: FileObject): Boolean = include(f.getName.getExtension)
   def includeFile(info: FileSelectInfo): Boolean = includeFile(info.getFile)
   def includeFile(f: File): Boolean = include.exists(f.getName.endsWith(_))
@@ -20,11 +20,15 @@ object EnsimeVFS {
     new EnsimeVFS(vfsInst)
   }
 
-  private[indexer] object ClassfileSelector extends RecursiveExtSelector {
+  private[indexer] object JarSelector extends ExtSelector {
+    val include = Set("jar")
+  }
+
+  private[indexer] object ClassfileSelector extends ExtSelector {
     val include = Set("class")
   }
 
-  private[indexer] object SourceSelector extends RecursiveExtSelector {
+  private[indexer] object SourceSelector extends ExtSelector {
     val include = Set("scala", "java")
   }
 }
@@ -37,19 +41,19 @@ class EnsimeVFS(val vfs: DefaultFileSystemManager) {
     case e: FileSystemException => throw new FileSystemException(e.getMessage + " in " + msg, e)
   }
 
-  private[indexer] def vfile(name: String) = withContext(name)(
+  private[indexer] def vfile(name: String) = withContext(s"$name =>")(
     vfs.resolveFile(name)
   )
-  private[indexer] def vfile(file: File) = withContext("" + file)(
+  private[indexer] def vfile(file: File) = withContext(s"$file =>")(
     vfs.toFileObject(file)
   )
-  private[indexer] def vres(path: String) = withContext(path)(
+  private[indexer] def vres(path: String) = withContext(s"$path =>")(
     vfs.resolveFile("res:" + path)
   )
-  private[indexer] def vjar(jar: File) = withContext("" + jar)(
+  private[indexer] def vjar(jar: File) = withContext(s"$jar =>")(
     vfs.resolveFile("jar:" + jar.getAbsolutePath)
   )
-  private[indexer] def vjar(jar: FileObject) = withContext("" + jar)(
+  private[indexer] def vjar(jar: FileObject) = withContext(s"$jar =>")(
     vfs.resolveFile("jar:" + jar.getName.getURI)
   )
 

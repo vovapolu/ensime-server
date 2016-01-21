@@ -48,6 +48,7 @@ class Project(
     def fileAdded(f: FileObject): Unit = reTypeCheck()
     def fileChanged(f: FileObject): Unit = reTypeCheck()
     def fileRemoved(f: FileObject): Unit = reTypeCheck()
+    override def baseAdded(f: FileObject): Unit = reTypeCheck()
   }
   private val classfileWatcher = new ClassfileWatcher(config, searchService :: reTypecheck :: Nil)
 

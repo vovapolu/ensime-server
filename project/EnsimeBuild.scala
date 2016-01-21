@@ -163,14 +163,6 @@ object EnsimeBuild extends Build {
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % config
   ) ++ logback.map(_ % config)
 
-  def jars(cp: Classpath): String = {
-    for {
-      att <- cp
-      file = att.data
-      if file.isFile & file.getName.endsWith(".jar")
-    } yield file.getAbsolutePath
-  }.mkString(",")
-
   // WORKAROUND: https://github.com/scalatest/scalatest/issues/511
   def noColorIfEmacs =
     if (sys.env.get("INSIDE_EMACS").isDefined)
@@ -246,6 +238,11 @@ object EnsimeBuild extends Build {
     libraryDependencies += "org.scalatest" %% "scalatest" % scalatestVersion % "test" intransitive ()
   )
 
+  lazy val testingSimpleJar = Project("testingSimpleJar", file("testing/simpleJar")).settings(
+    exportJars := true,
+    EnsimeKeys.useJar := true
+  )
+
   lazy val testingImplicits = Project("testingImplicits", file("testing/implicits")) settings (
     libraryDependencies += "org.scalatest" %% "scalatest" % scalatestVersion % "test" intransitive ()
   )
@@ -279,6 +276,7 @@ object EnsimeBuild extends Build {
     // https://github.com/sbt/sbt/issues/1888
     testingEmpty % "test,it",
     testingSimple % "test,it",
+    testingSimpleJar % "test,it",
     testingTiming % "test,it",
     testingDebug % "test,it",
     testingJava % "test,it"
