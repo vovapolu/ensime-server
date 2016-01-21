@@ -198,7 +198,6 @@ object EnsimeBuild extends Build with JdkResolver {
   ) settings (
       licenses := Seq(LGPL3),
       libraryDependencies ++= Seq(
-        "org.parboiled" %% "parboiled-scala" % "1.1.7",
         "org.parboiled" %% "parboiled" % "2.1.0" intransitive (),
         shapeless
       ) ++ testLibs(scalaVersion.value)
