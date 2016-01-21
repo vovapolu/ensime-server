@@ -8,7 +8,6 @@ import sbt.Keys._
 import sbtassembly.{ AssemblyKeys, MergeStrategy, PathList }
 import sbtassembly.AssemblyKeys._
 import scala.util.{ Properties, Try }
-import scoverage.ScoverageKeys
 import org.ensime.EnsimePlugin.JdkDir
 
 object EnsimeBuild extends Build {
@@ -230,32 +229,24 @@ object EnsimeBuild extends Build {
       ) ++ testLibs(scalaVersion.value)
     )
 
-  lazy val testingEmpty = Project("testingEmpty", file("testing/empty")).settings(
-    ScoverageKeys.coverageExcludedPackages := ".*"
-  )
+  lazy val testingEmpty = Project("testingEmpty", file("testing/empty"))
 
   lazy val testingSimple = Project("testingSimple", file("testing/simple")) settings (
-    ScoverageKeys.coverageExcludedPackages := ".*",
     scalacOptions in Compile := Seq(),
     libraryDependencies += "org.scalatest" %% "scalatest" % scalatestVersion % "test" intransitive ()
   )
 
   lazy val testingImplicits = Project("testingImplicits", file("testing/implicits")) settings (
-    ScoverageKeys.coverageExcludedPackages := ".*",
     libraryDependencies += "org.scalatest" %% "scalatest" % scalatestVersion % "test" intransitive ()
   )
 
-  lazy val testingTiming = Project("testingTiming", file("testing/timing")).settings(
-    ScoverageKeys.coverageExcludedPackages := ".*"
-  )
+  lazy val testingTiming = Project("testingTiming", file("testing/timing"))
 
   lazy val testingDebug = Project("testingDebug", file("testing/debug")).settings(
-    ScoverageKeys.coverageExcludedPackages := ".*",
     scalacOptions in Compile := Seq()
   )
 
   lazy val testingDocs = Project("testingDocs", file("testing/docs")).settings(
-    ScoverageKeys.coverageExcludedPackages := ".*",
     libraryDependencies ++= Seq(
       // specifically using ForecastIOLib version 1.5.1 for javadoc 1.8 output
       "com.github.dvdme" % "ForecastIOLib" % "1.5.1" intransitive (),
@@ -267,8 +258,7 @@ object EnsimeBuild extends Build {
   // java project with no scala-library
   lazy val testingJava = Project("testingJava", file("testing/java")).settings(
     crossPaths := false,
-    autoScalaLibrary := false,
-    ScoverageKeys.coverageExcludedPackages := ".*"
+    autoScalaLibrary := false
   )
 
   lazy val core = Project("core", file("core")).dependsOn(
