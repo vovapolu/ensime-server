@@ -28,33 +28,18 @@ object SexpParser {
   // Not supported: https://www.gnu.org/software/emacs/manual/html_node/elisp/Non_002dASCII-in-Strings.html
   private[sexp] val specialChars = Map[String, String](
     "\"" -> "\"",
-    "a" -> "\u0007",
+    "a" -> 7.toChar.toString,
     "b" -> "\b",
     "t" -> "\t",
     "n" -> "\n",
-    "v" -> "\u000b",
+    "v" -> 11.toChar.toString,
     "f" -> "\f",
     "r" -> "\r",
-    "e" -> "\u001b",
+    "e" -> 27.toChar.toString,
     "s" -> " ",
-    "d" -> "\u007f",
+    "d" -> 127.toChar.toString,
     "\\" -> "\\"
   )
-
-  val SexpQuote = SexpSymbol("quote")
-  val SymbolsPredicate = CharPredicate("+-*/_~!@$%^&=:<>{}")
-  val NormalCharPredicate = CharPredicate.Printable -- "\"\\"
-  val WhiteSpacePredicate = CharPredicate(" \n\r\t\f")
-  val NotNewLinePredicate = CharPredicate.Printable -- '\n'
-  val SymbolStartCharPredicate = CharPredicate.AlphaNum ++ SymbolsPredicate
-  val SymbolBodyCharPredicate = SymbolStartCharPredicate ++ "."
-  val PlusMinusPredicate = CharPredicate("+-")
-  val ExpPredicate = CharPredicate("eE")
-
-  val QuoteBackslash = CharPredicate("\"\\")
-  val QuoteSlashBackSlash = QuoteBackslash ++ "/"
-  var NCCharPredicate = CharPredicate.All -- "\"\\"
-
 }
 
 /**
@@ -63,13 +48,12 @@ object SexpParser {
  */
 class SexpParser(val input: ParserInput) extends Parser with StringBuilding {
 
-  import SexpParser._
   private def SexpP: Rule1[Sexp] = rule {
     SexpAtomP | SexpListP | SexpEmptyList | SexpConsP | SexpQuotedP
   }
 
   private def SexpConsP: Rule1[SexpCons] = rule {
-    LeftBrace ~ SexpP ~ Whitespace ~ '.' ~ Whitespace ~ SexpP ~ RightBrace ~> {
+    LeftBrace ~ SexpP ~ Whitespace ~ "." ~ Whitespace ~ SexpP ~ RightBrace ~> {
       (x: Sexp, y: Sexp) => SexpCons(x, y)
     }
   }
@@ -85,37 +69,19 @@ class SexpParser(val input: ParserInput) extends Parser with StringBuilding {
   }
 
   private def SexpCharP: Rule1[SexpChar] = rule {
-    '?' ~ NormalChar ~> { SexpChar }
+    '?' ~ NormalChar ~> { (c: String) => SexpChar(c.head) }
   }
 
-  def SexpStringP = rule { '"' ~ clearSB() ~ CharactersSB ~ '"' ~ push(SexpString(sb.toString)) }
-
-  def CharactersSB = rule { zeroOrMore(NormalCharSB | '\\' ~ EscapedCharSB) }
-
-  def NormalCharSB = rule { NCCharPredicate ~ appendSB() }
-
-  def EscapedCharSB = rule(
-    QuoteSlashBackSlash ~ appendSB()
-      | '\"' ~ appendSB('\"')
-      | 'b' ~ appendSB('\b')
-      | 's' ~ appendSB(' ')
-      | 'f' ~ appendSB('\f')
-      | 'n' ~ appendSB('\n')
-      | 'r' ~ appendSB('\r')
-      | 't' ~ appendSB('\t')
-      | ' ' ~ appendSB("") // special emacs magic for comments \<space< and \<newline> are removed
-      | '\n' ~ appendSB("")
-      | 'a' ~ appendSB('\u0007') // bell
-      | 'v' ~ appendSB('\u000b') // vertical tab
-      | 'e' ~ appendSB('\u001b') // escape
-      | 'd' ~ appendSB('\u007f') // DEL
-  )
+  private def SexpStringP: Rule1[SexpString] = rule {
+    '"' ~ zeroOrMore(Character) ~ '"' ~> { strs: Seq[String] => SexpString(strs.mkString("")) }
+    //    '"' ~ clearSB() ~ zeroOrMore((Character | "\"\"") ~ appendSB()) ~ '"' ~ push(SexpString(sb.toString))
+  }
 
   def SexpNumberP = rule {
     capture(Integer ~ optional(Frac) ~ optional(Exp)) ~> { s: String => SexpNumber(BigDecimal(s)) }
   }
 
-  import CharPredicate.{ Digit, Digit19 }
+  import CharPredicate.{ Alpha, Digit, Digit19 }
 
   def Integer = rule {
     optional('-') ~ (Digit19 ~ Digits | Digit)
@@ -126,11 +92,11 @@ class SexpParser(val input: ParserInput) extends Parser with StringBuilding {
   }
 
   def Frac = rule {
-    '.' ~ Digits
+    "." ~ Digits
   }
 
   def Exp = rule {
-    ExpPredicate ~ optional(PlusMinusPredicate) ~ Digits
+    ignoreCase('e') ~ optional(anyOf("+-")) ~ Digits
   }
 
   private def SexpNaNP: Rule1[SexpAtom] = rule {
@@ -140,12 +106,12 @@ class SexpParser(val input: ParserInput) extends Parser with StringBuilding {
   }
 
   private def SexpQuotedP: Rule1[Sexp] = rule {
-    '\'' ~ SexpP ~> { v: Sexp => SexpCons(SexpQuote, v) }
+    "'" ~ SexpP ~> { v: Sexp => SexpCons(SexpQuote, v) }
   }
 
   private def SexpSymbolP: Rule1[SexpAtom] = rule {
     // ? allowed at the end of symbol names
-    capture(oneOrMore(SymbolStartCharPredicate) ~ zeroOrMore(SymbolBodyCharPredicate) ~ optional('?')) ~> { sym: String =>
+    capture(oneOrMore(Alpha | Digit | SymbolSpecial) ~ zeroOrMore(Alpha | Digit | SymbolSpecial | ".") ~ optional("?")) ~> { sym: String =>
       if (sym == "nil") SexpNil
       else SexpSymbol(sym)
     }
@@ -155,16 +121,30 @@ class SexpParser(val input: ParserInput) extends Parser with StringBuilding {
     LeftBrace ~ RightBrace ~ push(SexpNil)
   }
 
-  private def NormalChar: Rule1[Char] = rule {
-    NormalCharPredicate ~ push(lastChar)
+  private val SexpQuote = SexpSymbol("quote")
+
+  private def Character: Rule1[String] = rule {
+    EscapedChar | NormalChar
+  }
+
+  private def EscapedChar: Rule1[String] = rule {
+    '\\' ~ capture(ANY) ~> { s: String => unescape(s) }
+  }
+
+  private def NormalChar: Rule1[String] = rule {
+    capture(CharPredicate.Printable -- "\"\\") ~> { s: String => s }
+  }
+
+  private def SymbolSpecial = rule {
+    anyOf("+-*/_~!@$%^&=:<>{}")
   }
 
   private def Whitespace: Rule0 = rule {
-    zeroOrMore(Comment | WhiteSpacePredicate)
+    zeroOrMore(Comment | anyOf(" \n\r\t\f"))
   }
 
   private def Comment: Rule0 = rule {
-    ';' ~ zeroOrMore(NotNewLinePredicate) ~ ("\n" | EOI)
+    ";" ~ zeroOrMore(noneOf("\n")) ~ ("\n" | EOI)
   }
 
   private def LeftBrace: Rule0 = rule {
@@ -175,4 +155,14 @@ class SexpParser(val input: ParserInput) extends Parser with StringBuilding {
     Whitespace ~ ')' ~ Whitespace
   }
 
+  private val ignore = Set("\n", " ")
+
+  private def unescape(c: String): String = {
+    if (ignore(c)) ""
+    else {
+      val unescaped = SexpParser.specialChars.get(c)
+      require(unescaped.isDefined, c + " is not a valid escaped character")
+      unescaped.get
+    }
+  }
 }

@@ -31,8 +31,6 @@ object DescriptorParser {
         throw new Exception("Failed to parse descriptor type: ", other)
     }
   }
-  val PackageNamePredicate = CharPredicate.AlphaNum ++ "$_-" -- "/"
-  val ClassNameCharPredicate = CharPredicate.AlphaNum ++ "$_"
 }
 
 class DescriptorParser(val input: ParserInput) extends Parser {
@@ -66,15 +64,15 @@ class DescriptorParser(val input: ParserInput) extends Parser {
   }
 
   private def Class: Rule1[DescriptorType] = rule {
-    'L' ~ Package ~ Name ~ ';' ~> ClassName.apply _
+    'L' ~ Package ~ Name ~ ";" ~> ClassName.apply _
   }
 
   private def Name: Rule1[String] = rule {
-    capture(oneOrMore(DescriptorParser.ClassNameCharPredicate))
+    capture(oneOrMore(noneOf(";/()")))
   }
 
   private def Package: Rule1[PackageName] = rule {
-    zeroOrMore(capture(oneOrMore(DescriptorParser.PackageNamePredicate)) ~ '/') ~> { seq: Seq[String] => PackageName(seq.toList) }
+    zeroOrMore(capture(oneOrMore(CharPredicate.AlphaNum | '$' | '_' | '-')) ~ '/') ~> { seq: Seq[String] => PackageName(seq.toList) }
   }
 
   private def Array: Rule1[DescriptorType] = rule {
