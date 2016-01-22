@@ -2,10 +2,13 @@ package org.ensime.sexp.formats
 
 import java.io.File
 import java.net.URI
+import java.net.URL
+import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.TimeZone
 import java.util.UUID
+import scala.util.Try
 
 import org.ensime.sexp._
 import org.ensime.sexp.util.ThreadLocalSupport

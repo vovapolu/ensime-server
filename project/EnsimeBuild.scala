@@ -196,9 +196,10 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val sexpress = Project("sexpress", file("sexpress"), settings = commonSettings) dependsOn (
     util
   ) settings (
-      licenses := Seq(LGPL3),
+      licenses := Seq(GPL3),
       libraryDependencies ++= Seq(
-        "org.parboiled" %% "parboiled" % "2.1.0" intransitive (),
+        "org.parboiled" %% "parboiled-scala" % "1.1.7",
+        "org.parboiled" %% "parboiled" % "2.1.0" exclude("com.chuusai", "shapeless_2.10.4"),
         shapeless
       ) ++ testLibs(scalaVersion.value)
     )
