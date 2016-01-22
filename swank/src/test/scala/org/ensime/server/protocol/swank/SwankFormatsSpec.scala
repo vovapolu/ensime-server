@@ -5,6 +5,7 @@ import org.scalatest._
 
 import org.ensime.sexp._
 import org.ensime.api._
+import org.ensime.util.EscapingStringInterpolation
 
 class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
   import SwankFormats._

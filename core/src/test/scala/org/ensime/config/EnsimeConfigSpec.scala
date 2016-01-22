@@ -2,6 +2,7 @@ package org.ensime.config
 
 import org.scalatest.{ FunSpec, Matchers }
 import org.ensime.util.file._
+import org.ensime.util.EscapingStringInterpolation
 
 import org.ensime.api._
 

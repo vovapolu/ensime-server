@@ -1,4 +1,4 @@
-package org.ensime.api
+package org.ensime.util
 
 import java.io.File
 

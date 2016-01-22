@@ -11,14 +11,7 @@ import scala.concurrent.{ Await, Future }
 import scala.reflect.ClassTag
 
 /**
- * Convenience for the boilerplate of setting up a test using an Akka
- * System.
- *
- * Ideally we'd reuse the TestkitFixture, but sbt makes it *really*
- * hard to share test utilities between unit tests and integration
- * tests.
- *
- * http://stackoverflow.com/questions/20624574
+ * This should be deprecated, prefer TestkitFixture
  */
 abstract class AkkaFlatSpec
   extends HasSystem with TestKitBase

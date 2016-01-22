@@ -2,8 +2,16 @@ package org.ensime.indexer
 
 import java.io.File
 
-import org.apache.commons.vfs2.{ FileObject, FileSystemException }
-import org.apache.commons.vfs2.impl.{ StandardFileSystemManager, DefaultFileSystemManager }
+import org.apache.commons.vfs2._
+import org.apache.commons.vfs2.impl._
+
+private[indexer] abstract class RecursiveExtSelector extends FileSelector {
+  def includeFile(f: FileObject): Boolean = include(f.getName.getExtension)
+  def includeFile(info: FileSelectInfo): Boolean = includeFile(info.getFile)
+  def includeFile(f: File): Boolean = include.exists(f.getName.endsWith(_))
+  def traverseDescendents(info: FileSelectInfo) = true
+  def include: Set[String]
+}
 
 object EnsimeVFS {
   def apply(): EnsimeVFS = {

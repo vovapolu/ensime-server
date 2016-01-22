@@ -151,7 +151,7 @@ object EnsimeBuild extends Build {
   )
   val akkaVersion = "2.3.14"
   val streamsVersion = "1.0"
-  val scalatestVersion = "2.2.5"
+  val scalatestVersion = "2.2.6"
 
   ////////////////////////////////////////////////
   // utils
@@ -183,9 +183,17 @@ object EnsimeBuild extends Build {
   // modules
   lazy val util = Project("util", file("util"), settings = commonSettings) settings (
     libraryDependencies ++= List(
+      "org.apache.commons" % "commons-vfs2" % "2.0" intransitive (),
       "com.google.guava" % "guava" % "18.0",
       "com.google.code.findbugs" % "jsr305" % "3.0.1" % "provided"
     ) ++ testLibs(scalaVersion.value) ++ logback
+  )
+
+  lazy val testutil = Project("testutil", file("testutil"), settings = commonSettings) dependsOn(
+    util, api
+  ) settings (
+    libraryDependencies += "commons-io" % "commons-io" % "2.4",
+    libraryDependencies ++= testLibs(scalaVersion.value, "compile")
   )
 
   lazy val sexpress = Project("sexpress", file("sexpress"), settings = commonSettings) dependsOn (
@@ -210,6 +218,7 @@ object EnsimeBuild extends Build {
   lazy val jerk = Project("jerk", file("jerk"), settings = commonSettings) dependsOn (
     util,
     api,
+    testutil % "test",
     api % "test->test" // for the test data
   ) settings (
       libraryDependencies ++= Seq(
@@ -221,6 +230,7 @@ object EnsimeBuild extends Build {
   // the S-Exp protocol
   lazy val swank = Project("swank", file("swank"), settings = commonSettings) dependsOn (
     api,
+    testutil % "test",
     api % "test->test", // for the test data
     sexpress
   ) settings (
@@ -264,6 +274,7 @@ object EnsimeBuild extends Build {
   lazy val core = Project("core", file("core")).dependsOn(
     api, sexpress,
     api % "test->test", // for the interpolator
+    testutil % "test,it",
     // depend on "it" dependencies in "test" or sbt adds them to the release deps!
     // https://github.com/sbt/sbt/issues/1888
     testingEmpty % "test,it",
@@ -287,7 +298,6 @@ object EnsimeBuild extends Build {
           // Netbeans 7.4+ needs Java 7 (7.3 only needs it at runtime)
           "org.netbeans.api" % "org-netbeans-api-java" % "RELEASE731",
           "org.netbeans.api" % "org-netbeans-modules-java-source" % "RELEASE731",
-          "org.apache.commons" % "commons-vfs2" % "2.0" intransitive (),
           // lucene 4.8+ needs Java 7: http://www.gossamer-threads.com/lists/lucene/general/225300
           "org.apache.lucene" % "lucene-core" % "4.7.2",
           "org.apache.lucene" % "lucene-analyzers-common" % "4.7.2",
@@ -299,7 +309,6 @@ object EnsimeBuild extends Build {
           "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
           "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.8.0",
           "commons-lang" % "commons-lang" % "2.6",
-          "commons-io" % "commons-io" % "2.4" % "test,it",
           "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0"
         ) ++ logback ++ testLibs(scalaVersion.value, "it,test")
       )
@@ -332,7 +341,7 @@ object EnsimeBuild extends Build {
 
   // manual root project so we can exclude the testing projects from publication
   lazy val root = Project(id = "ensime", base = file("."), settings = commonSettings) aggregate (
-    api, util, sexpress, jerk, swank, core, server
+    api, util, testutil, sexpress, jerk, swank, core, server
   ) dependsOn (server) settings (
       // e.g. `sbt ++2.11.7 ensime/assembly`
       test in assembly := {},

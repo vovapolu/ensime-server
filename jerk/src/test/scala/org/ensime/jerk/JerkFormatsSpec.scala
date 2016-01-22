@@ -2,6 +2,7 @@ package org.ensime.jerk
 
 import org.scalatest._
 import org.ensime.api._
+import org.ensime.util.EscapingStringInterpolation
 
 class JerkFormatsSpec extends FlatSpec with Matchers
     with SprayJsonTestSupport with EnsimeTestData {
