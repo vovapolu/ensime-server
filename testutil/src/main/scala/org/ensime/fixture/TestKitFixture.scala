@@ -1,3 +1,5 @@
+// Copyright: 2010 - 2016 https://github.com/ensime/ensime-server/graphs
+// Licence: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.fixture
 
 import akka.util.Timeout
@@ -25,7 +27,7 @@ trait TestKitFixture {
     "IsolatedActorSystems are incompatible with TestKit. Instead, 'import sys._'"
   )
 
-  implicit protected val timeout: Timeout = ConfigFactory.load().getDuration("akka.test.default-timeout", TimeUnit.MILLISECONDS) milliseconds
+  implicit protected val akkaTimeout: Timeout = ConfigFactory.load().getDuration("akka.test.default-timeout", TimeUnit.MILLISECONDS) milliseconds
 
   def withTestKit(testCode: TestKitFix => Any): Any
 }

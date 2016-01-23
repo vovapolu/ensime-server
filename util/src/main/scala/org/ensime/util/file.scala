@@ -1,5 +1,5 @@
-// Copyright (C) 2015 ENSIME Authors
-// License: GPL 3.0
+// Copyright: 2010 - 2016 https://github.com/ensime/ensime-server/graphs
+// Licence: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.util
 
 import com.google.common.base.Charsets
@@ -57,6 +57,7 @@ package object file {
     def isScala: Boolean = file.getName.toLowerCase.endsWith(".scala")
     def isJava: Boolean = file.getName.toLowerCase.endsWith(".java")
     def isClassfile: Boolean = file.getName.toLowerCase.endsWith(".class")
+    def isJar: Boolean = file.getName.toLowerCase.endsWith(".jar")
 
     def parts: List[String] =
       file.getPath.split(
@@ -65,7 +66,7 @@ package object file {
 
     def outputStream(): OutputStream = new FileOutputStream(file)
 
-    def createWithParents(): Unit = {
+    def createWithParents(): Boolean = {
       Files.createParentDirs(file)
       file.createNewFile()
     }

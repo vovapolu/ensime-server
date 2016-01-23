@@ -8,15 +8,9 @@ import sbt.Keys._
 import sbtassembly.{ AssemblyKeys, MergeStrategy, PathList }
 import sbtassembly.AssemblyKeys._
 import scala.util.{ Properties, Try }
-import scoverage.ScoverageKeys
+import org.ensime.EnsimePlugin.JdkDir
 
-object EnsimeBuild extends Build with JdkResolver {
-  /*
-   WARNING: When running `server/it:test` be aware that the tests may
-   fail, but sbt will report success. This is a bug in sbt
-   https://github.com/sbt/sbt/issues/1890
-   */
-
+object EnsimeBuild extends Build {
   ////////////////////////////////////////////////
   // common
   override lazy val settings = super.settings ++ Seq(
@@ -148,6 +142,7 @@ object EnsimeBuild extends Build with JdkResolver {
 
   ////////////////////////////////////////////////
   // common dependencies
+  lazy val JavaTools: File = JdkDir / "lib/tools.jar"
   lazy val shapeless = "com.chuusai" %% "shapeless" % "2.2.5"
   lazy val logback = Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.3",
@@ -156,7 +151,7 @@ object EnsimeBuild extends Build with JdkResolver {
   )
   val akkaVersion = "2.3.14"
   val streamsVersion = "1.0"
-  val scalatestVersion = "2.2.5"
+  val scalatestVersion = "2.2.6"
 
   ////////////////////////////////////////////////
   // utils
@@ -167,14 +162,6 @@ object EnsimeBuild extends Build with JdkResolver {
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % config,
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % config
   ) ++ logback.map(_ % config)
-
-  def jars(cp: Classpath): String = {
-    for {
-      att <- cp
-      file = att.data
-      if file.isFile & file.getName.endsWith(".jar")
-    } yield file.getAbsolutePath
-  }.mkString(",")
 
   // WORKAROUND: https://github.com/scalatest/scalatest/issues/511
   def noColorIfEmacs =
@@ -188,9 +175,17 @@ object EnsimeBuild extends Build with JdkResolver {
   // modules
   lazy val util = Project("util", file("util"), settings = commonSettings) settings (
     libraryDependencies ++= List(
+      "org.apache.commons" % "commons-vfs2" % "2.0" intransitive (),
       "com.google.guava" % "guava" % "18.0",
       "com.google.code.findbugs" % "jsr305" % "3.0.1" % "provided"
     ) ++ testLibs(scalaVersion.value) ++ logback
+  )
+
+  lazy val testutil = Project("testutil", file("testutil"), settings = commonSettings) dependsOn(
+    util, api
+  ) settings (
+    libraryDependencies += "commons-io" % "commons-io" % "2.4",
+    libraryDependencies ++= testLibs(scalaVersion.value, "compile")
   )
 
   lazy val sexpress = Project("sexpress", file("sexpress"), settings = commonSettings) dependsOn (
@@ -215,6 +210,7 @@ object EnsimeBuild extends Build with JdkResolver {
   lazy val jerk = Project("jerk", file("jerk"), settings = commonSettings) dependsOn (
     util,
     api,
+    testutil % "test",
     api % "test->test" // for the test data
   ) settings (
       libraryDependencies ++= Seq(
@@ -226,6 +222,7 @@ object EnsimeBuild extends Build with JdkResolver {
   // the S-Exp protocol
   lazy val swank = Project("swank", file("swank"), settings = commonSettings) dependsOn (
     api,
+    testutil % "test",
     api % "test->test", // for the test data
     sexpress
   ) settings (
@@ -234,32 +231,29 @@ object EnsimeBuild extends Build with JdkResolver {
       ) ++ testLibs(scalaVersion.value)
     )
 
-  lazy val testingEmpty = Project("testingEmpty", file("testing/empty")).settings(
-    ScoverageKeys.coverageExcludedPackages := ".*"
-  )
+  lazy val testingEmpty = Project("testingEmpty", file("testing/empty"))
 
   lazy val testingSimple = Project("testingSimple", file("testing/simple")) settings (
-    ScoverageKeys.coverageExcludedPackages := ".*",
     scalacOptions in Compile := Seq(),
     libraryDependencies += "org.scalatest" %% "scalatest" % scalatestVersion % "test" intransitive ()
   )
 
+  lazy val testingSimpleJar = Project("testingSimpleJar", file("testing/simpleJar")).settings(
+    exportJars := true,
+    EnsimeKeys.useJar := true
+  )
+
   lazy val testingImplicits = Project("testingImplicits", file("testing/implicits")) settings (
-    ScoverageKeys.coverageExcludedPackages := ".*",
     libraryDependencies += "org.scalatest" %% "scalatest" % scalatestVersion % "test" intransitive ()
   )
 
-  lazy val testingTiming = Project("testingTiming", file("testing/timing")).settings(
-    ScoverageKeys.coverageExcludedPackages := ".*"
-  )
+  lazy val testingTiming = Project("testingTiming", file("testing/timing"))
 
   lazy val testingDebug = Project("testingDebug", file("testing/debug")).settings(
-    ScoverageKeys.coverageExcludedPackages := ".*",
     scalacOptions in Compile := Seq()
   )
 
   lazy val testingDocs = Project("testingDocs", file("testing/docs")).settings(
-    ScoverageKeys.coverageExcludedPackages := ".*",
     libraryDependencies ++= Seq(
       // specifically using ForecastIOLib version 1.5.1 for javadoc 1.8 output
       "com.github.dvdme" % "ForecastIOLib" % "1.5.1" intransitive (),
@@ -271,17 +265,18 @@ object EnsimeBuild extends Build with JdkResolver {
   // java project with no scala-library
   lazy val testingJava = Project("testingJava", file("testing/java")).settings(
     crossPaths := false,
-    autoScalaLibrary := false,
-    ScoverageKeys.coverageExcludedPackages := ".*"
+    autoScalaLibrary := false
   )
 
   lazy val core = Project("core", file("core")).dependsOn(
     api, sexpress,
     api % "test->test", // for the interpolator
+    testutil % "test,it",
     // depend on "it" dependencies in "test" or sbt adds them to the release deps!
     // https://github.com/sbt/sbt/issues/1888
     testingEmpty % "test,it",
     testingSimple % "test,it",
+    testingSimpleJar % "test,it",
     testingTiming % "test,it",
     testingDebug % "test,it",
     testingJava % "test,it"
@@ -293,11 +288,7 @@ object EnsimeBuild extends Build with JdkResolver {
         commonItSettings
       ).settings(
         unmanagedJars in Compile += JavaTools,
-        // tools.jar sources are not distributed with the JDK. Get sources
-        // from http://download.java.net/openjdk/jdk6/ extract and zip up
-        // the langtools/src/classes directory, and set the environment
-        // variable referenced here
-        EnsimeKeys.unmanagedSourceArchives := sys.env.get("JDK_LANGTOOLS_SRC").map(file).filter(_.exists()).toSeq,
+        EnsimeKeys.unmanagedSourceArchives += file(".").getCanonicalFile / "openjdk-langtools/openjdk6-langtools-src.zip",
         libraryDependencies ++= Seq(
           "com.h2database" % "h2" % "1.4.190",
           "com.typesafe.slick" %% "slick" % "3.1.1",
@@ -305,7 +296,6 @@ object EnsimeBuild extends Build with JdkResolver {
           // Netbeans 7.4+ needs Java 7 (7.3 only needs it at runtime)
           "org.netbeans.api" % "org-netbeans-api-java" % "RELEASE731",
           "org.netbeans.api" % "org-netbeans-modules-java-source" % "RELEASE731",
-          "org.apache.commons" % "commons-vfs2" % "2.0" intransitive (),
           // lucene 4.8+ needs Java 7: http://www.gossamer-threads.com/lists/lucene/general/225300
           "org.apache.lucene" % "lucene-core" % "4.7.2",
           "org.apache.lucene" % "lucene-analyzers-common" % "4.7.2",
@@ -317,7 +307,6 @@ object EnsimeBuild extends Build with JdkResolver {
           "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
           "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.8.0",
           "commons-lang" % "commons-lang" % "2.6",
-          "commons-io" % "commons-io" % "2.4" % "test,it",
           "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0"
         ) ++ logback ++ testLibs(scalaVersion.value, "it,test")
       )
@@ -350,7 +339,7 @@ object EnsimeBuild extends Build with JdkResolver {
 
   // manual root project so we can exclude the testing projects from publication
   lazy val root = Project(id = "ensime", base = file("."), settings = commonSettings) aggregate (
-    api, util, sexpress, jerk, swank, core, server
+    api, util, testutil, sexpress, jerk, swank, core, server
   ) dependsOn (server) settings (
       // e.g. `sbt ++2.11.7 ensime/assembly`
       test in assembly := {},
@@ -370,26 +359,5 @@ object EnsimeBuild extends Build with JdkResolver {
         } :+ Attributed.blank(JavaTools)
       },
       assemblyJarName in assembly := s"ensime_${scalaBinaryVersion.value}-${version.value}-assembly.jar"
-    )
-}
-
-trait JdkResolver {
-  // WORKAROUND: https://github.com/typelevel/scala/issues/75
-  val JavaTools: File = List(
-    // manual
-    sys.env.get("JDK_HOME"),
-    sys.env.get("JAVA_HOME"),
-    // osx
-    Try("/usr/libexec/java_home".!!).toOption,
-    // fallback
-    sys.props.get("java.home").map(new File(_).getParent),
-    sys.props.get("java.home")
-  ).flatten.map { n =>
-      new File(n.trim + "/lib/tools.jar")
-    }.filter(_.exists()).headOption.getOrElse(
-      throw new FileNotFoundException(
-        """Could not automatically find the JDK/lib/tools.jar.
-        |You must explicitly set JDK_HOME or JAVA_HOME.""".stripMargin
-      )
     )
 }

@@ -1,3 +1,5 @@
+// Copyright: 2010 - 2016 https://github.com/ensime/ensime-server/graphs
+// Licence: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.fixture
 
 import com.google.common.io.Files
@@ -51,6 +53,10 @@ object EnsimeConfigFixture {
   lazy val SimpleTestProject: EnsimeConfig = EnsimeTestProject.copy(
     subprojects = EnsimeTestProject.subprojects.filter(_.name == "testingSimple")
   )
+  lazy val SimpleJarTestProject: EnsimeConfig = EnsimeTestProject.copy(
+    subprojects = EnsimeTestProject.subprojects.filter(_.name == "testingSimpleJar"),
+    javaLibs = Nil
+  )
   lazy val ImplicitsTestProject: EnsimeConfig = EnsimeTestProject.copy(
     subprojects = EnsimeTestProject.subprojects.filter(_.name == "testingImplicits"),
     javaLibs = Nil
@@ -89,7 +95,10 @@ object EnsimeConfigFixture {
 
     def renameAndCopy(from: File): File = {
       val to = rename(from)
-      copyDirectory(from, to)
+      if (!to.isJar)
+        copyDirectory(from, to)
+      else
+        to.getParentFile.mkdirs()
       to
     }
 

@@ -1,3 +1,5 @@
+// Copyright: 2010 - 2016 https://github.com/ensime/ensime-server/graphs
+// Licence: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.indexer
 
 import java.io.File
@@ -111,21 +113,6 @@ class DatabaseService(dir: File) extends SLF4JLogging {
 }
 
 object DatabaseService {
-  // I absolutely **HATE** this DSL bullshit. I want to use the raw
-  // SQL!! But it looks like slick/scala-2.11 don't play well at the
-  // moment: https://issues.scala-lang.org/browse/SI-8261
-  // another advantage of the raw SQL and mappers is that our
-  // case classes don't need to be bastardised to match what the
-  // DSL can understand.
-
-  // case class Checked(file: File, checked: Date)
-  // db withSession { implicit s =>
-  //   sqlu"""CREATE TABLE CHECKED(
-  //            id INTEGER NOT NULL PRIMARY KEY,
-  //            file VARCHAR(255) NOT NULL UNIQUE,
-  //            checked TIMESTAMP)""".execute(s)
-  //}
-
   case class FileCheck(id: Option[Int], filename: String, timestamp: Timestamp) {
     def file(implicit vfs: EnsimeVFS) = vfs.vfile(filename)
     def lastModified = timestamp.getTime
