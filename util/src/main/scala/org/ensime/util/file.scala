@@ -97,6 +97,12 @@ package object file {
     }
 
     /**
+     * Non-recursive children of the file.
+     */
+    def children: Stream[File] =
+      Option(file.listFiles()).map(_.toStream).getOrElse(Stream.empty)
+
+    /**
      * Helps to resolve ambiguity surrounding files in symbolically
      * linked directories, which are common on operating systems that
      * use a symbolically linked temporary directory (OS X I'm looking

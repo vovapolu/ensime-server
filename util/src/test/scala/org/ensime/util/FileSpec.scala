@@ -119,6 +119,19 @@ class FileSpec extends FlatSpec with Matchers {
     here.tree.filter(_.getName == "FileSpec.scala").toList.size shouldBe 1
   }
 
+  it should "calculate children" in withTempDir { dir =>
+    dir.children should be an 'empty
+
+    val foo = (dir / "foo")
+    val bar = (foo / "bar")
+    val baz = (dir / "baz")
+
+    bar.createWithParents()
+    baz.createWithParents()
+
+    dir.children should contain only (foo, baz)
+  }
+
   // don't know how to test .canon, no way to systematically create
   // this since the JVM doesn't support symbolic links until Java 7.
 }

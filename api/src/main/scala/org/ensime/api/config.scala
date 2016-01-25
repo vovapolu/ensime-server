@@ -89,7 +89,7 @@ case class EnsimeModule(
   def testJars = testDeps
   def referenceSourceJars = referenceSourceRoots
 
-  // prefer these to the raw target(s)
+  // prefer these to the raw target(s) until we deprecate `target`
   val targetDirs = targets ++ target.toIterable
   val testTargetDirs = testTargets ++ testTarget.toIterable
 
