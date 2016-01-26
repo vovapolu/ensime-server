@@ -10,11 +10,9 @@ import org.scalatest.concurrent.Eventually
 import scala.concurrent.duration._
 
 /**
- * Tries to simulate SBT clean/compile to stress test timing issues.
- *
- * (which also tests the file watchers).
+ * Tests a project that uses jars instead of classfiles in the target.
  */
-class JarTargetTest extends EnsimeSpec with Eventually
+class JarTargetTest extends EnsimeSpec
     with IsolatedEnsimeConfigFixture
     with IsolatedTestKitFixture
     with IsolatedProjectFixture {
@@ -22,6 +20,39 @@ class JarTargetTest extends EnsimeSpec with Eventually
   val original = EnsimeConfigFixture.SimpleJarTestProject
 
   "ensime-server" should "index jar targets" in {
+    withEnsimeConfig { implicit config =>
+      withTestKit { implicit tk =>
+        withProject { (project, asyncHelper) =>
+          import tk._
+
+          mainTarget should be a 'file
+
+          eventually(interval(1 second)) {
+            project ! PublicSymbolSearchReq(List("Foo"), 5)
+            atLeast(1, expectMsgType[SymbolSearchResults].syms) should matchPattern {
+              case TypeSearchResult("baz.Foo$", "Foo$", DeclaredAs.Class, Some(_)) =>
+            }
+          }
+        }
+      }
+    }
+  }
+
+}
+
+/**
+ * Variant of JarTargetTest with jars missing on startup.
+ */
+class MissingJarTargetTest extends EnsimeSpec
+    with IsolatedEnsimeConfigFixture
+    with IsolatedTestKitFixture
+    with IsolatedProjectFixture {
+
+  val original = EnsimeConfigFixture.SimpleJarTestProject
+
+  override def copyTargets = false
+
+  "ensime-server" should "index jar targets that appear after startup" in {
     withEnsimeConfig { implicit config =>
       withTestKit { implicit tk =>
         withProject { (project, asyncHelper) =>

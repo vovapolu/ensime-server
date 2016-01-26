@@ -82,8 +82,15 @@ class SearchService(
       log.info("findBases")
       config.modules.flatMap {
         case (name, m) =>
-          m.targetDirs.flatMap { d => scan(vfs.vfile(d)) } :::
-            m.testTargetDirs.flatMap { d => scan(vfs.vfile(d)) } :::
+          m.targetDirs.flatMap {
+            case d if !d.exists() => Nil
+            case d if d.isJar => List(vfs.vfile(d))
+            case d => scan(vfs.vfile(d))
+          } ::: m.testTargetDirs.flatMap {
+            case d if !d.exists() => Nil
+            case d if d.isJar => List(vfs.vfile(d))
+            case d => scan(vfs.vfile(d))
+          } :::
             m.compileJars.map(vfs.vfile) ::: m.testJars.map(vfs.vfile)
       }
     }.toSet ++ config.javaLibs.map(vfs.vfile)

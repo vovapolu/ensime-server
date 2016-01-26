@@ -198,8 +198,6 @@ abstract class FileWatcherSpec extends EnsimeSpec
         dir.delete()
         try {
           withClassWatcher(dir) { watcher =>
-            tk.expectMsgType[BaseAdded]
-
             val foo = (dir / "foo.class")
             val bar = (dir / "b/bar.class")
 
@@ -355,7 +353,7 @@ abstract class FileWatcherSpec extends EnsimeSpec
       def fileAdded(f: FileObject): Unit = { tk.testActor ! Added(f) }
       def fileRemoved(f: FileObject): Unit = { tk.testActor ! Removed(f) }
       def fileChanged(f: FileObject): Unit = { tk.testActor ! Changed(f) }
-      override def baseAdded(f: FileObject): Unit = { tk.testActor ! BaseAdded(f) }
+      override def baseReCreated(f: FileObject): Unit = { tk.testActor ! BaseAdded(f) }
       override def baseRemoved(f: FileObject): Unit = { tk.testActor ! BaseRemoved(f) }
     }
   )

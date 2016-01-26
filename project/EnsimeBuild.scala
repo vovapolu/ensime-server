@@ -276,7 +276,8 @@ object EnsimeBuild extends Build {
     // https://github.com/sbt/sbt/issues/1888
     testingEmpty % "test,it",
     testingSimple % "test,it",
-    testingSimpleJar % "test,it",
+    // test config needed to get the test jar
+    testingSimpleJar % "test,it->test",
     testingTiming % "test,it",
     testingDebug % "test,it",
     testingJava % "test,it"

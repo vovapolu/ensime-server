@@ -5,7 +5,7 @@ package org.ensime.fixture
 import com.google.common.io.Files
 import java.io.{ File => JFile }
 
-import org.apache.commons.io.FileUtils.copyDirectory
+import org.apache.commons.io.FileUtils.{ copyDirectory, copyFile }
 import org.ensime.api._
 import org.ensime.config._
 import org.scalatest._
@@ -18,6 +18,8 @@ import org.ensime.util.file._
 trait EnsimeConfigFixture {
   /** The definition of the original project to clone for testing. */
   def original: EnsimeConfig
+
+  def copyTargets: Boolean = true
 
   def withEnsimeConfig(testCode: EnsimeConfig => Any): Any
 
@@ -81,7 +83,8 @@ object EnsimeConfigFixture {
   // with options to copy ENSIME's own sources/classes into the structure.
   def cloneForTesting(
     source: EnsimeConfig,
-    target: File
+    target: File,
+    copyTargets: Boolean
   ): EnsimeConfig = {
 
     def rename(from: File): File = {
@@ -98,17 +101,21 @@ object EnsimeConfigFixture {
       if (!to.isJar)
         copyDirectory(from, to)
       else
-        to.getParentFile.mkdirs()
+        copyFile(from, to)
       to
     }
+
+    def renameAndCopyTarget(from: File): File =
+      if (copyTargets) renameAndCopy(from)
+      else rename(from)
 
     // I tried using shapeless everywhere here, but it OOMd the compiler :-(
 
     def cloneModule(m: EnsimeModule): EnsimeModule = m.copy(
-      target = m.target.map(renameAndCopy),
-      targets = m.targets.map(renameAndCopy),
-      testTarget = m.testTarget.map(renameAndCopy),
-      testTargets = m.testTargets.map(renameAndCopy),
+      target = m.target.map(renameAndCopyTarget),
+      targets = m.targets.map(renameAndCopyTarget),
+      testTarget = m.testTarget.map(renameAndCopyTarget),
+      testTargets = m.testTargets.map(renameAndCopyTarget),
       sourceRoots = m.sourceRoots.map(renameAndCopy)
     )
 
@@ -146,7 +153,7 @@ trait IsolatedEnsimeConfigFixture extends Suite
   import EnsimeConfigFixture._
 
   override def withEnsimeConfig(testCode: EnsimeConfig => Any): Any = withTempDir {
-    dir => testCode(cloneForTesting(original, dir))
+    dir => testCode(cloneForTesting(original, dir, copyTargets))
   }
 }
 
@@ -164,7 +171,7 @@ trait SharedEnsimeConfigFixture extends Suite
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    _config = cloneForTesting(original, tmpDir)
+    _config = cloneForTesting(original, tmpDir, copyTargets)
   }
 
   override def afterAll(): Unit = {

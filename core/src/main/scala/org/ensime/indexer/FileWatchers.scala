@@ -18,7 +18,7 @@ trait FileChangeListener {
   def fileAdded(f: FileObject): Unit
   def fileRemoved(f: FileObject): Unit
   def fileChanged(f: FileObject): Unit
-  def baseAdded(f: FileObject): Unit = {}
+  def baseReCreated(f: FileObject): Unit = {}
   def baseRemoved(f: FileObject): Unit = {}
 }
 
@@ -121,19 +121,21 @@ private class ApachePollingFileWatcher(
 
   private def init(restarted: Boolean): Unit = {
     fm.setRecursive(recursive)
-
-    // VFS doesn't send "file created" messages when it first starts
-    // up, but since we're reacting to a directory deletion, we
-    // should send signals for everything we see. This could result
-    // in dupes, but we figure that's better than dropping the
-    // message.
     val base = vfs.vfile(watched)
-    if (watched.mkdirs()) listeners.foreach(_.baseAdded(base))
+
+    // we don't send baseReCreated if we create it on startup
+    if (watched.mkdirs() && restarted)
+      listeners.foreach(_.baseReCreated(base))
     fm.addFile(base)
     for {
-      file <- watched.tree
+      file <- if (recursive) watched.tree else watched.children
       fo = vfs.vfile(file)
     } {
+      // VFS doesn't send "file created" messages when it first starts
+      // up, but since we're reacting to a directory deletion, we
+      // should send signals for everything we see. This could result
+      // in dupes, but we figure that's better than dropping the
+      // message.
       if (restarted && selector.includeFile(fo)) {
         listeners foreach (_.fileAdded(fo))
       }
