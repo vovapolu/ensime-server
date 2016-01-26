@@ -305,8 +305,6 @@ class IndexingQueueActor(searchService: SearchService) extends Actor with ActorL
                 searchService.persist(FileCheck(file), syms, commitIndex = true).onComplete {
                   case Failure(t) => log.error(s"failed to persist entries in $file", t)
                   case Success(_) =>
-                    if (log.isDebugEnabled)
-                      log.debug(s"successfully persisted ${syms.size} symbols in $file: $syms")
                 }
             }
           }
