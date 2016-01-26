@@ -55,7 +55,7 @@ object SexpParser {
 
   val QuoteBackslash = CharPredicate("\"\\")
   val QuoteSlashBackSlash = QuoteBackslash ++ "/"
-  var NCCharPredicate = CharPredicate.All -- "\"\\"
+  val NCCharPredicate = CharPredicate.All -- "\"\\"
 
 }
 

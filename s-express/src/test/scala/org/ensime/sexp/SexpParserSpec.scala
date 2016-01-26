@@ -39,7 +39,13 @@ class SexpParserSpec extends WordSpec with Matchers {
     "parse escaped chars in strings" in {
       parse(""""z \\ \" \t \\t \\\t x\ x"""") shouldBe SexpString("z \\ \" \t \\t \\\t xx")
 
+      parse(""""import foo\n\n\nexport bar\n"""") shouldBe SexpString("import foo\n\n\nexport bar\n")
+
       parse(""""C:\\my\\folder"""") shouldBe SexpString("""C:\my\folder""")
+    }
+
+    "parse unescaped chars in strings" in {
+      parse("\"import foo\n\n\nexport bar\n\"") shouldBe SexpString("import foo\n\n\nexport bar\n")
     }
 
     "parse lists of chars" in {
