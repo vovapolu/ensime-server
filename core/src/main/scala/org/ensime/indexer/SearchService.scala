@@ -147,7 +147,8 @@ class SearchService(
       val check = FileCheck(classfile)
       Future {
         blocking {
-          extractSymbols(classfile, classfile)
+          try extractSymbols(classfile, classfile)
+          finally classfile.close()
         }
       }
     case jar =>
@@ -155,7 +156,9 @@ class SearchService(
       val check = FileCheck(jar)
       Future {
         blocking {
-          scan(vfs.vjar(jar)) flatMap (extractSymbols(jar, _))
+          val vJar = vfs.vjar(jar)
+          try scan(vJar) flatMap (extractSymbols(jar, _))
+          finally vJar.close()
         }
       }
   }
@@ -302,8 +305,6 @@ class IndexingQueueActor(searchService: SearchService) extends Actor with ActorL
                 searchService.persist(FileCheck(file), syms, commitIndex = true).onComplete {
                   case Failure(t) => log.error(s"failed to persist entries in $file", t)
                   case Success(_) =>
-                    if (log.isDebugEnabled)
-                      log.debug(s"successfully persisted ${syms.size} symbols in $file: $syms")
                 }
             }
           }

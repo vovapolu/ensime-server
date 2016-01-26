@@ -293,7 +293,7 @@ object EnsimeBuild extends Build {
         libraryDependencies ++= Seq(
           "com.h2database" % "h2" % "1.4.190",
           "com.typesafe.slick" %% "slick" % "3.1.1",
-          "com.jolbox" % "bonecp" % "0.8.0.RELEASE", // consider https://github.com/brettwooldridge/HikariCP
+          "com.zaxxer" % "HikariCP-java6" % "2.3.12",
           // Netbeans 7.4+ needs Java 7 (7.3 only needs it at runtime)
           "org.netbeans.api" % "org-netbeans-api-java" % "RELEASE731",
           "org.netbeans.api" % "org-netbeans-modules-java-source" % "RELEASE731",

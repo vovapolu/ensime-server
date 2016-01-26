@@ -6,7 +6,7 @@ import java.io.File
 import java.sql.Timestamp
 
 import akka.event.slf4j.SLF4JLogging
-import com.jolbox.bonecp.BoneCPDataSource
+import com.zaxxer.hikari.HikariDataSource
 import org.apache.commons.vfs2.FileObject
 import org.ensime.indexer.DatabaseService._
 
@@ -23,14 +23,11 @@ class DatabaseService(dir: File) extends SLF4JLogging {
     val url = "jdbc:h2:file:" + dir.getAbsolutePath + "/db;MVCC=TRUE"
     val driver = "org.h2.Driver"
 
-    // http://jolbox.com/benchmarks.html
-    val ds = new BoneCPDataSource()
-    ds.setDriverClass(driver)
+    // https://github.com/brettwooldridge/HikariCP
+    val ds = new HikariDataSource()
+    ds.setDriverClassName(driver)
     ds.setJdbcUrl(url)
-    ds.setStatementsCacheSize(50)
-    ds.setUsername("")
-    ds.setPassword("")
-    val threads = ds.getMaxConnectionsPerPartition()
+    val threads = ds.getMaximumPoolSize()
     val executor = AsyncExecutor("Slick", numThreads = threads, queueSize = -1)
     (ds, Database.forDataSource(ds, executor = executor))
   }
