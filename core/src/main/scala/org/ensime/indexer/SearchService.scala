@@ -147,7 +147,8 @@ class SearchService(
       val check = FileCheck(classfile)
       Future {
         blocking {
-          extractSymbols(classfile, classfile)
+          try extractSymbols(classfile, classfile)
+          finally classfile.close()
         }
       }
     case jar =>
@@ -155,7 +156,9 @@ class SearchService(
       val check = FileCheck(jar)
       Future {
         blocking {
-          scan(vfs.vjar(jar)) flatMap (extractSymbols(jar, _))
+          val vJar = vfs.vjar(jar)
+          try scan(vJar) flatMap (extractSymbols(jar, _))
+          finally vJar.close()
         }
       }
   }
