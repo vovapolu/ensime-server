@@ -61,12 +61,10 @@ class SearchService(
     // check each file against DatabaseService.outOfDate
     def findStaleFileChecks(checks: Seq[FileCheck]): List[FileCheck] = {
       log.info("findStaleFileChecks")
-      val jarUris = config.allJars.map(vfs.vfile).map(_.getName.getURI)
       for {
         check <- checks
         name = check.file.getName.getURI
-        if !check.file.exists || check.changed ||
-          (!name.endsWith(".class") && !jarUris(name))
+        if !check.file.exists || check.changed
       } yield check
     }.toList
 
