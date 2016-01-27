@@ -44,19 +44,19 @@ class EnsimeVFS(val vfs: DefaultFileSystemManager) {
   }
 
   private[indexer] def vfile(name: String) = withContext(s"$name =>")(
-    vfs.resolveFile(name)
+    vfs.resolveFile(name.intern)
   )
   private[indexer] def vfile(file: File) = withContext(s"$file =>")(
     vfs.toFileObject(file)
   )
   private[indexer] def vres(path: String) = withContext(s"$path =>")(
-    vfs.resolveFile("res:" + path)
+    vfs.resolveFile(("res:" + path).intern)
   )
   private[indexer] def vjar(jar: File) = withContext(s"$jar =>")(
-    vfs.resolveFile("jar:" + jar.getAbsolutePath)
+    vfs.resolveFile(("jar:" + jar.getAbsolutePath).intern)
   )
   private[indexer] def vjar(jar: FileObject) = withContext(s"$jar =>")(
-    vfs.resolveFile("jar:" + jar.getName.getURI)
+    vfs.resolveFile(("jar:" + jar.getName.getURI).intern)
   )
 
   def close(): Unit = {
