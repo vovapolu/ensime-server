@@ -36,7 +36,7 @@ class SearchService(
     with SLF4JLogging {
 
   private val QUERY_TIMEOUT = 30 seconds
-  private val version = "1.0"
+  private val version = "1.1"
 
   private val index = new IndexService(config.cacheDir / ("index-" + version))
   private val db = new DatabaseService(config.cacheDir / ("sql-" + version))
