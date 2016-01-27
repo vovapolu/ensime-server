@@ -188,7 +188,7 @@ object EnsimeBuild extends Build {
     libraryDependencies ++= testLibs(scalaVersion.value, "compile")
   )
 
-  lazy val sexpress = Project("sexpress", file("sexpress"), settings = commonSettings) dependsOn (
+  lazy val s_express = Project("s-express", file("s-express"), settings = commonSettings) dependsOn (
     util
   ) settings (
       licenses := Seq(GPL3),
@@ -207,7 +207,7 @@ object EnsimeBuild extends Build {
   )
 
   // the JSON protocol
-  lazy val jerk = Project("jerk", file("jerk"), settings = commonSettings) dependsOn (
+  lazy val jerky = Project("jerky", file("protocol-jerky"), settings = commonSettings) dependsOn (
     util,
     api,
     testutil % "test",
@@ -220,11 +220,11 @@ object EnsimeBuild extends Build {
     )
 
   // the S-Exp protocol
-  lazy val swank = Project("swank", file("swank"), settings = commonSettings) dependsOn (
+  lazy val swanky = Project("swanky", file("protocol-swanky"), settings = commonSettings) dependsOn (
     api,
     testutil % "test",
     api % "test->test", // for the test data
-    sexpress
+    s_express
   ) settings (
       libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
@@ -269,7 +269,7 @@ object EnsimeBuild extends Build {
   )
 
   lazy val core = Project("core", file("core")).dependsOn(
-    api, sexpress,
+    api, s_express,
     api % "test->test", // for the interpolator
     testutil % "test,it",
     // depend on "it" dependencies in "test" or sbt adds them to the release deps!
@@ -313,9 +313,9 @@ object EnsimeBuild extends Build {
       )
 
   lazy val server = Project("server", file("server")).dependsOn(
-    core, swank, jerk,
-    sexpress % "test->test",
-    swank % "test->test",
+    core, swanky, jerky,
+    s_express % "test->test",
+    swanky % "test->test",
     // depend on "it" dependencies in "test" or sbt adds them to the release deps!
     // https://github.com/sbt/sbt/issues/1888
     core % "test->test",
@@ -340,7 +340,7 @@ object EnsimeBuild extends Build {
 
   // manual root project so we can exclude the testing projects from publication
   lazy val root = Project(id = "ensime", base = file("."), settings = commonSettings) aggregate (
-    api, util, testutil, sexpress, jerk, swank, core, server
+    api, util, testutil, s_express, jerky, swanky, core, server
   ) dependsOn (server) settings (
       // e.g. `sbt ++2.11.7 ensime/assembly`
       test in assembly := {},
