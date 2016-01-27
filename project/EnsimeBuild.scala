@@ -193,7 +193,6 @@ object EnsimeBuild extends Build {
   ) settings (
       licenses := Seq(GPL3),
       libraryDependencies ++= Seq(
-        "org.parboiled" %% "parboiled-scala" % "1.1.7",
         "org.parboiled" %% "parboiled" % "2.1.0" exclude("com.chuusai", "shapeless_2.10.4"),
         shapeless
       ) ++ testLibs(scalaVersion.value)
