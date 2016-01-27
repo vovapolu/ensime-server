@@ -21,9 +21,8 @@ class SexpParserSpec extends WordSpec with Matchers {
   val fookey = SexpSymbol(":foo")
   val barkey = SexpSymbol(":bar")
 
-  "PimpedString" should {
+  "EnrichedString" should {
     "use the parser" in {
-      import org.ensime.sexp._
       "nil".parseSexp shouldBe SexpNil
     }
   }
