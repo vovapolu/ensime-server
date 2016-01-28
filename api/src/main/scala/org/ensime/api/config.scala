@@ -34,7 +34,8 @@ case class EnsimeConfig(
   /* Proposed alternatives to the legacy wire format field names */
   def root = rootDir
   def debugVMArgs = debugArgs
-  def referenceSourceJars = referenceSourceRoots
+  val referenceSourceJars =
+    (referenceSourceRoots ++ subprojects.flatMap(_.referenceSourceRoots)).toSet
 
   // some marshalling libs (e.g. spray-json) might not like extra vals
   val modules = subprojects.map { module => (module.name, module) }.toMap
