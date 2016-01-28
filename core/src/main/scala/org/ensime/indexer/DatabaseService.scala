@@ -168,7 +168,6 @@ object DatabaseService {
     def * = (id.?, file, path, fqn, descriptor, internal, source, line, offset) <> (FqnSymbol.tupled, FqnSymbol.unapply)
     def fqnIdx = index("idx_fqn", fqn, unique = false) // fqns are unique by type and sig
     def uniq = index("idx_uniq", (fqn, descriptor, internal), unique = true)
-    def fileIdx = index("idx_file", file, unique = false)
   }
   private val fqnSymbols = TableQuery[FqnSymbols]
   private val fqnSymbolsCompiled = Compiled { TableQuery[FqnSymbols] }

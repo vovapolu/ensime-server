@@ -36,7 +36,19 @@ class SearchService(
     with SLF4JLogging {
 
   private val QUERY_TIMEOUT = 30 seconds
-  private val version = "1.1"
+
+  /**
+   * Changelog:
+   *
+   * 1.0 - reverted index due to negative impact to startup time. The
+   *       workaround to large scale deletions is to just nuke the
+   *       .ensime_cache.
+   *
+   * 1.1 - added index to FileCheck.file to speed up delete.
+   *
+   * 1.0 - initial schema
+   */
+  private val version = "1.0"
 
   private val index = new IndexService(config.cacheDir / ("index-" + version))
   private val db = new DatabaseService(config.cacheDir / ("sql-" + version))
