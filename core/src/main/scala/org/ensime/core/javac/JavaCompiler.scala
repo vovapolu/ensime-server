@@ -46,15 +46,33 @@ class JavaCompiler(
   private val cp = (config.allJars ++ config.targetClasspath).mkString(File.pathSeparator)
   private var workingSet = new ConcurrentHashMap[String, JavaFileObject]()
 
-  // needs to be recreated in JDK6. JDK7 seems more capable of reuse.
+  // Cache the filemanager so we can re-use jars on the classpath. This has
+  // *very* large performance implications: ensime-server/issues/1262
+  //
+  // Warning from docs: "An object of this interface is not required to
+  //   support multi-threaded access, that is, be synchronized."
+  var sharedFileManager: Option[JavaFileManager] = None
+
   def getTask(
     lint: String,
     listener: DiagnosticListener[JavaFileObject],
     files: java.lang.Iterable[JavaFileObject]
   ): JavacTask = {
-    // TODO: take a charset for each invocation
     val compiler = ToolProvider.getSystemJavaCompiler()
-    val fileManager = compiler.getStandardFileManager(listener, null, DefaultCharset)
+
+    // Try to re-use file manager.
+    // Note: we can't re-use the compiler, as that will
+    // explode with 'Compilation in progress' on jdk6.
+    // see comments on ensime-server/pull/1108
+    val fileManager = sharedFileManager match {
+      case Some(fm) => fm
+      case _ =>
+        // TODO: take a charset for each invocation
+        val fm = compiler.getStandardFileManager(listener, null, DefaultCharset)
+        sharedFileManager = Some(fm)
+        fm
+    }
+
     compiler.getTask(null, fileManager, listener, List(
       "-cp", cp, "-Xlint:" + lint, "-proc:none"
     ).asJava, null, files).asInstanceOf[JavacTask]
