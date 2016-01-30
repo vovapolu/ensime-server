@@ -33,8 +33,8 @@ object DescriptorParser {
         throw new Exception("Failed to parse descriptor type: ", other)
     }
   }
-  val PackageNamePredicate = CharPredicate.AlphaNum ++ "$_-" -- "/"
-  val ClassNameCharPredicate = CharPredicate.AlphaNum ++ "$_"
+  val PackageNamePredicate = CharPredicate.All -- ";/ "
+  val ClassNameCharPredicate = CharPredicate.All -- ";/ "
 }
 
 class DescriptorParser(val input: ParserInput) extends Parser {

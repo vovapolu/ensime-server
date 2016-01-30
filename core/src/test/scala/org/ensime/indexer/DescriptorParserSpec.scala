@@ -11,6 +11,7 @@ import scala.util.Try
 
 class DescriptorParserSpec extends FunSpec with Matchers with SLF4JLogging {
 
+  private val SZ = ClassName(PackageName(List("scalaz", "syntax")), "ToApplicativeOps$ApplicativeIdV$$anonfun$η$1")
   private val S = ClassName(PackageName(List("java", "lang")), "String")
   private val A = ArrayDescriptor
   private val D = Descriptor
@@ -62,6 +63,7 @@ class DescriptorParserSpec extends FunSpec with Matchers with SLF4JLogging {
     }
 
     it("should handle examples") {
+      assert(parseType("Lscalaz/syntax/ToApplicativeOps$ApplicativeIdV$$anonfun$η$1;") === SZ)
       assert(parseType("Ljava/lang/String;") === S)
       assert(parseType("[Ljava/lang/String;") === A(S))
       assert(parseType("[[Ljava/lang/String;") === A(A(S)))
