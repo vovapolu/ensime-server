@@ -143,16 +143,6 @@ case class PackageMemberCompletionReq(
 ) extends RpcAnalyserRequest
 
 /**
- * Responds with `CallCompletionInfo` if valid, or `FalseResponse`.
- */
-case class CallCompletionReq(id: Int) extends RpcAnalyserRequest
-
-/**
- * Responds with `TypeInfo` if valid, or `FalseResponse`.
- */
-case class TypeByIdReq(id: Int) extends RpcAnalyserRequest
-
-/**
  * Responds with `TypeInfo` if valid, or `FalseResponse`.
  */
 case class TypeByNameReq(name: String) extends RpcAnalyserRequest
@@ -182,15 +172,6 @@ case class TypeAtPointReq(
  * @param range in the file to inspect.
  */
 case class InspectTypeAtPointReq(file: Either[File, SourceFileInfo], range: OffsetRange) extends RpcAnalyserRequest
-
-/**
- * Request detailed type description by `typeId`.
- *
- * Responds with a `TypeInspectInfo` if the id is valid, or `FalseResponse`.
- *
- * @param id of the type to inspect (returned by other calls).
- */
-case class InspectTypeByIdReq(id: Int) extends RpcAnalyserRequest
 
 /**
  * Request detailed type description by fully qualified class name.

@@ -32,7 +32,7 @@ class JavaWorkflow extends WordSpec with Matchers
             expectMsg(VoidResponse)
 
             project ! TypeAtPointReq(Left(fooFile), OffsetRange(30))
-            expectMsg(Some(BasicTypeInfo("pure.NoScalaHere", -1, DeclaredAs.Class, "pure.NoScalaHere", Nil, Nil, Some(EmptySourcePosition()), None)))
+            expectMsg(Some(BasicTypeInfo("pure.NoScalaHere", DeclaredAs.Class, "pure.NoScalaHere", Nil, Nil, Some(EmptySourcePosition()))))
           }
         }
       }

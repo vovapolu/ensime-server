@@ -1,6 +1,14 @@
-Protocol Version: 0.8.19 (Must match version at ConnectionInfo.protocolVersion)
+Protocol Version: 0.8.20 (Must match version at ConnectionInfo.protocolVersion)
 
 Protocol Change Log:
+  0.8.20
+    Removed CallCompletionInfoReq
+    Removed TypeByIdReq
+    Removed InspectTypeByIdReq
+    Removed all type-id fields from result types, including
+      :type-id, :companion-id, :outer-type-id
+    Add :has-implicit field to CompletionSignature result type
+    CompletionSignature now returns fully qualified param types
   0.8.19
     Added swank:diff-refactor
   0.8.18

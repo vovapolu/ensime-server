@@ -128,18 +128,8 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     unmarshal(
-      """(swank:call-completion 13)""",
-      CallCompletionReq(13): RpcRequest
-    )
-
-    unmarshal(
       s"""(swank:uses-of-symbol-at-point "$file1" 100)""",
       UsesOfSymbolAtPointReq(Left(file1), 100): RpcRequest
-    )
-
-    unmarshal(
-      s"""(swank:type-by-id 13)""",
-      TypeByIdReq(13): RpcRequest
     )
 
     unmarshal(
@@ -160,11 +150,6 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     unmarshal(
       s"""(swank:inspect-type-at-point "$file1" (1 100))""",
       InspectTypeAtPointReq(Left(file1), OffsetRange(1, 100)): RpcRequest
-    )
-
-    unmarshal(
-      s"""(swank:inspect-type-by-id 13)""",
-      InspectTypeByIdReq(13): RpcRequest
     )
 
     unmarshal(
@@ -525,27 +510,27 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
 
     marshal(
       completionInfo: CompletionInfo,
-      """(:name "name" :type-sig (((("abc" "def") ("hij" "lmn"))) "ABC") :type-id 88 :is-callable nil :relevance 90 :to-insert "BAZ")"""
+      """(:name "name" :type-sig (((("abc" "def") ("hij" "lmn"))) "ABC" nil) :is-callable nil :relevance 90 :to-insert "BAZ")"""
     )
 
     marshal(
       completionInfo2: CompletionInfo,
-      """(:name "name2" :type-sig (((("abc" "def"))) "ABC") :type-id 90 :is-callable t :relevance 91 :to-insert nil)"""
+      """(:name "name2" :type-sig (((("abc" "def"))) "ABC" nil) :is-callable t :relevance 91 :to-insert nil)"""
     )
 
     marshal(
       CompletionInfoList("fooBar", List(completionInfo)): CompletionInfoList,
-      """(:prefix "fooBar" :completions ((:name "name" :type-sig (((("abc" "def") ("hij" "lmn"))) "ABC") :type-id 88 :is-callable nil :relevance 90 :to-insert "BAZ")))"""
+      """(:prefix "fooBar" :completions ((:name "name" :type-sig (((("abc" "def") ("hij" "lmn"))) "ABC" nil) :is-callable nil :relevance 90 :to-insert "BAZ")))"""
     )
 
     marshal(
-      new SymbolInfo("name", "localName", None, typeInfo, false, Some(2)): SymbolInfo,
-      """(:name "name" :local-name "localName" :decl-pos nil :type (:arrow-type nil :name "type1" :type-id 7 :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil :outer-type-id 8) :is-callable nil :owner-type-id 2)"""
+      new SymbolInfo("name", "localName", None, typeInfo, false): SymbolInfo,
+      """(:name "name" :local-name "localName" :decl-pos nil :type (:arrow-type nil :name "type1" :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil) :is-callable nil)"""
     )
 
     marshal(
       new NamedTypeMemberInfo("typeX", typeInfo, None, None, DeclaredAs.Method): EntityInfo,
-      """(:name "typeX" :type (:arrow-type nil :name "type1" :type-id 7 :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil :outer-type-id 8) :pos nil :signature-string nil :decl-as method)"""
+      """(:name "typeX" :type (:arrow-type nil :name "type1" :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil) :pos nil :signature-string nil :decl-as method)"""
     )
 
     marshal(
@@ -564,18 +549,13 @@ class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
     )
 
     marshal(
-      new CallCompletionInfo(typeInfo, List(paramSectionInfo)): CallCompletionInfo,
-      """(:result-type (:arrow-type nil :name "type1" :type-id 7 :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil :outer-type-id 8) :param-sections ((:params (("ABC" (:arrow-type nil :name "type1" :type-id 7 :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil :outer-type-id 8))) :is-implicit nil)))"""
-    )
-
-    marshal(
       interfaceInfo: InterfaceInfo,
-      """(:type (:arrow-type nil :name "type1" :type-id 7 :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil :outer-type-id 8) :via-view "DEF")"""
+      """(:type (:arrow-type nil :name "type1" :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil) :via-view "DEF")"""
     )
 
     marshal(
-      new TypeInspectInfo(typeInfo, Some(1), List(interfaceInfo)): TypeInspectInfo,
-      """(:type (:arrow-type nil :name "type1" :type-id 7 :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil :outer-type-id 8) :companion-id 1 :interfaces ((:type (:arrow-type nil :name "type1" :type-id 7 :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil :outer-type-id 8) :via-view "DEF")) :info-type typeInspect)"""
+      new TypeInspectInfo(typeInfo, List(interfaceInfo)): TypeInspectInfo,
+      """(:type (:arrow-type nil :name "type1" :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil) :interfaces ((:type (:arrow-type nil :name "type1" :decl-as method :full-name "FOO.type1" :type-args nil :members nil :pos nil) :via-view "DEF")) :info-type typeInspect)"""
     )
 
     marshal(

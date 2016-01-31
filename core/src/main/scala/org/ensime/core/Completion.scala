@@ -312,7 +312,7 @@ object Keywords {
     "yield"
   )
 
-  val keywordCompletions = keywords map { CompletionInfo(_, CompletionSignature(List(), ""), -1, false, 100, None) }
+  val keywordCompletions = keywords map { CompletionInfo(_, CompletionSignature(List(), "", false), false, 100, None) }
 
 }
 
@@ -327,7 +327,7 @@ trait Completion { self: RichPresentationCompiler =>
         memberSyms.flatMap { s =>
           val name = if (s.hasPackageFlag) { s.nameString } else { typeShortName(s) }
           if (name.startsWith(prefix)) {
-            Some(CompletionInfo(name, CompletionSignature(List.empty, ""), -1, isCallable = false, 50, None))
+            Some(CompletionInfo(name, CompletionSignature(List.empty, "", false), isCallable = false, 50, None))
           } else None
         }.toList.sortBy(ci => (ci.relevance, ci.name))
       case _ => List.empty
@@ -362,8 +362,8 @@ object CompletionUtil {
       case s: SymbolSearchResults =>
         s.syms.map { s =>
           CompletionInfo(
-            s.localName, CompletionSignature(List.empty, s.name),
-            -1, isCallable = false, 40, None
+            s.localName, CompletionSignature(List.empty, s.name, false),
+            isCallable = false, 40, None
           )
         }
       case unknown =>
