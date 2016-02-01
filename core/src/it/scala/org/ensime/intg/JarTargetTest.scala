@@ -38,7 +38,8 @@ class JarTargetTest extends EnsimeSpec
     }
   }
 
-  it should "allow jar targets to be deleted" in {
+  // FIXME https://github.com/ensime/ensime-server/pull/1273
+  ignore should "allow jar targets to be deleted" in {
     withEnsimeConfig { implicit config =>
       withTestKit { implicit tk =>
         withProject { (project, asyncHelper) =>
