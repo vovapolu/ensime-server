@@ -38,6 +38,21 @@ class JarTargetTest extends EnsimeSpec
     }
   }
 
+  it should "allow jar targets to be deleted" in {
+    withEnsimeConfig { implicit config =>
+      withTestKit { implicit tk =>
+        withProject { (project, asyncHelper) =>
+          mainTarget should be a 'file
+
+          // no scaling here
+          eventually(timeout(30 seconds), interval(1 second)) {
+            mainTarget.delete() shouldBe true
+          }
+        }
+      }
+    }
+  }
+
 }
 
 /**
