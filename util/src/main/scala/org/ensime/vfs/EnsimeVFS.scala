@@ -17,8 +17,10 @@ abstract class ExtSelector extends FileSelector {
   def include: Set[String]
 }
 
+// intended to be used when watching a single jar file
 object JarSelector extends ExtSelector {
   val include = Set("jar")
+  override def traverseDescendents(info: FileSelectInfo) = false
 }
 
 object ClassfileSelector extends ExtSelector {
