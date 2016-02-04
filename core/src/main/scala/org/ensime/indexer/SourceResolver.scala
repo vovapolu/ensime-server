@@ -61,7 +61,9 @@ class SourceResolver(
       // interestingly, this is able to handle zip files
       srcJar = vfs.vjar(srcJarFile)
       srcEntry <- scan(srcJar)
-    } yield (infer(srcJar, srcEntry), srcEntry)
+      inferred = infer(srcJar, srcEntry)
+      _ = vfs.nuke(srcJar)
+    } yield (inferred, srcEntry)
   }.toMultiMapSet
 
   private def userSources = {

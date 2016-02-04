@@ -3,9 +3,11 @@
 package org.ensime.indexer
 
 import java.io.File
+import java.util.zip.ZipFile
 
 import org.apache.commons.vfs2._
 import org.apache.commons.vfs2.impl._
+import org.apache.commons.vfs2.provider.zip.ZipFileSystem
 
 private[indexer] abstract class ExtSelector extends FileSelector {
   def includeFile(f: FileObject): Boolean = include(f.getName.getExtension)
@@ -18,6 +20,7 @@ private[indexer] abstract class ExtSelector extends FileSelector {
 object EnsimeVFS {
   def apply(): EnsimeVFS = {
     val vfsInst = new StandardFileSystemManager()
+    vfsInst.setCacheStrategy(CacheStrategy.MANUAL) // VFS-593
     vfsInst.init()
     new EnsimeVFS(vfsInst)
   }
@@ -33,6 +36,10 @@ object EnsimeVFS {
   private[indexer] object SourceSelector extends ExtSelector {
     val include = Set("scala", "java")
   }
+
+  // the alternative is a monkey patch, count yourself lucky
+  private val zipFileField = classOf[ZipFileSystem].getDeclaredField("zipFile")
+  zipFileField.setAccessible(true)
 }
 
 class EnsimeVFS(val vfs: DefaultFileSystemManager) {
@@ -58,6 +65,20 @@ class EnsimeVFS(val vfs: DefaultFileSystemManager) {
   private[indexer] def vjar(jar: FileObject) = withContext(s"$jar =>")(
     vfs.resolveFile(("jar:" + jar.getName.getURI).intern)
   )
+
+  // WORKAROUND https://issues.apache.org/jira/browse/VFS-594
+  def nuke(jar: FileObject) = {
+    jar.close()
+
+    val fs = jar.getFileSystem
+
+    // clearing an entry from the cache doesn't close it
+    val zip = EnsimeVFS.zipFileField.get(fs)
+    if (zip != null)
+      zip.asInstanceOf[ZipFile].close()
+
+    vfs.getFilesCache.clear(fs)
+  }
 
   def close(): Unit = {
     vfs.close()

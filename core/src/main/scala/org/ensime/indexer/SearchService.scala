@@ -168,7 +168,7 @@ class SearchService(
         blocking {
           val vJar = vfs.vjar(jar)
           try scan(vJar) flatMap (extractSymbols(jar, _))
-          finally vJar.close()
+          finally vfs.nuke(vJar)
         }
       }
   }
