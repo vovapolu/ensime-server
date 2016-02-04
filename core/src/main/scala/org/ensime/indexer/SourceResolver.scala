@@ -8,6 +8,7 @@ import org.apache.commons.vfs2._
 import collection.mutable
 
 import org.ensime.api._
+import org.ensime.vfs._
 
 import org.ensime.util.list._
 import org.ensime.util.map._
@@ -44,7 +45,7 @@ class SourceResolver(
     all = recalculate
   }
 
-  private def scan(f: FileObject) = f.findFiles(EnsimeVFS.SourceSelector) match {
+  private def scan(f: FileObject) = f.findFiles(SourceSelector) match {
     case null => Nil
     case res => res.toList
   }

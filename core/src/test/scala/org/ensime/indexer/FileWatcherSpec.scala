@@ -6,6 +6,7 @@ import akka.testkit._
 import com.google.common.io.Files
 import org.apache.commons.vfs2._
 import org.ensime.fixture._
+import org.ensime.vfs._
 import org.ensime.util._
 import org.ensime.util.file._
 import org.scalatest._
@@ -361,7 +362,6 @@ abstract class FileWatcherSpec extends EnsimeSpec
 }
 
 class ApacheFileWatcherSpec extends FileWatcherSpec {
-  import EnsimeVFS._
   override def createClassWatcher(base: File)(implicit vfs: EnsimeVFS, tk: TestKit): Watcher =
     new ApachePollingFileWatcher(base, ClassfileSelector, true, listeners)
 

@@ -19,7 +19,8 @@ import javax.tools._
 import org.ensime.api._
 import org.ensime.core.DocSigPair
 import org.ensime.model.LineSourcePositionHelper
-import org.ensime.indexer.{ EnsimeVFS, SearchService }
+import org.ensime.vfs._
+import org.ensime.indexer.SearchService
 import org.ensime.util.ReportHandler
 import org.ensime.util.file._
 import scala.collection.JavaConverters._

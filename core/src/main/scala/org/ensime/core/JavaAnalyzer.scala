@@ -6,7 +6,8 @@ import akka.actor._
 import akka.event.LoggingReceive.withLabel
 import org.ensime.api._
 import org.ensime.core.javac._
-import org.ensime.indexer.{ EnsimeVFS, SearchService }
+import org.ensime.vfs._
+import org.ensime.indexer.SearchService
 import org.ensime.util.ReportHandler
 import org.ensime.util.FileUtils
 

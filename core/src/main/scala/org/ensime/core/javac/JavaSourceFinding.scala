@@ -8,7 +8,8 @@ import java.io.File
 import javax.lang.model.element.Element
 import org.ensime.api._
 import org.ensime.model.LineSourcePositionHelper
-import org.ensime.indexer.{ EnsimeVFS, SearchService }
+import org.ensime.vfs._
+import org.ensime.indexer.SearchService
 
 trait JavaSourceFinding extends Helpers with SLF4JLogging {
 

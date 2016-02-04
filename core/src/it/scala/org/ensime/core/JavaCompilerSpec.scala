@@ -12,7 +12,6 @@ import org.ensime.core.javac.JavaCompiler
 import org.ensime.core.javac.JavaFqn
 import org.ensime.core.javac.Helpers
 import org.ensime.fixture._
-import org.ensime.indexer.EnsimeVFS
 import org.ensime.indexer.SearchServiceTestUtils
 import org.scalatest._
 import scala.concurrent.Await

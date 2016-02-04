@@ -8,6 +8,7 @@ import akka.event.LoggingReceive.withLabel
 import org.apache.commons.vfs2.FileObject
 import org.ensime.api._
 import org.ensime.core.debug.DebugManager
+import org.ensime.vfs._
 import org.ensime.indexer._
 
 import scala.collection.immutable.ListSet

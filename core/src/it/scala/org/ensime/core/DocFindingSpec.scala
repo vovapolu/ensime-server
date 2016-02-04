@@ -6,7 +6,6 @@ import java.io.File
 
 import akka.event.slf4j.SLF4JLogging
 import org.ensime.fixture._
-import org.ensime.indexer.EnsimeVFS
 import org.scalatest._
 
 import scala.collection.immutable.Queue

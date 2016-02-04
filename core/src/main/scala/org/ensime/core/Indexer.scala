@@ -8,7 +8,8 @@ import akka.event.LoggingReceive
 import org.ensime.api._
 
 import org.ensime.indexer.DatabaseService.FqnSymbol
-import org.ensime.indexer.{ EnsimeVFS, SearchService }
+import org.ensime.vfs._
+import org.ensime.indexer.SearchService
 import org.ensime.model._
 
 // only used for queries by other components

@@ -11,6 +11,7 @@ import org.apache.commons.vfs2.FileObject
 import org.ensime.indexer.DatabaseService._
 
 import org.ensime.api._
+import org.ensime.vfs._
 
 import scala.concurrent._
 import scala.concurrent.duration._

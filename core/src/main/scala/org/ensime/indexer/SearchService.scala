@@ -8,6 +8,7 @@ import akka.actor._
 import akka.event.slf4j.SLF4JLogging
 import org.apache.commons.vfs2._
 import org.ensime.api._
+import org.ensime.vfs._
 import org.ensime.indexer.DatabaseService._
 import org.ensime.util.file._
 import scala.util.Failure
@@ -55,7 +56,7 @@ class SearchService(
 
   implicit val workerEC = actorSystem.dispatchers.lookup("akka.search-service-dispatcher")
 
-  private def scan(f: FileObject) = f.findFiles(EnsimeVFS.ClassfileSelector) match {
+  private def scan(f: FileObject) = f.findFiles(ClassfileSelector) match {
     case null => Nil
     case res => res.toList
   }

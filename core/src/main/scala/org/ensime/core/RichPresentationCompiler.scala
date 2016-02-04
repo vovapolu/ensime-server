@@ -45,7 +45,8 @@ import org.ensime.api._
 import org.ensime.config._
 
 import akka.actor.ActorRef
-import org.ensime.indexer.{ EnsimeVFS, SearchService }
+import org.ensime.vfs._
+import org.ensime.indexer.SearchService
 import org.ensime.model._
 import org.ensime.util.FileUtils
 import org.slf4j.LoggerFactory
