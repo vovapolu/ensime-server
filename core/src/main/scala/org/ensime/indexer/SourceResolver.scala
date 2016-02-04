@@ -63,7 +63,10 @@ class SourceResolver(
       srcJar = vfs.vjar(srcJarFile)
       srcEntry <- scan(srcJar)
       inferred = infer(srcJar, srcEntry)
-      _ = vfs.nuke(srcJar)
+      // continue to hold a reference to source jars
+      // so that we can access their contents elsewhere.
+      // this does mean we have a file handler, sorry.
+      //_ = vfs.nuke(srcJar)
     } yield (inferred, srcEntry)
   }.toMultiMapSet
 
