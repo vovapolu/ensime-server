@@ -2,24 +2,16 @@
 // Licence: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.core
 
-import java.io.File
-
-import akka.event.slf4j.SLF4JLogging
 import org.ensime.fixture._
-import org.scalatest._
-
-import scala.collection.immutable.Queue
-import scala.concurrent.Await
+import org.ensime.util.EnsimeSpec
 import scala.reflect.internal.util.{ BatchSourceFile, OffsetPosition }
 import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.ConsoleReporter
-import scala.util.Properties
 
-class DocFindingSpec extends FlatSpec with Matchers
+class DocFindingSpec extends EnsimeSpec
     with IsolatedRichPresentationCompilerFixture
     with RichPresentationCompilerTestUtils
-    with ReallyRichPresentationCompilerFixture
-    with SLF4JLogging {
+    with ReallyRichPresentationCompilerFixture {
   import ReallyRichPresentationCompilerFixture._
 
   val original = EnsimeConfigFixture.DocsTestProject

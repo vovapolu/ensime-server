@@ -2,10 +2,11 @@
 // Licence: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.indexer
 
-import org.scalatest.{ BeforeAndAfterAll, FunSpec, Matchers }
+import org.scalatest.BeforeAndAfterAll
+import org.ensime.util.EnsimeSpec
 import org.ensime.vfs._
 
-class ClassfileDepicklerSpec extends FunSpec with Matchers with BeforeAndAfterAll {
+class ClassfileDepicklerSpec extends EnsimeSpec with BeforeAndAfterAll {
 
   var vfs: EnsimeVFS = _
 
@@ -17,27 +18,25 @@ class ClassfileDepicklerSpec extends FunSpec with Matchers with BeforeAndAfterAl
     vfs.close()
   }
 
-  describe("ClassfileDepickler") {
-    it("don't depickle J2SE classes") {
-      assert(new ClassfileDepickler(vfs.vres("java/lang/String.class")).scalasig === None)
-    }
+  "ClassfileDepickler" should "not depickle J2SE classes" in {
+    new ClassfileDepickler(vfs.vres("java/lang/String.class")).scalasig should ===(None)
+  }
 
-    it("support typical Scala classes") {
-      assert(new ClassfileDepickler(vfs.vres("scala/collection/immutable/List.class")).scalasig.nonEmpty)
-    }
+  it should "support typical Scala classes" in {
+    new ClassfileDepickler(vfs.vres("scala/collection/immutable/List.class")).scalasig shouldBe defined
+  }
 
-    it("don't expect anything in companions") {
-      assert(new ClassfileDepickler(vfs.vres("scala/collection/immutable/List$.class")).scalasig === None)
-    }
+  it should "not expect anything in companions" in {
+    new ClassfileDepickler(vfs.vres("scala/collection/immutable/List$.class")).scalasig should ===(None)
+  }
 
-    it("don't expect anything in closures") {
-      assert(new ClassfileDepickler(vfs.vres("scala/io/Source$$anonfun$1.class")).scalasig === None)
-    }
+  it should "not expect anything in closures" in {
+    new ClassfileDepickler(vfs.vres("scala/io/Source$$anonfun$1.class")).scalasig should ===(None)
+  }
 
-    it("can find type aliases") {
-      assert(new ClassfileDepickler(vfs.vres("scala/Predef.class")).getTypeAliases.contains(
-        RawType(s"scala.Predef$$String", Public)
-      ))
-    }
+  it should "find type aliases" in {
+    new ClassfileDepickler(vfs.vres("scala/Predef.class")).getTypeAliases should contain(
+      RawType(s"scala.Predef$$String", Public)
+    )
   }
 }
