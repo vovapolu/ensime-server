@@ -9,6 +9,7 @@ import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import org.ensime.api._
 import org.ensime.core.javac.JavaCompiler
+import org.ensime.vfs._
 import org.ensime.indexer._
 import org.ensime.util._
 import org.ensime.util.file._

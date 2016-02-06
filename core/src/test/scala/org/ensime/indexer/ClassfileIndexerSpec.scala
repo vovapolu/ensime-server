@@ -3,42 +3,35 @@
 package org.ensime.indexer
 
 import akka.event.slf4j.SLF4JLogging
+import org.ensime.fixture.IsolatedEnsimeVFSFixture
+import org.ensime.util.EnsimeSpec
 import org.scalatest.{ BeforeAndAfterAll, FunSpec, Matchers }
+import org.ensime.vfs._
 
-class ClassfileIndexerSpec extends FunSpec with Matchers with ClassfileIndexer with SLF4JLogging
-    with BeforeAndAfterAll {
+class ClassfileIndexerSpec extends EnsimeSpec with IsolatedEnsimeVFSFixture {
 
-  var vfs: EnsimeVFS = _
-
-  override def beforeAll(): Unit = {
-    vfs = EnsimeVFS()
-  }
-
-  override def afterAll(): Unit = {
-    vfs.close()
-  }
+  val indexer = new ClassfileIndexer with SLF4JLogging {}
+  import indexer._
 
   // TODO: some assertions (currently we're just checking that no exceptions are raised!)
 
-  describe("ClassfileIndexer") {
-    it("should support Java 6 class files") {
-      indexClassfile(vfs.vres("jdk6/Test.class"))
-    }
+  "ClassfileIndexer" should "support Java 6 class files" in withVFS { implicit vfs =>
+    indexClassfile(vfs.vres("jdk6/Test.class"))
+  }
 
-    it("should support Java 8 class files") {
-      indexClassfile(vfs.vres("jdk8/Test.class"))
-      indexClassfile(vfs.vres("jdk8/MyAnnotation.class"))
-      indexClassfile(vfs.vres("jdk8/Test$InnerClassWithCtorParam.class"))
-    }
+  it should "support Java 8 class files" in withVFS { implicit vfs =>
+    indexClassfile(vfs.vres("jdk8/Test.class"))
+    indexClassfile(vfs.vres("jdk8/MyAnnotation.class"))
+    indexClassfile(vfs.vres("jdk8/Test$InnerClassWithCtorParam.class"))
+  }
 
-    it("should support typical J2SE classes") {
-      val (clazz, refs) = indexClassfile(vfs.vres("java/lang/String.class"))
-      assert(clazz.access === Public)
-    }
+  it should "support typical J2SE classes" in withVFS { implicit vfs =>
+    val (clazz, refs) = indexClassfile(vfs.vres("java/lang/String.class"))
+    clazz.access shouldBe Public
+  }
 
-    it("should support typical Scala classes") {
-      indexClassfile(vfs.vres("scala/collection/immutable/List.class"))
-      indexClassfile(vfs.vres("scala/collection/immutable/List$.class"))
-    }
+  it should "support typical Scala classes" in withVFS { implicit vfs =>
+    indexClassfile(vfs.vres("scala/collection/immutable/List.class"))
+    indexClassfile(vfs.vres("scala/collection/immutable/List$.class"))
   }
 }

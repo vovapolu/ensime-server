@@ -8,7 +8,7 @@ import org.ensime.util.file._
 import org.apache.commons.vfs2.FileObject
 import org.ensime.core.RichPresentationCompiler
 import org.ensime.indexer.DatabaseService._
-import org.ensime.indexer.EnsimeVFS
+import org.ensime.vfs._
 
 import scala.collection.mutable
 import scala.reflect.internal.util.{ NoPosition, Position, RangePosition }

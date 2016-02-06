@@ -3,6 +3,7 @@
 package org.ensime.indexer
 
 import org.scalatest.{ BeforeAndAfterAll, FunSpec, Matchers }
+import org.ensime.vfs._
 
 class ClassfileDepicklerSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
