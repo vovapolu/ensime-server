@@ -2,12 +2,10 @@
 // Licence: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.jerk
 
-import org.scalatest._
 import org.ensime.api._
-import org.ensime.util.EscapingStringInterpolation
+import org.ensime.util.{ EnsimeSpec, EscapingStringInterpolation }
 
-class JerkFormatsSpec extends FlatSpec with Matchers
-    with SprayJsonTestSupport with EnsimeTestData {
+class JerkFormatsSpec extends EnsimeSpec with SprayJsonTestSupport with EnsimeTestData {
 
   import JerkFormats._
   import JerkEnvelopeFormats._

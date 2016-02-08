@@ -12,84 +12,79 @@ class ProductFormatsSpec extends FormatSpec
   case class Baz()
   case class Wibble(thing: String, thong: Int, bling: Option[String])
 
-  describe("ProductFormats case classes") {
-    val foo = Foo(13, "foo")
-    val fooexpect = SexpData(
-      SexpSymbol(":i") -> SexpNumber(13),
-      SexpSymbol(":s") -> SexpString("foo")
-    )
+  val foo = Foo(13, "foo")
+  val fooexpect = SexpData(
+    SexpSymbol(":i") -> SexpNumber(13),
+    SexpSymbol(":s") -> SexpString("foo")
+  )
 
-    it("should support primitive types") {
-      // will create the marshaller every time assertFormat is called
-      assertFormat(foo, fooexpect)
-      assertFormat(foo, fooexpect)
-      assertFormat(foo, fooexpect)
-    }
-
-    it("should support 'fast' case classes") {
-      // can't really test - its a side effect optimisation
-      implicit val FastFooFormat = SexpFormat[Foo]
-      assertFormat(foo, fooexpect)
-      assertFormat(foo, fooexpect)
-      assertFormat(foo, fooexpect)
-    }
-
-    it("should support nested case classes") {
-      val bar = Bar(foo)
-      val expect = SexpData(
-        SexpSymbol(":foo") -> fooexpect
-      )
-
-      // (this is actually a really big deal, thank you shapeless!)
-      assertFormat(bar, expect)
-    }
-
-    it("should support zero content case classes") {
-      assertFormat(Baz(), SexpNil)
-    }
-
-    it("should support missing fields as SexpNil / None") {
-      val wibble = Wibble("wibble", 13, Some("fork"))
-
-      assertFormat(wibble, SexpData(
-        SexpSymbol(":thing") -> SexpString("wibble"),
-        SexpSymbol(":thong") -> SexpNumber(13),
-        SexpSymbol(":bling") -> SexpList(SexpString("fork"))
-      ))
-
-      val wobble = Wibble("wibble", 13, None)
-
-      // write out None as SexpNil
-      assertFormat(wobble, SexpData(
-        SexpSymbol(":thing") -> SexpString("wibble"),
-        SexpSymbol(":thong") -> SexpNumber(13),
-        SexpSymbol(":bling") -> SexpNil
-      ))
-
-      // but tolerate missing entries
-      assert(SexpData(
-        SexpSymbol(":thing") -> SexpString("wibble"),
-        SexpSymbol(":thong") -> SexpNumber(13)
-      ).convertTo[Wibble] === wobble)
-    }
+  "ProductFormats case classes" should "support primitive types" in {
+    // will create the marshaller every time assertFormat is called
+    assertFormat(foo, fooexpect)
+    assertFormat(foo, fooexpect)
+    assertFormat(foo, fooexpect)
   }
 
-  describe("ProductFormat tuples") {
-    val foo = (13, "foo")
-    val fooexpect = SexpList(SexpNumber(13), SexpString("foo"))
+  it should "support 'fast' case classes" in {
+    // can't really test - its a side effect optimisation
+    implicit val FastFooFormat = SexpFormat[Foo]
+    assertFormat(foo, fooexpect)
+    assertFormat(foo, fooexpect)
+    assertFormat(foo, fooexpect)
+  }
 
-    it("should support primitive types") {
-      assertFormat(foo, fooexpect)
-    }
+  it should "support nested case classes" in {
+    val bar = Bar(foo)
+    val expect = SexpData(
+      SexpSymbol(":foo") -> fooexpect
+    )
 
-    it("should support 'fast' tuples") {
-      // can't really test - its a side effect optimisation
-      implicit val FastFooFormat = SexpFormat[(Int, String)]
-      assertFormat(foo, fooexpect)
-      assertFormat(foo, fooexpect)
-      assertFormat(foo, fooexpect)
-    }
+    // (this is actually a really big deal, thank you shapeless!)
+    assertFormat(bar, expect)
+  }
 
+  it should "support zero content case classes" in {
+    assertFormat(Baz(), SexpNil)
+  }
+
+  it should "support missing fields as SexpNil / None" in {
+    val wibble = Wibble("wibble", 13, Some("fork"))
+
+    assertFormat(wibble, SexpData(
+      SexpSymbol(":thing") -> SexpString("wibble"),
+      SexpSymbol(":thong") -> SexpNumber(13),
+      SexpSymbol(":bling") -> SexpList(SexpString("fork"))
+    ))
+
+    val wobble = Wibble("wibble", 13, None)
+
+    // write out None as SexpNil
+    assertFormat(wobble, SexpData(
+      SexpSymbol(":thing") -> SexpString("wibble"),
+      SexpSymbol(":thong") -> SexpNumber(13),
+      SexpSymbol(":bling") -> SexpNil
+    ))
+
+    // but tolerate missing entries
+    SexpData(
+      SexpSymbol(":thing") -> SexpString("wibble"),
+      SexpSymbol(":thong") -> SexpNumber(13)
+    ).convertTo[Wibble] should ===(wobble)
+  }
+
+  val bar = (13, "bar")
+  val barexpect = SexpList(SexpNumber(13), SexpString("bar"))
+
+  "ProductFormat tuples" should "support primitive types" in {
+    assertFormat(bar, barexpect)
+  }
+
+  it should "support 'fast' tuples" in {
+    // can't really test - its a side effect optimisation
+    implicit val FastBarormat = SexpFormat[(Int, String)]
+    assertFormat(bar, barexpect)
+    assertFormat(bar, barexpect)
+    assertFormat(bar, barexpect)
   }
 }
 
@@ -99,12 +94,10 @@ class CustomisedProductFormatsSpec extends FormatSpec
 
   case class Foo(AThingyMaBob: Int, HTML: String)
 
-  describe("ProductFormats with overloaded toWireName") {
-    it("should support custom field names") {
-      assertFormat(Foo(13, "foo"), SexpData(
-        SexpSymbol(":a-thingy-ma-bob") -> SexpNumber(13),
-        SexpSymbol(":h-t-m-l") -> SexpString("foo")
-      ))
-    }
+  "ProductFormats with overloaded toWireName" should "support custom field names" in {
+    assertFormat(Foo(13, "foo"), SexpData(
+      SexpSymbol(":a-thingy-ma-bob") -> SexpNumber(13),
+      SexpSymbol(":h-t-m-l") -> SexpString("foo")
+    ))
   }
 }

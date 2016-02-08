@@ -199,7 +199,8 @@ object EnsimeBuild extends Build {
   )
 
   lazy val s_express = Project("s-express", file("s-express")) settings(commonSettings) dependsOn (
-    util
+    util,
+    testutil % "test"
   ) settings (
       libraryDependencies ++= Seq(
         "org.parboiled" %% "parboiled" % "2.1.0" intransitive() exclude("com.chuusai", "shapeless_2.10.4"),

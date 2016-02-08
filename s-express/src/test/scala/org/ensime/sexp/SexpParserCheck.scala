@@ -4,16 +4,16 @@ package org.ensime.sexp
 
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
-import org.scalatest.FunSpec
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.ensime.util.EnsimeSpec
 
-class SexpParserCheck extends FunSpec
+class SexpParserCheck extends EnsimeSpec
     with GeneratorDrivenPropertyChecks
     with ArbitrarySexp {
 
   import SexpParser.parse
 
-  it("should round-trip Sexp <=> String") {
+  "SexpParser" should "round-trip Sexp <=> String" in {
     forAll { (sexp: Sexp) =>
       val compact = SexpCompactPrinter(sexp)
       //println(compact)
@@ -21,8 +21,8 @@ class SexpParserCheck extends FunSpec
       // it might be worthwhile creating a test-only printer that adds
       // superfluous whitespace/comments
 
-      assert(parse(compact) === sexp, compact)
-      assert(parse(pretty) === sexp, pretty)
+      withClue(compact)(parse(compact) should ===(sexp))
+      withClue(pretty)(parse(pretty) should ===(sexp))
     }
   }
 }

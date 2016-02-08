@@ -3,13 +3,12 @@
 package org.ensime.server.protocol.swank
 
 import java.io.File
-import org.scalatest._
 
 import org.ensime.sexp._
 import org.ensime.api._
-import org.ensime.util.EscapingStringInterpolation
+import org.ensime.util.{ EnsimeSpec, EscapingStringInterpolation }
 
-class SwankFormatsSpec extends FlatSpec with Matchers with EnsimeTestData {
+class SwankFormatsSpec extends EnsimeSpec with EnsimeTestData {
   import SwankFormats._
   import SwankTestData._
 

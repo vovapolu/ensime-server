@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 import org.scalatest._
 import org.scalatest.time._
 import org.scalatest.concurrent.Eventually
+import org.scalactic.TypeCheckedTripleEquals
 import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 import scala.concurrent.duration._
@@ -15,7 +16,15 @@ import scala.concurrent.duration._
 /**
  * Boilerplate remover and preferred testing style in ENSIME.
  */
-trait EnsimeSpec extends FlatSpec with Matchers with Inside with Retries with Eventually {
+trait EnsimeSpec extends FlatSpec
+    with Matchers
+    with Inside
+    with Retries
+    with Eventually
+    with TryValues
+    with Inspectors
+    with TypeCheckedTripleEquals {
+
   SLF4JBridgeHandler.removeHandlersForRootLogger()
   SLF4JBridgeHandler.install()
   val log = LoggerFactory.getLogger(this.getClass)

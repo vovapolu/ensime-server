@@ -8,10 +8,11 @@ import akka.pattern.ask
 import akka.testkit.TestActorRef
 import org.ensime.api._
 import org.ensime.fixture._
-import org.scalatest._
+import org.ensime.util.EnsimeSpec
 
-class DocResolverSpec extends FlatSpec with Matchers with SLF4JLogging
-    with IsolatedEnsimeConfigFixture with IsolatedTestKitFixture {
+class DocResolverSpec extends EnsimeSpec
+    with IsolatedEnsimeConfigFixture
+    with IsolatedTestKitFixture {
 
   val original = EnsimeConfigFixture.DocsTestProject
 
