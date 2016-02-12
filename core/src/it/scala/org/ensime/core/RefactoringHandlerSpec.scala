@@ -338,4 +338,51 @@ class RefactoringHandlerSpec extends EnsimeSpec
     }
   }
 
+  it should "organize and group imports" in {
+    withAnalyzer { (dir, analyzerRef) =>
+      import org.ensime.util.file._
+
+      //when 3 imports exist
+      // "produce a diff file in the unified output format"
+
+      val file = srcFile(dir, "tmp-contents", contents(
+        "import scala._",
+        "import scala.Int",
+        "import java.lang.Integer",
+        "import java.lang._",
+        " ",
+        "trait Temp { }"
+      ), write = true, encoding = encoding)
+
+      val analyzer = analyzerRef.underlyingActor
+
+      val procId = 1
+      val result = analyzer.handleRefactorRequest(
+        new RefactorReq(
+          procId, OrganiseImportsRefactorDesc(new File(file.path)), false
+        )
+      )
+      val diffFile = result match {
+        case RefactorDiffEffect(_, _, f) => f.canon
+        case _ => fail()
+      }
+
+      val sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss Z")
+      val t = sdf.format(new Date((new File(file.path)).lastModified()))
+      val diffContents = diffFile.readString()
+      val expectedContents = s"""|--- ${file.path}	${t}
+                                 |+++ ${file.path}	${t}
+                                 |@@ -1,4 +1,4 @@
+                                 |import scala._
+                                 |import scala.Int
+                                 |-import java.lang.Integer
+                                 |-import java.lang._
+                                 |+import java.lang._
+                                 |+import java.lang.Integer
+                                 |""".stripMargin
+
+      diffContents should ===(expectedContents)
+      diffFile.delete()
+    }
+  }
 }
