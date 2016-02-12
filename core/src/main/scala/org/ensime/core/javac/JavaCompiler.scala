@@ -30,6 +30,7 @@ import scala.tools.nsc.interactive.CompilerControl
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.refactoring.analysis.GlobalIndexes
+import com.sun.tools.javac.util.Abort
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
@@ -170,9 +171,14 @@ class JavaCompiler(
   private def typecheckAll(): Unit = {
     val task = getTask("all", listener, workingSet.values)
     val t = System.currentTimeMillis()
-    task.parse()
-    task.analyze()
-    log.info("Parsed and analyzed: " + (System.currentTimeMillis() - t) + "ms")
+    try {
+      task.parse()
+      task.analyze()
+      log.info("Parsed and analyzed: " + (System.currentTimeMillis() - t) + "ms")
+    } catch {
+      case e @ (_: Abort | _: ArrayIndexOutOfBoundsException | _: AssertionError) =>
+        log.error("Javac error: " + e.getMessage())
+    }
   }
 
   private def typecheckForUnits(inputs: List[SourceFileInfo]): Vector[CompilationInfo] = {
@@ -181,11 +187,17 @@ class JavaCompiler(
     val inputJfos = inputs.map { sf => internSource(sf).toUri }.toSet
     val task = getTask("none", silencer, workingSet.values)
     val t = System.currentTimeMillis()
-    val units = task.parse().asScala.filter { unit => inputJfos.contains(unit.getSourceFile.toUri) }
-      .map(new CompilationInfo(task, _)).toVector
-    task.analyze()
-    log.info("Parsed and analyzed for trees: " + (System.currentTimeMillis() - t) + "ms")
-    units
+    try {
+      val units = task.parse().asScala.filter { unit => inputJfos.contains(unit.getSourceFile.toUri) }
+        .map(new CompilationInfo(task, _)).toVector
+      task.analyze()
+      log.info("Parsed and analyzed for trees: " + (System.currentTimeMillis() - t) + "ms")
+      units
+    } catch {
+      case e @ (_: Abort | _: ArrayIndexOutOfBoundsException | _: AssertionError) =>
+        log.error("Javac error: " + e.getMessage())
+        Vector()
+    }
   }
 
   private class JavaObjectWithContents(val f: File, val contents: String)
