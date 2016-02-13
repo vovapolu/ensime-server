@@ -9,6 +9,7 @@ import sbtassembly.{ AssemblyKeys, MergeStrategy, PathList }
 import sbtassembly.AssemblyKeys._
 import scala.util.{ Properties, Try }
 import org.ensime.EnsimePlugin.JdkDir
+import sbtbuildinfo.BuildInfoPlugin, BuildInfoPlugin.autoImport._
 
 object EnsimeBuild extends Build {
   ////////////////////////////////////////////////
@@ -319,6 +320,10 @@ object EnsimeBuild extends Build {
           "commons-lang" % "commons-lang" % "2.6",
           "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0"
         ) ++ logback ++ testLibs(scalaVersion.value, "it,test")
+      ) enablePlugins BuildInfoPlugin settings (
+        buildInfoPackage := "org.ensime",
+        buildInfoKeys += BuildInfoKey.action("gitSha")(Try("git rev-parse --verify HEAD".!! dropRight 1) getOrElse "n/a"),
+        buildInfoOptions += BuildInfoOption.BuildTime
       )
 
   lazy val server = Project("server", file("server")).dependsOn(
