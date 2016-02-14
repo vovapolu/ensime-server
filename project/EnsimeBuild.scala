@@ -78,6 +78,7 @@ object EnsimeBuild extends Build {
     testutil % "test"
   ) settings (
       libraryDependencies ++= Seq(
+        // 2.1.1 not available https://github.com/sirthias/parboiled2/issues/160
         "org.parboiled" %% "parboiled" % "2.1.0" intransitive () exclude ("com.chuusai", "shapeless_2.10.4")
       ) ++ Sensible.shapeless(scalaVersion.value)
     )
@@ -135,7 +136,7 @@ object EnsimeBuild extends Build {
       libraryDependencies ++= Seq(
         "com.h2database" % "h2" % "1.4.190",
         "com.typesafe.slick" %% "slick" % "3.1.1",
-        "com.zaxxer" % "HikariCP-java6" % "2.3.12",
+        "com.zaxxer" % "HikariCP-java6" % "2.3.13",
         // Netbeans 7.4+ needs Java 7 (7.3 only needs it at runtime)
         "org.netbeans.api" % "org-netbeans-api-java" % "RELEASE731",
         "org.netbeans.api" % "org-netbeans-modules-java-source" % "RELEASE731",
