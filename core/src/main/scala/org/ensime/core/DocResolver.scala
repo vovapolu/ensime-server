@@ -18,7 +18,6 @@ class DocResolver(
     config: EnsimeConfig
 ) extends Actor with ActorLogging with DocUsecaseHandling {
 
-  var allDocJars: List[File] = _
   var htmlToJar = Map.empty[String, File]
   var jarNameToJar = Map.empty[String, File]
   var docTypes = Map.empty[String, DocType]
@@ -36,10 +35,8 @@ class DocResolver(
     // the package contents of each jar, and whether it's a javadoc or
     // scaladoc.
 
-    allDocJars = config.modules.values.flatMap(_.docJars).toList
-
     for (
-      jarFile <- allDocJars if jarFile.exists()
+      jarFile <- config.allDocJars if jarFile.exists()
     ) {
       try {
         val jar = new JarFile(jarFile)
