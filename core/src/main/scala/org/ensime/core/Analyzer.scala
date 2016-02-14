@@ -187,13 +187,17 @@ class Analyzer(
     case req: RefactorReq =>
       sender ! handleRefactorRequest(req)
     case CompletionsReq(fileInfo, point, maxResults, caseSens, _reload) =>
-      reporter.disable()
-      sender ! scalaCompiler.askCompletionsAt(pos(fileInfo, point), maxResults, caseSens)
+      sender ! withExisting(fileInfo) {
+        reporter.disable()
+        scalaCompiler.askCompletionsAt(pos(fileInfo, point), maxResults, caseSens)
+      }
     case UsesOfSymbolAtPointReq(file, point) =>
-      val p = pos(file, point)
-      scalaCompiler.askLoadedTyped(p.source)
-      val uses = scalaCompiler.askUsesOfSymAtPoint(p)
-      sender ! ERangePositions(uses.map(ERangePositionHelper.fromRangePosition))
+      sender ! withExisting(file) {
+        val p = pos(file, point)
+        scalaCompiler.askLoadedTyped(p.source)
+        val uses = scalaCompiler.askUsesOfSymAtPoint(p)
+        ERangePositions(uses.map(ERangePositionHelper.fromRangePosition))
+      }
     case PackageMemberCompletionReq(path: String, prefix: String) =>
       val members = scalaCompiler.askCompletePackageMember(path, prefix)
       sender ! members
@@ -230,12 +234,13 @@ class Analyzer(
     case SymbolDesignationsReq(f, start, end, Nil) =>
       sender ! SymbolDesignations(f.file, List.empty)
     case SymbolDesignationsReq(f, start, end, tpes) =>
-      val sf = createSourceFile(f)
-      val clampedEnd = math.max(end, start)
-      val pos = new RangePosition(sf, start, start, clampedEnd)
-      scalaCompiler.askLoadedTyped(pos.source)
-      val syms = scalaCompiler.askSymbolDesignationsInRegion(pos, tpes)
-      sender ! syms
+      sender ! withExisting(f) {
+        val sf = createSourceFile(f)
+        val clampedEnd = math.max(end, start)
+        val pos = new RangePosition(sf, start, start, clampedEnd)
+        scalaCompiler.askLoadedTyped(pos.source)
+        scalaCompiler.askSymbolDesignationsInRegion(pos, tpes)
+      }
 
     case ImplicitInfoReq(file, range: OffsetRange) =>
       val p = pos(file, range)
@@ -250,8 +255,10 @@ class Analyzer(
     case FormatOneSourceReq(fileInfo: SourceFileInfo) =>
       sender ! StringResponse(handleFormatFile(fileInfo))
     case StructureViewReq(fileInfo: SourceFileInfo) =>
-      val sourceFile = createSourceFile(fileInfo)
-      sender ! StructureView(scalaCompiler.askStructure(sourceFile))
+      sender ! withExisting(fileInfo) {
+        val sourceFile = createSourceFile(fileInfo)
+        StructureView(scalaCompiler.askStructure(sourceFile))
+      }
   }
 
   def handleReloadFiles(files: List[SourceFileInfo]): RpcResponse = {
@@ -270,21 +277,21 @@ class Analyzer(
     }
   }
 
+  def withExisting(x: SourceFileInfo)(f: => RpcResponse): RpcResponse =
+    if (FileUtils.exists(x)) f else EnsimeServerError(s"File does not exist: ${x.file}")
+
   def pos(file: File, range: OffsetRange): OffsetPosition =
     pos(createSourceFile(file), range)
   def pos(file: File, offset: Int): OffsetPosition =
     pos(createSourceFile(file), offset)
-
   def pos(file: SourceFileInfo, range: OffsetRange): OffsetPosition =
     pos(createSourceFile(file), range)
   def pos(file: SourceFileInfo, offset: Int): OffsetPosition =
     pos(createSourceFile(file), offset)
-
   def pos(f: SourceFile, range: OffsetRange): OffsetPosition = {
     if (range.from == range.to) new OffsetPosition(f, range.from)
     else new RangePosition(f, range.from, range.from, range.to)
   }
-
   def pos(f: SourceFile, offset: Int): OffsetPosition = new OffsetPosition(f, offset)
 
   def createSourceFile(file: File): SourceFile =

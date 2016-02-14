@@ -51,4 +51,34 @@ class UnsavedFileTest extends EnsimeSpec
       }
     }
   }
+
+  it should "handle unsaved empty files" in {
+    withEnsimeConfig { implicit config =>
+      withTestKit { implicit testkit =>
+        withProject { (project, asyncHelper) =>
+          import testkit._
+
+          val sourceRoot = scalaMain(config)
+          val unsavedEmpty = sourceRoot / "p1/UnsavedEmpty.scala"
+
+          assert(!unsavedEmpty.exists)
+
+          val unsaved = SourceFileInfo(unsavedEmpty, None, None)
+          project ! TypecheckFileReq(unsaved)
+          expectMsgPF() { case EnsimeServerError(e) => }
+
+          project ! SymbolDesignationsReq(Right(unsaved), 0, 0, SourceSymbol.allSymbols)
+          expectMsgPF() { case EnsimeServerError(e) => }
+
+          project ! CompletionsReq(unsaved, 0, 0, false, false)
+          expectMsgPF() { case EnsimeServerError(e) => }
+
+          project ! UsesOfSymbolAtPointReq(Left(unsavedEmpty), 0)
+          expectMsgPF() { case EnsimeServerError(e) => }
+
+        }
+      }
+    }
+  }
+
 }

@@ -81,3 +81,12 @@ object RefactorType {
 
   def allTypes = Seq(Rename, ExtractMethod, ExtractLocal, InlineLocal, OrganizeImports, AddImport)
 }
+
+case class SourceFileInfo(
+    file: File,
+    contents: Option[String] = None,
+    contentsIn: Option[File] = None
+) {
+  // keep the log file sane for unsaved files
+  override def toString = s"SourceFileInfo($file,${contents.map(_ => "...")},$contentsIn)"
+}
