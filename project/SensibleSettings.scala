@@ -43,8 +43,8 @@ object Sensible {
     ),
     javacOptions in doc ++= Seq("-source", "1.6"),
 
-    javaOptions += "-Dfile.encoding=UTF8",
     javaOptions := Seq("-Xss2m", "-XX:MaxPermSize=256m", "-Xms1g", "-Xmx1g"),
+    javaOptions += "-Dfile.encoding=UTF8",
     javaOptions ++= Seq("-XX:+UseConcMarkSweepGC", "-XX:+CMSIncrementalMode"),
     javaOptions in run ++= yourkitAgent,
 

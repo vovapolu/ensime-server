@@ -39,11 +39,16 @@ trait EnsimeConfigFixture {
 object EnsimeConfigFixture {
 
   lazy val dotEnsime = File("../.ensime")
-  require(
-    dotEnsime.exists,
-    "the .ensime file must exist to run the integration tests." +
-      "Type 'sbt gen-ensime' to create it"
-  )
+  if (!dotEnsime.exists) {
+    System.err.println(
+      "The .ensime file must exist to run the integration tests." +
+        " Type 'sbt gen-ensime' to create it"
+    )
+    System.err.flush()
+    sys.exit(1)
+  }
+  lazy val dotEnsimeCache = File("../.ensime_cache")
+  dotEnsimeCache.mkdirs()
 
   lazy val EnsimeTestProject = EnsimeConfigProtocol.parse(dotEnsime.readString())
 
