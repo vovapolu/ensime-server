@@ -7,8 +7,8 @@ build:
     - EMACS=/opt/emacs-24.4/bin/emacs
     - AKKA_TEST_TIMEFACTOR=10
   commands:
+    - git log | head -n 20
     - sbt ++$SCALA_VERSION gen-ensime ;
-      mkdir .ensime_cache ;
       sbt ++$SCALA_VERSION clean test:compile it:compile doc ;
       if [ $(git diff | wc -l) -ge 1 ] ; then
         echo "Code formatting does not meet the project's standards:" ;
@@ -16,8 +16,8 @@ build:
         exit 1 ;
       fi
     - sbt ++$SCALA_VERSION test it:test
-    - sbt ++$SCALA_VERSION publishLocal
     - if [ "${SCALA_VERSION}" = "2.11.7" ] ; then
+        sbt ++$SCALA_VERSION publishLocal ;
         git clone --depth 1 https://github.com/ensime/ensime-emacs.git ensime-emacs ;
         cd ensime-emacs ;
         cask pkg-file ;
