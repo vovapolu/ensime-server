@@ -160,7 +160,7 @@ class RefactoringHandlerSpec extends EnsimeSpec
 
     val formatted = readSrcFile(file, encoding)
     val expectedContents = contents(
-      "import java.lang.Integer.{toBinaryString, valueOf => vo}",
+      "import java.lang.Integer.{valueOf => vo, toBinaryString}",
       "import java.lang.String.valueOf",
       " ",
       "trait Temp {",
@@ -329,7 +329,7 @@ class RefactoringHandlerSpec extends EnsimeSpec
                                  |@@ -1,3 +1,2 @@
                                  |-import java.lang.Integer.{valueOf => vo}
                                  |-import java.lang.Integer.toBinaryString
-                                 |+import java.lang.Integer.{toBinaryString, valueOf => vo}
+                                 |+import java.lang.Integer.{valueOf => vo, toBinaryString}
                                  | import java.lang.String.valueOf
                                  |""".stripMargin
 
@@ -342,16 +342,17 @@ class RefactoringHandlerSpec extends EnsimeSpec
     withAnalyzer { (dir, analyzerRef) =>
       import org.ensime.util.file._
 
-      //when 3 imports exist
-      // "produce a diff file in the unified output format"
-
       val file = srcFile(dir, "tmp-contents", contents(
         "import scala._",
-        "import scala.Int",
         "import java.lang.Integer",
-        "import java.lang._",
+        "import scala.Int",
+        "import java._",
         " ",
-        "trait Temp { }"
+        "trait Temp {",
+        "  def i(): Int",
+        "  def j(): Integer",
+        "}",
+        ""
       ), write = true, encoding = encoding)
 
       val analyzer = analyzerRef.underlyingActor
@@ -364,7 +365,7 @@ class RefactoringHandlerSpec extends EnsimeSpec
       )
       val diffFile = result match {
         case RefactorDiffEffect(_, _, f) => f.canon
-        case _ => fail()
+        case default => println(default); fail()
       }
 
       val sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss Z")
@@ -372,13 +373,13 @@ class RefactoringHandlerSpec extends EnsimeSpec
       val diffContents = diffFile.readString()
       val expectedContents = s"""|--- ${file.path}	${t}
                                  |+++ ${file.path}	${t}
-                                 |@@ -1,4 +1,4 @@
-                                 |import scala._
-                                 |import scala.Int
+                                 |@@ -1,5 +1,3 @@
+                                 |-import scala._
+                                 |-import scala.Int
                                  |-import java.lang.Integer
-                                 |-import java.lang._
-                                 |+import java.lang._
-                                 |+import java.lang.Integer
+                                 | import java.lang._
+                                 |+import scala._
+                                 |
                                  |""".stripMargin
 
       diffContents should ===(expectedContents)
