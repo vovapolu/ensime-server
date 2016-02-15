@@ -228,16 +228,16 @@ trait RefactoringImpl { self: RichPresentationCompiler =>
       val refactoring = new OrganizeImports {
         val global = RefactoringImpl.this
       }
-      private val importFormatingOptions = List(
-        refactoring.GroupImports(List("java", "scala")),
-        refactoring.SortImports,
-        refactoring.SortImportSelectors,
-        refactoring.CollapseImports,
-        refactoring.SimplifyWildcards,
-        refactoring.RemoveDuplicates
-      )
+
       val result = performRefactoring(procId, tpe, new refactoring.RefactoringParameters(
-        options = importFormatingOptions
+        options = List(
+          refactoring.GroupImports(List("java", "scala")),
+          refactoring.SortImports,
+          refactoring.SortImportSelectors,
+          refactoring.CollapseImports,
+          refactoring.SimplifyWildcards,
+          refactoring.RemoveDuplicates
+        )
       ))
     }.result
 
