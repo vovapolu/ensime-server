@@ -188,15 +188,6 @@ case class OrganiseImportsRefactorDesc(file: File) extends RefactorDesc(Refactor
 case class AddImportRefactorDesc(qualifiedName: String, file: File)
   extends RefactorDesc(RefactorType.AddImport)
 
-case class SourceFileInfo(
-    file: File,
-    contents: Option[String] = None,
-    contentsIn: Option[File] = None
-) {
-  // keep the log file sane for unsaved files
-  override def toString = s"SourceFileInfo($file,${contents.map(_ => "...")},$contentsIn)"
-}
-
 sealed trait PatchOp {
   def start: Int
 }
