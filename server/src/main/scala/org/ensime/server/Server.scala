@@ -47,9 +47,14 @@ class ServerActor(
     val broadcaster = context.actorOf(Broadcaster(), "broadcaster")
     val project = context.actorOf(Project(broadcaster), "project")
 
+    val preferredTcpPort = PortUtil.port(config.cacheDir, "port")
     val shutdownOnLastDisconnect = Environment.shutdownOnDisconnectFlag
-    context.actorOf(TCPServer(config.cacheDir, protocol, project,
-      broadcaster, shutdownOnLastDisconnect), "tcp-server")
+    context.actorOf(Props(
+      new TCPServer(
+        config.cacheDir, protocol, project,
+        broadcaster, shutdownOnLastDisconnect, preferredTcpPort
+      )
+    ), "tcp-server")
 
     // this is a bit ugly in a couple of ways
     // 1) web server creates handlers in the top domain
@@ -58,8 +63,12 @@ class ServerActor(
 
     // async start the HTTP Server
     val selfRef = self
-    Http()(context.system).bindAndHandle(webserver.route, interface, 0).onSuccess {
-      case ServerBinding(addr) =>
+    val preferredHttpPort = PortUtil.port(config.cacheDir, "http")
+    Http()(context.system).bindAndHandle(webserver.route, interface, preferredHttpPort.getOrElse(0)).onComplete {
+      case Failure(_) =>
+        selfRef ! ShutdownRequest(s"http endpoint failed to bind ($preferredHttpPort)", isError = true)
+
+      case Success(ServerBinding(addr)) =>
         log.info(s"ENSIME HTTP on ${addr.getAddress}")
         try {
           PortUtil.writePort(config.cacheDir, addr.getPort, "http")
@@ -138,10 +147,12 @@ object Server {
         Try(system.awaitTermination())
 
         log.info("Shutdown complete")
-        if (request.isError)
-          System.exit(1)
-        else
-          System.exit(0)
+        if (!propIsSet("ensime.server.test")) {
+          if (request.isError)
+            System.exit(1)
+          else
+            System.exit(0)
+        }
       }
     })
     t.start()
