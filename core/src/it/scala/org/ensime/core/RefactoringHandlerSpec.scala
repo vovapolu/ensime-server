@@ -365,7 +365,7 @@ class RefactoringHandlerSpec extends EnsimeSpec
       )
       val diffFile = result match {
         case RefactorDiffEffect(_, _, f) => f.canon
-        case default => println(default); fail()
+        case default => fail()
       }
 
       val sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss Z")
@@ -373,14 +373,15 @@ class RefactoringHandlerSpec extends EnsimeSpec
       val diffContents = diffFile.readString()
       val expectedContents = s"""|--- ${file.path}	${t}
                                  |+++ ${file.path}	${t}
-                                 |@@ -1,5 +1,3 @@
+                                 |@@ -1,5 +1,5 @@
                                  |-import scala._
-                                 |-import scala.Int
                                  |-import java.lang.Integer
-                                 | import java.lang._
+                                 |-import scala.Int
+                                 | import java._
+                                 |+import java.lang.Integer
+                                 |+
                                  |+import scala._
-                                 |
-                                 |""".stripMargin
+                                 |  \n""".stripMargin
 
       diffContents should ===(expectedContents)
       diffFile.delete()

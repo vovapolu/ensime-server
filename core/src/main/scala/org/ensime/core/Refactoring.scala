@@ -231,12 +231,12 @@ trait RefactoringImpl { self: RichPresentationCompiler =>
 
       val result = performRefactoring(procId, tpe, new refactoring.RefactoringParameters(
         options = List(
-          refactoring.GroupImports(List("java", "scala")),
           refactoring.SortImports,
           refactoring.SortImportSelectors,
           refactoring.CollapseImports,
           refactoring.SimplifyWildcards,
-          refactoring.RemoveDuplicates
+          refactoring.RemoveDuplicates,
+          refactoring.GroupImports(List("java", "scala"))
         )
       ))
     }.result
