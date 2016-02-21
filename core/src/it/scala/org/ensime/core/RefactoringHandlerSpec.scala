@@ -160,7 +160,7 @@ class RefactoringHandlerSpec extends EnsimeSpec
 
     val formatted = readSrcFile(file, encoding)
     val expectedContents = contents(
-      "import java.lang.Integer.{toBinaryString, valueOf => vo}",
+      "import java.lang.Integer.{valueOf => vo, toBinaryString}",
       "import java.lang.String.valueOf",
       " ",
       "trait Temp {",
@@ -329,7 +329,7 @@ class RefactoringHandlerSpec extends EnsimeSpec
                                  |@@ -1,3 +1,2 @@
                                  |-import java.lang.Integer.{valueOf => vo}
                                  |-import java.lang.Integer.toBinaryString
-                                 |+import java.lang.Integer.{toBinaryString, valueOf => vo}
+                                 |+import java.lang.Integer.{valueOf => vo, toBinaryString}
                                  | import java.lang.String.valueOf
                                  |""".stripMargin
 
@@ -338,4 +338,53 @@ class RefactoringHandlerSpec extends EnsimeSpec
     }
   }
 
+  it should "organize and group imports" in {
+    withAnalyzer { (dir, analyzerRef) =>
+      import org.ensime.util.file._
+
+      val file = srcFile(dir, "tmp-contents", contents(
+        "import scala._",
+        "import java.lang.Integer",
+        "import scala.Int",
+        "import java._",
+        " ",
+        "trait Temp {",
+        "  def i(): Int",
+        "  def j(): Integer",
+        "}",
+        ""
+      ), write = true, encoding = encoding)
+
+      val analyzer = analyzerRef.underlyingActor
+
+      val procId = 1
+      val result = analyzer.handleRefactorRequest(
+        new RefactorReq(
+          procId, OrganiseImportsRefactorDesc(new File(file.path)), false
+        )
+      )
+      val diffFile = result match {
+        case RefactorDiffEffect(_, _, f) => f.canon
+        case default => fail()
+      }
+
+      val sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss Z")
+      val t = sdf.format(new Date((new File(file.path)).lastModified()))
+      val diffContents = diffFile.readString()
+      val expectedContents = s"""|--- ${file.path}	${t}
+                                 |+++ ${file.path}	${t}
+                                 |@@ -1,5 +1,5 @@
+                                 |-import scala._
+                                 |-import java.lang.Integer
+                                 |-import scala.Int
+                                 | import java._
+                                 |+import java.lang.Integer
+                                 |+
+                                 |+import scala._
+                                 |  \n""".stripMargin
+
+      diffContents should ===(expectedContents)
+      diffFile.delete()
+    }
+  }
 }
