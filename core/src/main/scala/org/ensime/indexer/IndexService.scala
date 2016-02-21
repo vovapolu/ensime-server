@@ -115,14 +115,14 @@ class IndexService(path: File) {
       add(new BoostedPrefixQuery(new Term("fqn", query)), Occur.MUST)
       add(ClassIndexT, Occur.MUST)
     }
-    lucene.search(q, max).map(_.toEntity[ClassIndex])
+    lucene.search(q, max).map(_.toEntity[ClassIndex]).distinct
   }
 
   def searchClassesMethods(terms: List[String], max: Int): List[FqnIndex] = {
     val query = new DisjunctionMaxQuery(
       terms.map(buildTermClassMethodQuery), 0f
     )
-    lucene.search(query, max).map(_.toEntity[ClassIndex])
+    lucene.search(query, max).map(_.toEntity[ClassIndex]).distinct
   }
 
   def buildTermClassMethodQuery(query: String): BooleanQuery = {

@@ -145,6 +145,19 @@ class SearchServiceSpec extends EnsimeSpec
     )
   }
 
+  it should "not prioritise noisy inner classes" in withSearchService { implicit service =>
+    val hits = service.searchClasses("Baz", 10).map(_.fqn)
+    hits should contain theSameElementsAs (Seq(
+      "org.example2.Baz",
+      "org.example2.Baz$Wibble$baz",
+      "org.example2.Baz$Wibble$baz$",
+      "org.example2.Baz$Wibble$",
+      "org.example2.Baz$",
+      "org.example2.Baz$Wibble"
+    ))
+    hits.head shouldBe "org.example2.Baz"
+  }
+
   "exact searches" should "find type aliases" in withSearchService { implicit service =>
     service.findUnique("org.scalatest.fixture.ConfigMapFixture$FixtureParam") shouldBe defined
   }
