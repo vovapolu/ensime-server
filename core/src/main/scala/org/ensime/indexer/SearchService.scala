@@ -175,7 +175,7 @@ class SearchService(
   }
 
   private val blacklist = Set("sun/", "sunw/", "com/sun/")
-  private val ignore = Set("$$anon$", "$$anonfun$", "$worker$")
+  private val ignore = Set("$$", "$worker$")
   import org.ensime.util.RichFileObject._
   private def extractSymbols(container: FileObject, f: FileObject): List[FqnSymbol] = {
     f.pathWithinArchive match {
