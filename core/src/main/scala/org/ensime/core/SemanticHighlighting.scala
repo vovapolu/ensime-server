@@ -9,11 +9,11 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.RangePosition
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.symtab.Flags._
-import scala.tools.refactoring.common.{ CompilerAccess, PimpedTrees }
+import scala.tools.refactoring.common.{ CompilerAccess, EnrichedTrees }
 
 import org.ensime.api._
 
-class SemanticHighlighting(val global: RichPresentationCompiler) extends CompilerAccess with PimpedTrees {
+class SemanticHighlighting(val global: RichPresentationCompiler) extends CompilerAccess with EnrichedTrees {
 
   import global._
 

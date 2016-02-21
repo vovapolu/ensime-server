@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
 import scala.reflect.io.AbstractFile
-import scala.tools.refactoring.common.{ CompilerAccess, PimpedTrees }
+import scala.tools.refactoring.common.{ CompilerAccess, EnrichedTrees }
 import scala.reflect.internal.util.SourceFile
 import org.ensime.api._
 

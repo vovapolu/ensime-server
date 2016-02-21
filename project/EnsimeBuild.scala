@@ -24,6 +24,8 @@ object EnsimeBuild extends Build {
     // WORKAROUND https://github.com/ensime/ensime-emacs/issues/327
     fullResolvers += Resolver.jcenterRepo,
 
+    resolvers += Resolver.sonatypeRepo("snapshots"),
+
     // disabling shared memory gives a small performance boost to tests
     javaOptions ++= Seq("-XX:+PerfDisableSharedMem"),
 
@@ -149,7 +151,7 @@ object EnsimeBuild extends Build {
         "org.scala-lang" % "scalap" % scalaVersion.value,
         "com.typesafe.akka" %% "akka-actor" % Sensible.akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % Sensible.akkaVersion,
-        "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.8.0",
+        "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.9.0-SNAPSHOT",
         "commons-lang" % "commons-lang" % "2.6",
         "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0"
       ) ++ Sensible.testLibs("it,test") ++ Sensible.shapeless(scalaVersion.value)
