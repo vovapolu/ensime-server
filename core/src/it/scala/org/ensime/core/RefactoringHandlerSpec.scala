@@ -255,7 +255,7 @@ class RefactoringHandlerSpec extends EnsimeSpec
     }
   }
 
-  it should "rename a function id with params' opening/closing parenthesis on different lines" ignore withAnalyzer { (dir, analyzerRef) =>
+  it should "rename a function id with params' opening/closing parenthesis on different lines" in withAnalyzer { (dir, analyzerRef) =>
 
     val file = srcFile(dir, "tmp-contents", contents(
       "package org.ensime.testing",
