@@ -46,15 +46,6 @@ class RequestHandler(
       server forward RpcResponseEnvelope(Some(envelope.callId), err)
       context stop self
 
-    // FIXME: find and eliminate all the Option responses
-    // legacy --- to deal with bad/Optional actor responses
-    case Some(response: RpcResponse) =>
-      server forward RpcResponseEnvelope(Some(envelope.callId), response)
-      context stop self
-    case None =>
-      server forward RpcResponseEnvelope(Some(envelope.callId), FalseResponse)
-      context stop self
-
     case response: RpcResponse =>
       server forward RpcResponseEnvelope(Some(envelope.callId), response)
       context stop self

@@ -4,7 +4,7 @@ build:
   environment:
     - SONATYPE_USERNAME=$$SONATYPE_USERNAME
     - SONATYPE_PASSWORD=$$SONATYPE_PASSWORD
-    - EMACS=/opt/emacs-24.4/bin/emacs
+    - EMACS=/opt/emacs-24.5/bin/emacs
     - AKKA_TEST_TIMEFACTOR=10
   commands:
     - git log | head -n 20
