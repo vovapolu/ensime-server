@@ -51,13 +51,13 @@ class BasicWorkflow extends EnsimeSpec
           //-----------------------------------------------------------------------------------------------
           // symbolAtPoint
           project ! SymbolAtPointReq(Left(fooFile), 128)
-          val symbolAtPointOpt: Option[SymbolInfo] = expectMsgType[Option[SymbolInfo]]
+          val symbolAtPointOpt: SymbolInfo = expectMsgType[SymbolInfo]
 
           project ! TypeByNameReq("org.example.Foo")
-          val fooClassByNameOpt = expectMsgType[Option[TypeInfo]]
+          val fooClassByNameOpt = expectMsgType[TypeInfo]
 
           project ! TypeByNameReq("org.example.Foo$")
-          val fooObjectByNameOpt = expectMsgType[Option[TypeInfo]]
+          val fooObjectByNameOpt = expectMsgType[TypeInfo]
 
           //-----------------------------------------------------------------------------------------------
           // public symbol search - java.io.File
@@ -118,56 +118,56 @@ class BasicWorkflow extends EnsimeSpec
           // loaded by the pres compiler
           project ! SymbolAtPointReq(Left(fooFile), 276)
           expectMsgPF() {
-            case Some(SymbolInfo("testMethod", "testMethod", Some(OffsetSourcePosition(`fooFile`, 114)), ArrowTypeInfo("(i: Int, s: String)Int", BasicTypeInfo("Int", DeclaredAs.Class, "scala.Int", List(), List(), None), List(ParamSectionInfo(List((i, BasicTypeInfo("Int", DeclaredAs.Class, "scala.Int", List(), List(), None)), (s, BasicTypeInfo("String", DeclaredAs.Class, "java.lang.String", List(), List(), None))), false))), true)) =>
+            case SymbolInfo("testMethod", "testMethod", Some(OffsetSourcePosition(`fooFile`, 114)), ArrowTypeInfo("(i: Int, s: String)Int", BasicTypeInfo("Int", DeclaredAs.Class, "scala.Int", List(), List(), None), List(ParamSectionInfo(List((i, BasicTypeInfo("Int", DeclaredAs.Class, "scala.Int", List(), List(), None)), (s, BasicTypeInfo("String", DeclaredAs.Class, "java.lang.String", List(), List(), None))), false))), true) =>
           }
 
           // M-.  external symbol
           project ! SymbolAtPointReq(Left(fooFile), 190)
           expectMsgPF() {
-            case Some(SymbolInfo("Map", "Map", Some(OffsetSourcePosition(_, _)),
+            case SymbolInfo("Map", "Map", Some(OffsetSourcePosition(_, _)),
               BasicTypeInfo("Map$", DeclaredAs.Object, "scala.collection.immutable.Map$", List(), List(), None),
-              false)) =>
+              false) =>
           }
 
           project ! SymbolAtPointReq(Left(fooFile), 343)
           expectMsgPF() {
-            case Some(SymbolInfo("fn", "fn", Some(OffsetSourcePosition(`fooFile`, 304)),
+            case SymbolInfo("fn", "fn", Some(OffsetSourcePosition(`fooFile`, 304)),
               BasicTypeInfo("Function1", DeclaredAs.Trait, "scala.Function1",
                 List(
                   BasicTypeInfo("String", DeclaredAs.Class, "java.lang.String", List(), List(), None),
                   BasicTypeInfo("Int", DeclaredAs.Class, "scala.Int", List(), List(), None)),
                 List(), None),
-              false)) =>
+              false) =>
           }
 
           project ! SymbolAtPointReq(Left(barFile), 150)
           expectMsgPF() {
-            case Some(SymbolInfo("apply", "apply", Some(OffsetSourcePosition(`barFile`, 59)),
+            case SymbolInfo("apply", "apply", Some(OffsetSourcePosition(`barFile`, 59)),
               ArrowTypeInfo("(bar: String, baz: Int)org.example.Bar.Foo",
                 BasicTypeInfo("Foo", DeclaredAs.Class, "org.example.Bar$$Foo", List(), List(), None),
                 List(ParamSectionInfo(
                   List(
                     ("bar", BasicTypeInfo("String", DeclaredAs.Class, "java.lang.String", List(), List(), None)),
                     ("baz", BasicTypeInfo("Int", DeclaredAs.Class, "scala.Int", List(), List(), None))), false))),
-              true)) =>
+              true) =>
           }
 
           project ! SymbolAtPointReq(Left(barFile), 193)
           expectMsgPF() {
-            case Some(SymbolInfo("copy", "copy", Some(OffsetSourcePosition(`barFile`, 59)),
+            case SymbolInfo("copy", "copy", Some(OffsetSourcePosition(`barFile`, 59)),
               ArrowTypeInfo("(bar: String, baz: Int)org.example.Bar.Foo",
                 BasicTypeInfo("Foo", DeclaredAs.Class, "org.example.Bar$$Foo", List(), List(), None),
                 List(ParamSectionInfo(
                   List(
                     ("bar", BasicTypeInfo("String", DeclaredAs.Class, "java.lang.String", List(), List(), None)),
                     ("baz", BasicTypeInfo("Int", DeclaredAs.Class, "scala.Int", List(), List(), None))), false))),
-              true)) =>
+              true) =>
           }
 
           // C-c C-v p Inspect source of current package
           project ! InspectPackageByPathReq("org.example")
           expectMsgPF() {
-            case Some(PackageInfo("example", "org.example", List(
+            case PackageInfo("example", "org.example", List(
               BasicTypeInfo("Bar", DeclaredAs.Class, "org.example.Bar", List(), List(), Some(_)),
               BasicTypeInfo("Bar$", DeclaredAs.Object, "org.example.Bar$", List(), List(), Some(_)),
               BasicTypeInfo("Bloo", DeclaredAs.Class, "org.example.Bloo", List(), List(), Some(_)),
@@ -183,7 +183,7 @@ class BasicWorkflow extends EnsimeSpec
               BasicTypeInfo("Test2", DeclaredAs.Class, "org.example.Test2", List(), List(), None),
               BasicTypeInfo("Test2$", DeclaredAs.Object, "org.example.Test2$", List(), List(), None),
               BasicTypeInfo("package$", DeclaredAs.Object, "org.example.package$", List(), List(), None),
-              BasicTypeInfo("package$", DeclaredAs.Object, "org.example.package$", List(), List(), None)))) =>
+              BasicTypeInfo("package$", DeclaredAs.Object, "org.example.package$", List(), List(), None))) =>
           }
 
           // expand selection around 'val foo'
