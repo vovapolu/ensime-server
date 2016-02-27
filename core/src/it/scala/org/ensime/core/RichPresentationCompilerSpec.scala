@@ -187,6 +187,27 @@ class RichPresentationCompilerSpec extends EnsimeSpec
     }
   }
 
+  it should "not fail when completion is requested outside document" in {
+    withPresCompiler { (config, cc) =>
+      import ReallyRichPresentationCompilerFixture._
+      runForPositionInCompiledSource(config, cc,
+        "package com.example",
+        "case class Foo(bar: String, baz: Int)",
+        "object Bla {",
+        "  val foo = Foo(",
+        "    bar = \"Bar\",",
+        "    baz = 123",
+        "  )",
+        " val fooUpd = foo.copy(b@@ar = foo.bar.reverse)",
+        "}") { (p, label, cc) =>
+
+          val outsidePosition = new OffsetPosition(p.source, 1000)
+          val completions = cc.completionsAt(outsidePosition, 100, false)
+          completions.completions.size shouldBe 0
+        }
+    }
+  }
+
   it should "get symbol info by name" in withPresCompiler { (config, cc) =>
     def verify(
       fqn: String, member: Option[String], sig: Option[String], expectedLocalName: String,
@@ -611,6 +632,7 @@ trait ReallyRichPresentationCompilerFixture {
 
 object ReallyRichPresentationCompilerFixture
     extends RichPresentationCompilerTestUtils {
+
   def runForPositionInCompiledSource(config: EnsimeConfig, cc: RichPresentationCompiler, lines: String*)(testCode: (OffsetPosition, String, RichPresentationCompiler) => Any): Any = {
     val contents = lines.mkString("\n")
     var offset = 0
