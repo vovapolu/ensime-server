@@ -243,7 +243,6 @@ class RefactoringHandlerSpec extends EnsimeSpec
         "package org.ensime.testing",
         "",
         "import java.lang.Integer",
-        "",
         "trait Temp {",
         "  valueOf(5)",
         "  vo(\"5\")",
