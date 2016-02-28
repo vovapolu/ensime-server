@@ -14,7 +14,7 @@ package object config {
       module: EnsimeModule <- c.modules.values.toSet
       root <- module.sourceRoots
       file <- root.tree
-      if file.isFile & file.getName.endsWith(".scala")
+      if file.isFile && file.getName.endsWith(".scala")
     } yield file
   }
 
