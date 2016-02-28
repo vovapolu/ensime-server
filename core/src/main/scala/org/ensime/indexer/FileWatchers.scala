@@ -2,6 +2,7 @@
 // Licence: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.indexer
 
+import akka.actor.{ Actor, Props }
 import akka.event.slf4j.SLF4JLogging
 import org.apache.commons.vfs2._
 import org.apache.commons.vfs2.impl.DefaultFileMonitor
@@ -42,7 +43,7 @@ class ClassfileWatcher(
 )(
     implicit
     vfs: EnsimeVFS
-) extends Watcher with SLF4JLogging {
+) extends Actor with SLF4JLogging {
 
   private val impls =
     if (config.disableClassMonitoring) Nil
@@ -52,7 +53,14 @@ class ClassfileWatcher(
       new ApachePollingFileWatcher(dir, selector, rec, listeners)
     }
 
-  override def shutdown(): Unit = impls.foreach(_.shutdown())
+  override def receive: Receive = {
+    case _ =>
+  }
+
+  override def postStop(): Unit = {
+    impls.foreach(_.shutdown())
+  }
+
 }
 
 class SourceWatcher(

@@ -53,7 +53,7 @@ class Project(
     def fileRemoved(f: FileObject): Unit = reTypeCheck()
     override def baseReCreated(f: FileObject): Unit = reTypeCheck()
   }
-  private val classfileWatcher = new ClassfileWatcher(config, searchService :: reTypecheck :: Nil)
+  private val classfileWatcher = context.actorOf(Props(new ClassfileWatcher(config, searchService :: reTypecheck :: Nil)), "classFileWatcher")
 
   def receive: Receive = awaitingConnectionInfoReq
 
@@ -106,7 +106,6 @@ class Project(
 
   override def postStop(): Unit = {
     // make sure the "reliable" dependencies are cleaned up
-    Try(classfileWatcher.shutdown())
     Try(sourceWatcher.shutdown())
     searchService.shutdown() // async
     Try(vfs.close())
