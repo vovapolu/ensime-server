@@ -14,6 +14,7 @@ object Sensible {
 
   lazy val settings = Seq(
     ivyLoggingLevel := UpdateLogging.Quiet,
+    conflictManager := ConflictManager.strict,
 
     scalacOptions in Compile ++= Seq(
       "-encoding", "UTF-8",
@@ -61,7 +62,8 @@ object Sensible {
       "org.scala-lang" % "scalap" % scalaVersion.value,
       "org.scala-lang.modules" %% "scala-xml" % scalaModulesVersion,
       "org.scala-lang.modules" %% "scala-parser-combinators" % scalaModulesVersion,
-      "org.scalamacros" %% "quasiquotes" % quasiquotesVersion
+      "org.scalamacros" %% "quasiquotes" % quasiquotesVersion,
+      "org.scalatest" %% "scalatest" % scalatestVersion
     ) ++ logback ++ guava ++ shapeless(scalaVersion.value)
   ) ++ inConfig(Test)(testSettings) ++ scalariformSettings
 
@@ -113,7 +115,7 @@ object Sensible {
   def shapeless(scalaVersion: String) = {
     if (scalaVersion.startsWith("2.10.")) macroParadise
     else Nil
-  } :+ "com.chuusai" %% "shapeless" % "2.2.5"
+  } :+ "com.chuusai" %% "shapeless" % "2.3.0"
   val logback = Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.5",
     "org.slf4j" % "slf4j-api" % logbackVersion,

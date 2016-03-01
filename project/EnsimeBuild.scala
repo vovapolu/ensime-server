@@ -21,6 +21,12 @@ object EnsimeBuild extends Build {
   lazy val commonSettings = Sensible.settings ++ Seq(
     libraryDependencies ++= Sensible.testLibs() ++ Sensible.logback,
 
+    dependencyOverrides ++= Set(
+       "com.typesafe.akka" %% "akka-actor" % Sensible.akkaVersion,
+       "com.typesafe.akka" %% "akka-testkit" % Sensible.akkaVersion,
+       "io.spray" %% "spray-json" % "1.3.2"
+    ),
+
     // WORKAROUND https://github.com/ensime/ensime-emacs/issues/327
     fullResolvers += Resolver.jcenterRepo,
 
@@ -58,13 +64,13 @@ object EnsimeBuild extends Build {
   lazy val monkeys = Project("monkeys", file("monkeys")) settings (commonSettings) settings (
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "org.apache.commons" % "commons-vfs2" % "2.0" intransitive () exclude ("commons-logging", "commons-logging")
+      "org.apache.commons" % "commons-vfs2" % "2.0" exclude ("commons-logging", "commons-logging")
     )
   )
 
   lazy val util = Project("util", file("util")) settings (commonSettings) settings (
     libraryDependencies ++= List(
-      "org.apache.commons" % "commons-vfs2" % "2.0" intransitive () exclude ("commons-logging", "commons-logging")
+      "org.apache.commons" % "commons-vfs2" % "2.0" exclude ("commons-logging", "commons-logging")
     ) ++ Sensible.guava
   )
 
@@ -80,8 +86,7 @@ object EnsimeBuild extends Build {
     testutil % "test"
   ) settings (
       libraryDependencies ++= Seq(
-        // 2.1.1 not available https://github.com/sirthias/parboiled2/issues/160
-        "org.parboiled" %% "parboiled" % "2.1.0" intransitive () exclude ("com.chuusai", "shapeless_2.10.4")
+        "org.parboiled" %% "parboiled" % "2.1.2"
       ) ++ Sensible.shapeless(scalaVersion.value)
     )
 
@@ -100,7 +105,7 @@ object EnsimeBuild extends Build {
     api % "test->test" // for the test data
   ) settings (
       libraryDependencies ++= Seq(
-        "com.github.fommil" %% "spray-json-shapeless" % "1.1.0",
+        "com.github.fommil" %% "spray-json-shapeless" % "1.2.0",
         "com.typesafe.akka" %% "akka-slf4j" % Sensible.akkaVersion
       ) ++ Sensible.shapeless(scalaVersion.value)
     )
