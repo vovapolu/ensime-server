@@ -11,7 +11,8 @@ import org.ensime.util.file._
 class BasicWorkflow extends EnsimeSpec
     with IsolatedEnsimeConfigFixture
     with IsolatedTestKitFixture
-    with IsolatedProjectFixture {
+    with IsolatedProjectFixture
+    with RefactoringHandlerTestUtils {
 
   val original = EnsimeConfigFixture.SimpleTestProject
 
@@ -198,21 +199,25 @@ class BasicWorkflow extends EnsimeSpec
 
           // TODO get the before content of the file
 
-          project ! PrepareRefactorReq(1234, null, RenameRefactorDesc("bar", fooFile, 215, 215), false)
+          project ! RefactorReq(1234, RenameRefactorDesc("bar", fooFile, 215, 215), false)
           expectMsgPF() {
-            case RefactorEffect(
-              1234,
-              RefactorType.Rename,
-              List(
-                TextEdit(`fooFile`, 214, 217, "bar"),
-                TextEdit(`fooFile`, 252, 255, "bar"),
-                TextEdit(`fooFile`, 269, 272, "bar")
-                ), _) =>
-          }
+            case RefactorDiffEffect(1234, RefactorType.Rename, diff) =>
 
-          project ! ExecRefactorReq(1234, RefactorType.Rename)
-          expectMsgPF() {
-            case RefactorResult(1234, RefactorType.Rename, List(`fooFile`), _) =>
+              val relevantExpectedPart = s"""|@@ -14,5 +14,5 @@
+                                             |   val map = Map[String, Int]()
+                                             |-  val foo = new Foo()
+                                             |-  println("Hello, " + foo.x)
+                                             |-  println(foo.testMethod(7, "seven"))
+                                             |+  val bar = new Foo()
+                                             |+  println("Hello, " + bar.x)
+                                             |+  println(bar.testMethod(7, "seven"))
+                                             | \n""".stripMargin
+
+              val diffContents = diff.canon.readString()
+              val expectedContents = expectedDiffContent(fooFilePath, relevantExpectedPart)
+
+              if (diffContents == expectedContents) true
+              else fail(s"Different diff content than expected. \n Actual content: '$diffContents' \n ExpectedRelevantContent: '$relevantExpectedPart'")
           }
 
           val oldTree1 = """Apply[1](Select[2](Select[1](Apply[3](TypeApply[4](Select[5](Select[6](This[7](newTypeName("immutable")), scala.collection.immutable.List#MOD%M1), newTermName("apply")#METH%M1), List(TypeTree[1]())), List(Literal[8](Constant(1)), Literal[9](Constant(2)), Literal[10](Constant(3)))), newTermName("head")#METH%M1), newTermName("$plus")#METH%M1), List(Literal[9](Constant(2))))
