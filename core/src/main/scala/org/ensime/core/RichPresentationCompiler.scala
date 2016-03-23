@@ -244,6 +244,9 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
     askOption(structureView(fileInfo))
       .getOrElse(List.empty)
 
+  def askRaw(any: Any): String =
+    showRaw(any, printTypes = true, printIds = false, printKinds = true, printMirrors = true)
+
 }
 
 class RichPresentationCompiler(

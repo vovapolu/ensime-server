@@ -265,6 +265,17 @@ case class ExpandSelectionReq(file: File, start: Int, end: Int) extends RpcAnaly
  */
 case class StructureViewReq(fileInfo: SourceFileInfo) extends RpcAnalyserRequest
 
+/**
+ * Responds with `ASTInfo`
+ *
+ * @param file source
+ * @param offset in file to inspect
+ */
+case class AstAtPointReq(
+  file: SourceFileInfo,
+  offset: OffsetRange
+) extends RpcAnalyserRequest
+
 sealed trait RpcDebuggerRequest extends RpcRequest
 
 /**

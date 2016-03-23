@@ -565,3 +565,8 @@ case class StructureViewMember(
   position: SourcePosition,
   members: List[StructureViewMember]
 )
+
+/**
+ * @param ast raw representation of the tree at point
+ */
+case class AstInfo(ast: String) extends RpcResponse

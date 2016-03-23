@@ -142,4 +142,8 @@ trait EnsimeTestData {
       )
     )
   ))
+
+  val astInfo = AstInfo(
+    "List(Apply(Select(Literal(Constant(1)), TermName(\"$plus\")), List(Literal(Constant(1)))))"
+  )
 }
