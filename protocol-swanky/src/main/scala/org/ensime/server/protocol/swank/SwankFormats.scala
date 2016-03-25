@@ -643,7 +643,6 @@ object SwankProtocolRequest {
   implicit val StructureViewReqHint = TypeHint[StructureViewReq](SexpSymbol("swank:structure-view"))
   implicit val AstAtPointReqHint = TypeHint[AstAtPointReq](SexpSymbol("swank:ast-at-point"))
   implicit val DebugActiveVmReqHint = TypeHint[DebugActiveVmReq.type](SexpSymbol("swank:debug-active-vm"))
-  implicit val DebugStartReqHint = TypeHint[DebugStartReq](SexpSymbol("swank:debug-start"))
   implicit val DebugAttachReqHint = TypeHint[DebugAttachReq](SexpSymbol("swank:debug-attach"))
   implicit val DebugStopReqHint = TypeHint[DebugStopReq.type](SexpSymbol("swank:debug-stop"))
   implicit val DebugSetBreakReqHint = TypeHint[DebugSetBreakReq](SexpSymbol("swank:debug-set-break"))
@@ -792,7 +791,6 @@ object SwankProtocolRequest {
   implicit def ExpandSelectionReqFormat = SexpFormat[ExpandSelectionReq]
   implicit def StructureViewReqFormat = SexpFormat[StructureViewReq]
   implicit def AstAtPointReqFormat = SexpFormat[AstAtPointReq]
-  implicit def DebugStartReqFormat = SexpFormat[DebugStartReq]
   implicit def DebugAttachReqFormat = SexpFormat[DebugAttachReq]
   implicit def DebugSetBreakReqFormat = SexpFormat[DebugSetBreakReq]
   implicit def DebugClearBreakReqFormat = SexpFormat[DebugClearBreakReq]
@@ -845,7 +843,6 @@ object SwankProtocolRequest {
           case s if s == StructureViewReqHint.hint => value.convertTo[StructureViewReq]
           case s if s == AstAtPointReqHint.hint => value.convertTo[AstAtPointReq]
           case s if s == DebugActiveVmReqHint.hint => DebugActiveVmReq
-          case s if s == DebugStartReqHint.hint => value.convertTo[DebugStartReq]
           case s if s == DebugAttachReqHint.hint => value.convertTo[DebugAttachReq]
           case s if s == DebugStopReqHint.hint => DebugStopReq
           case s if s == DebugSetBreakReqHint.hint => value.convertTo[DebugSetBreakReq]

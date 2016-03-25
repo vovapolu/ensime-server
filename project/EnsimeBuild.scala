@@ -141,7 +141,7 @@ object EnsimeBuild extends Build {
       unmanagedJars in Compile += JavaTools,
       EnsimeKeys.unmanagedSourceArchives += file(".").getCanonicalFile / "openjdk-langtools/openjdk6-langtools-src.zip",
       libraryDependencies ++= Seq(
-        "com.h2database" % "h2" % "1.4.190",
+        "com.h2database" % "h2" % "1.4.191",
         "com.typesafe.slick" %% "slick" % "3.1.1",
         "com.zaxxer" % "HikariCP-java6" % "2.3.13",
         // Netbeans 7.4+ needs Java 7 (7.3 only needs it at runtime)
@@ -150,13 +150,13 @@ object EnsimeBuild extends Build {
         // lucene 4.8+ needs Java 7: http://www.gossamer-threads.com/lists/lucene/general/225300
         "org.apache.lucene" % "lucene-core" % luceneVersion,
         "org.apache.lucene" % "lucene-analyzers-common" % luceneVersion,
-        "org.ow2.asm" % "asm-commons" % "5.0.4",
-        "org.ow2.asm" % "asm-util" % "5.0.4",
+        "org.ow2.asm" % "asm-commons" % "5.1",
+        "org.ow2.asm" % "asm-util" % "5.1",
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scalap" % scalaVersion.value,
         "com.typesafe.akka" %% "akka-actor" % Sensible.akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % Sensible.akkaVersion,
-        "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.9.1-SNAPSHOT",
+        "org.scala-refactoring" %% "org.scala-refactoring.library" % "0.10.0-SNAPSHOT",
         "commons-lang" % "commons-lang" % "2.6",
         "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0"
       ) ++ Sensible.testLibs("it,test") ++ Sensible.shapeless(scalaVersion.value)
@@ -215,12 +215,11 @@ object EnsimeBuild extends Build {
   )
 
   lazy val testingDocs = Project("testingDocs", file("testing/docs")).settings(
+    dependencyOverrides ++= Set("com.google.guava" % "guava" % "18.0"),
     libraryDependencies ++= Seq(
-      // specifically using ForecastIOLib version 1.5.1 for javadoc 1.8 output
       "com.github.dvdme" % "ForecastIOLib" % "1.5.1" intransitive (),
-      "com.google.guava" % "guava" % Sensible.guavaVersion intransitive (),
       "commons-io" % "commons-io" % "2.4" intransitive ()
-    )
+    ) ++ Sensible.guava
   )
 
   // java project with no scala-library

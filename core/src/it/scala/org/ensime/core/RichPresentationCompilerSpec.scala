@@ -557,12 +557,12 @@ class RichPresentationCompilerSpec extends EnsimeSpec
 
     compileScala(
       List(defsFile.path),
-      config.subprojects.head.targetDirs.head,
+      config.subprojects.head.targets.head,
       cc.settings.classpath.value
     )
 
     cc.search.refreshResolver()
-    Await.result(cc.search.refresh(), Duration.Inf)
+    Await.result(cc.search.refresh(), 180.seconds)
 
     val scalaVersion = scala.util.Properties.versionNumberString
     val parts = scalaVersion.split("\\.").map { _.toInt }

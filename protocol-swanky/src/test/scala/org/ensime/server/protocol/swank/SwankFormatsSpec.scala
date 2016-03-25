@@ -233,11 +233,6 @@ class SwankFormatsSpec extends EnsimeSpec with EnsimeTestData {
     )
 
     unmarshal(
-      """(swank:debug-start "blah blah blah")""",
-      DebugStartReq("blah blah blah"): RpcRequest
-    )
-
-    unmarshal(
       """(swank:debug-attach "mylovelyhorse" "13")""",
       DebugAttachReq("mylovelyhorse", "13"): RpcRequest
     )

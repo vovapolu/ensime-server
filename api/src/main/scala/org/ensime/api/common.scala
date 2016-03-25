@@ -3,6 +3,14 @@
 package org.ensime.api
 
 import java.io.File
+import scala.annotation.StaticAnnotation
+
+/**
+ * Indicates that something will be removed.
+ *
+ * WORKAROUND https://issues.scala-lang.org/browse/SI-7934
+ */
+class deprecating(detail: String = "") extends StaticAnnotation
 
 sealed abstract class DeclaredAs(val symbol: scala.Symbol)
 

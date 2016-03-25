@@ -36,7 +36,7 @@ class SearchServiceSpec extends EnsimeSpec
       val now = System.currentTimeMillis()
       for {
         m <- config.modules.values
-        r <- m.targetDirs ++ m.testTargetDirs
+        r <- m.targets ++ m.testTargets
         f <- r.tree
       } {
         // simulate a full recompile
@@ -52,7 +52,7 @@ class SearchServiceSpec extends EnsimeSpec
   it should "remove classfiles that have been deleted" in {
     withSearchService { (config, service) =>
       implicit val s = service
-      val classfile = config.subprojects.head.targetDirs.head / "org/example/Foo.class"
+      val classfile = config.subprojects.head.targets.head / "org/example/Foo.class"
 
       classfile shouldBe 'exists
 

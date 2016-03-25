@@ -2,15 +2,21 @@
 // Licence: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.intg
 
+import akka.event.slf4j.SLF4JLogging
 import java.io.File
 
 import akka.testkit._
+import java.io.InputStream
+import java.util.Scanner
 import org.ensime.api._
 import org.ensime.core._
 import org.ensime.fixture._
 import org.ensime.util.EnsimeSpec
 import org.ensime.util.file._
 import org.scalatest.Matchers
+import scala.concurrent.{ Await, Future, Promise }
+import scala.util.{ Properties, Try }
+import scala.concurrent.duration._
 
 // must be refreshing as the tests don't clean up after themselves properly
 class DebugTest extends EnsimeSpec
@@ -69,81 +75,51 @@ class DebugTest extends EnsimeSpec
                 DebugStackFrame(1, List(
                   DebugStackLocal(0, "args", "Array[]", "java.lang.String[]")
                   ), 1, "breakpoints.Breakpoints$", "main",
-                  LineSourcePosition(`breakpointsFile`, 41), _),
+                  LineSourcePosition(`breakpointsFile`, 42), _),
                 DebugStackFrame(2, List(), 1, "breakpoints.Breakpoints", "main",
                   LineSourcePosition(`breakpointsFile`, _), _)
                 ), DebugThreadId(1), "main") =>
             }
 
-            //            val bp11 = session.addLineBreakpoint(BP_TYPENAME, 11)
             project ! DebugSetBreakReq(breakpointsFile, 11)
             expectMsg(TrueResponse)
-            //            val bp13 = session.addLineBreakpoint(BP_TYPENAME, 13)
+
             project ! DebugSetBreakReq(breakpointsFile, 13)
             expectMsg(TrueResponse)
-
-            //              session.waitForBreakpointsToBeEnabled(bp11, bp13)
-
-            //              session.resumetoSuspension()
-            //              session.checkStackFrame(BP_TYPENAME, "simple1()V", 11)
-
-            asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 32))
 
             project ! DebugContinueReq(DebugThreadId(1))
             expectMsg(TrueResponse)
 
             asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 11))
 
-            //              session.resumetoSuspension()
-            //              session.checkStackFrame(BP_TYPENAME, "simple1()V", 13)
-
             project ! DebugContinueReq(DebugThreadId(1))
             expectMsg(TrueResponse)
 
             asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 13))
 
-            //              bp11.setEnabled(false)
             project ! DebugClearBreakReq(breakpointsFile, 11)
             expectMsg(TrueResponse)
 
-            //              session.waitForBreakpointsToBeDisabled(bp11)
-            //
-            //              session.resumetoSuspension()
             project ! DebugContinueReq(DebugThreadId(1))
             expectMsg(TrueResponse)
-            //              session.checkStackFrame(BP_TYPENAME, "simple1()V", 13)
+
             asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 13))
-            //
-            //              bp11.setEnabled(true); bp13.setEnabled(false)
             project ! DebugSetBreakReq(breakpointsFile, 11)
             expectMsg(TrueResponse)
             project ! DebugClearBreakReq(breakpointsFile, 13)
             expectMsg(TrueResponse)
 
-            //
-            //              session.waitForBreakpointsToBeEnabled(bp11)
-            //              session.waitForBreakpointsToBeDisabled(bp13)
-            //
-            //              session.resumetoSuspension()
-            //              session.checkStackFrame(BP_TYPENAME, "simple1()V", 11)
             project ! DebugContinueReq(DebugThreadId(1))
             expectMsg(TrueResponse)
 
             asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 11))
-            //
-            //              session.resumetoSuspension()
-            //              session.checkStackFrame(BP_TYPENAME, "simple1()V", 11)
             project ! DebugContinueReq(DebugThreadId(1))
             expectMsg(TrueResponse)
             asyncHelper.expectMsg(DebugBreakEvent(DebugThreadId(1), "main", breakpointsFile, 11))
-            //
+
             project ! DebugContinueReq(DebugThreadId(1))
             expectMsg(TrueResponse)
 
-            //asyncHelper.expectAsync(60 seconds, DebugVMDisconnectEvent)
-            //              session.resumeToCompletion()
-            //              bp11.delete()
-            //              bp13.delete()
           }
       }
     }
@@ -160,8 +136,6 @@ class DebugTest extends EnsimeSpec
         ) { breakpointsFile =>
             import testkit._
             val breakpointsPath = breakpointsFile.getAbsolutePath
-
-            // TODO: test listing/clearing pending breakpoints (i.e. before we connect)
 
             project ! DebugListBreakpointsReq
             expectMsgType[BreakpointList] should matchPattern {
@@ -302,31 +276,43 @@ trait DebugTestUtils {
     project ! DebugSetBreakReq(resolvedFile, breakLine)
     expectMsg(TrueResponse)
 
-    project ! DebugStartReq(className)
+    val vm = VMStarter(config, className)
+    Await.result(vm._4, (5 seconds).dilated)
+
+    project ! DebugAttachReq(vm._2, vm._3.toString)
+
     expectMsg(DebugVmSuccess())
 
     asyncHelper.expectMsg(DebugVMStartEvent)
-    asyncHelper.expectMsgType[DebugThreadStartEvent]
 
-    val expect = DebugBreakEvent(DebugThreadId(1), "main", resolvedFile, breakLine)
-    asyncHelper.expectMsg(expect)
+    val gotOnStartup = asyncHelper.expectMsgType[EnsimeServerMessage]
+    // weird! we sometimes see a duplicate break event instantly, not really expected
+    val additionalOnStartup = Try(asyncHelper.expectMsgType[EnsimeServerMessage](1 second)).toOption.toSeq
+    // but it doesn't always come through
+    (gotOnStartup +: additionalOnStartup) should contain(
+      DebugBreakEvent(DebugThreadId(1), "main", resolvedFile, breakLine)
+    )
+
     project ! DebugClearBreakReq(resolvedFile, breakLine)
     expectMsg(TrueResponse)
 
     try {
       f(resolvedFile)
     } finally {
-      project ! DebugClearAllBreaksReq
-      expectMsg(TrueResponse)
-
-      // no way to await the stopped condition so we let the app run
-      // its course on the main thread
-      project ! DebugContinueReq(DebugThreadId(1))
-      expectMsg(TrueResponse)
-      project ! DebugStopReq
-      expectMsgPF() {
-        case TrueResponse =>
-        case FalseResponse => // windows does this sometimes
+      try {
+        project ! DebugClearAllBreaksReq
+        expectMsg(TrueResponse)
+        // no way to await the stopped condition so we let the app run
+        // its course on the main thread
+        project ! DebugContinueReq(DebugThreadId(1))
+        expectMsg(TrueResponse)
+        project ! DebugStopReq
+        expectMsgPF() {
+          case TrueResponse =>
+          case FalseResponse => // windows does this sometimes
+        }
+      } finally {
+        vm._1.destroy()
       }
     }
   }
@@ -352,4 +338,50 @@ trait DebugTestUtils {
         DebugThreadId(1), "main") =>
     }
   }
+}
+
+// only for test because only the build tool really knows how to launch the JVM
+object VMStarter extends SLF4JLogging {
+
+  def logLines(src: InputStream): Future[Unit] = {
+    val promise = Promise[Unit]()
+    new Thread(new Runnable() {
+      override def run(): Unit = {
+        val sc = new Scanner(src)
+        while (sc.hasNextLine()) {
+          if (!promise.isCompleted) promise.trySuccess(())
+          log.info("DEBUGGING_PROCESS:" + sc.nextLine());
+        }
+      }
+    }).start()
+    promise.future
+  }
+
+  def java: String =
+    if (Properties.isWin) Properties.javaHome + """\bin\javaw.exe"""
+    else Properties.javaHome + "/bin/java"
+
+  def apply(config: EnsimeConfig, clazz: String): (Process, String, Int, Future[Unit]) = {
+    import collection.JavaConverters._
+
+    // would be nice to have ephemeral debug ports
+    val port = 5000 + scala.util.Random.nextInt(1000)
+
+    val classpath = (config.compileClasspath ++ config.targetClasspath).mkString(File.pathSeparator)
+    val args = Seq(
+      java,
+      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=" + port,
+      "-classpath", classpath,
+      clazz
+    )
+
+    val process = new ProcessBuilder(
+      args.asJava
+    ).redirectErrorStream(true).start()
+
+    val logging = logLines(process.getInputStream())
+
+    (process, "127.0.0.1", port, logging)
+  }
+
 }
