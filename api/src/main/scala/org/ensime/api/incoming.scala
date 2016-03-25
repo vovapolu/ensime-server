@@ -287,11 +287,6 @@ case object DebugActiveVmReq extends RpcDebuggerRequest
 /**
  * Responds with `DebugVmStatus`.
  */
-case class DebugStartReq(commandLine: String) extends RpcDebuggerRequest
-
-/**
- * Responds with `DebugVmStatus`.
- */
 case class DebugAttachReq(hostname: String, port: String) extends RpcDebuggerRequest
 
 /**

@@ -217,11 +217,6 @@ class JerkFormatsSpec extends EnsimeSpec with SprayJsonTestSupport with EnsimeTe
     )
 
     roundtrip(
-      DebugStartReq("blah blah blah"): RpcRequest,
-      """{"typehint":"DebugStartReq","commandLine":"blah blah blah"}"""
-    )
-
-    roundtrip(
       DebugAttachReq("mylovelyhorse", "13"): RpcRequest,
       """{"typehint":"DebugAttachReq","hostname":"mylovelyhorse","port":"13"}"""
     )

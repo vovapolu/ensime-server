@@ -51,18 +51,12 @@ object EnsimeConfigProtocol {
    side-effect.
    */
   private[config] def validated(m: EnsimeModule): EnsimeModule = {
-    (m.targetDirs ++ m.testTargetDirs ++ m.sourceRoots).foreach { dir =>
+    (m.targets ++ m.testTargets ++ m.sourceRoots).foreach { dir =>
       if (!dir.exists() && !dir.isJar) {
         log.warn(s"$dir does not exist, creating")
         dir.mkdirs()
       }
     }
-    Canonised(m.copy(
-      target = None,
-      targets = m.targetDirs,
-      testTarget = None,
-      testTargets = m.testTargetDirs,
-      sourceRoots = m.sourceRoots
-    ))
+    Canonised(m)
   }
 }

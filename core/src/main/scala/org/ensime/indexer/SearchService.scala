@@ -93,11 +93,11 @@ class SearchService(
       log.info("findBases")
       config.modules.flatMap {
         case (name, m) =>
-          m.targetDirs.flatMap {
+          m.targets.flatMap {
             case d if !d.exists() => Nil
             case d if d.isJar => List(vfs.vfile(d))
             case d => scan(vfs.vfile(d))
-          } ::: m.testTargetDirs.flatMap {
+          } ::: m.testTargets.flatMap {
             case d if !d.exists() => Nil
             case d if d.isJar => List(vfs.vfile(d))
             case d => scan(vfs.vfile(d))

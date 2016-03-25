@@ -105,11 +105,6 @@ class DebugManager(
     broadcaster ! DebugVMDisconnectEvent
   }
 
-  def vmOptions(): List[String] = List(
-    "-classpath",
-    config.runtimeClasspath.mkString("\"", File.pathSeparator, "\"")
-  ) ++ config.debugVMArgs
-
   def withVM[T](action: (VM => T)): Option[T] = {
     maybeVM.synchronized {
       try {
@@ -237,24 +232,10 @@ class DebugManager(
     DebugVmError(1, message)
   }
 
-  def handleDebugStartReq(commandLine: String): RpcResponse = {
+  def handleDebugAttachReq(hostname: String, port: Int): RpcResponse = {
     disposeCurrentVM()
     try {
-      val vm = new VM(VmStart(commandLine), vmOptions(), self, broadcaster, sourceMap)
-      maybeVM = Some(vm)
-      vm.start()
-      DebugVmSuccess()
-    } catch {
-      case e: Exception =>
-        log.error(e, "Could not start VM")
-        handleStartupFailure(e)
-    }
-  }
-
-  def handleDebugAttachReq(hostname: String, port: String): RpcResponse = {
-    disposeCurrentVM()
-    try {
-      val vm = new VM(VmAttach(hostname, port), vmOptions(), self, broadcaster, sourceMap)
+      val vm = new VM(hostname, port, self, broadcaster, sourceMap)
       maybeVM = Some(vm)
       vm.start()
       DebugVmSuccess()
@@ -266,19 +247,14 @@ class DebugManager(
   }
 
   def fromUser: Receive = {
-    case DebugStartReq(commandLine: String) =>
-      sender ! handleDebugStartReq(commandLine)
     case DebugAttachReq(hostname, port) ⇒
-      sender ! handleDebugAttachReq(hostname, port)
+      sender ! handleDebugAttachReq(hostname, port.toInt)
     case DebugActiveVmReq =>
       sender ! handleRPCWithVM() { vm =>
         TrueResponse
       }
     case DebugStopReq =>
       sender ! handleRPCWithVM() { vm =>
-        if (vm.mode.shouldExit) {
-          vm.exit(0)
-        }
         vm.dispose()
         TrueResponse
       }

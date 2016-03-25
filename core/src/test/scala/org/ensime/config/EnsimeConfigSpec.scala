@@ -32,12 +32,11 @@ class EnsimeConfigSpec extends EnsimeSpec {
  :root-dir "$dir"
  :cache-dir "$cache"
  :reference-source-roots ()
- :debug-args ("-Dthis=that")
  :subprojects ((:name "module1"
                 :scala-version "2.10.4"
                 :depends-on-modules ()
-                :target "$abc"
-                :test-target "$abc"
+                :targets ("$abc")
+                :test-targets ("$abc")
                 :source-roots ()
                 :reference-source-roots ()
                 :compiler-args ()
@@ -50,7 +49,6 @@ class EnsimeConfigSpec extends EnsimeSpec {
       module1.name shouldBe "module1"
       module1.dependencies shouldBe empty
       config.sourceMode shouldBe false
-      config.debugVMArgs shouldBe List("-Dthis=that")
     })
   }
 
@@ -77,7 +75,7 @@ class EnsimeConfigSpec extends EnsimeSpec {
       val module1 = config.modules("module1")
       module1.name shouldBe "module1"
       module1.dependencies shouldBe empty
-      module1.targetDirs should have size 1
+      module1.targets should have size 1
     })
   }
 
@@ -102,7 +100,6 @@ class EnsimeConfigSpec extends EnsimeSpec {
                 :scala-version "2.10.4"
                 :targets ("$abc"))))""", { implicit config =>
           config.sourceMode shouldBe sourceMode
-          config.runtimeClasspath shouldBe Set(abc)
           config.compileClasspath shouldBe (
             if (sourceMode) Set.empty else Set(abc)
           )
