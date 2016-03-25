@@ -18,7 +18,7 @@ class ImplicitsWildcardImports extends EnsimeSpec
 
   val original = EnsimeConfigFixture.ImplicitsTestProject
 
-  "ensime-server" should "allow getting symbols also after marking implicits imported with a wildcard import" ignore {
+  "ensime-server" should "allow getting symbols also after marking implicits imported with a wildcard import" in {
     withEnsimeConfig { implicit config =>
       withTestKit { implicit testkit =>
         withProject { (project, asyncHelper) =>
@@ -29,7 +29,7 @@ class ImplicitsWildcardImports extends EnsimeSpec
 
           log.info("Getting type the first time")
           project ! SymbolAtPointReq(Left(exampleFile), 116)
-          expectMsgType[Option[SymbolInfo]].get.name should be("seconds")
+          expectMsgType[SymbolInfo].name should be("seconds")
 
           log.info("Getting implicit info")
           project ! ImplicitInfoReq(Left(exampleFile), OffsetRange(0, 121))
@@ -37,7 +37,7 @@ class ImplicitsWildcardImports extends EnsimeSpec
 
           log.info("Getting type the second time")
           project ! SymbolAtPointReq(Left(exampleFile), 116)
-          expectMsgType[Option[SymbolInfo]].get.name should be("seconds")
+          expectMsgType[SymbolInfo].name should be("seconds")
         }
       }
     }

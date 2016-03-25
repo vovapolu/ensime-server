@@ -213,7 +213,7 @@ class RefactoringHandlerSpec extends EnsimeSpec
     formatted should ===(expectedContents)
   }
 
-  it should "add imports on the first line when other examples come" in {
+  it should "add imports even if none exist" in {
     withAnalyzer { (dir, analyzerRef) =>
       val file = srcFile(dir, "tmp-contents", contents(
         "package org.ensime.testing",
@@ -243,6 +243,7 @@ class RefactoringHandlerSpec extends EnsimeSpec
         "package org.ensime.testing",
         "",
         "import java.lang.Integer",
+        "",
         "trait Temp {",
         "  valueOf(5)",
         "  vo(\"5\")",
