@@ -108,9 +108,9 @@ class BasicWorkflow extends EnsimeSpec
           asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
 
           project ! UsesOfSymbolAtPointReq(Left(fooFile), 119) // point on testMethod
-          expectMsgPF() {
-            case ERangePositions(List(ERangePosition(`fooFilePath`, 114, 110, 172), ERangePosition(`fooFilePath`, 273, 269, 283))) =>
-          }
+          expectMsgType[ERangePositions].positions should contain theSameElementsAs List(
+            ERangePosition(`fooFilePath`, 114, 110, 172), ERangePosition(`fooFilePath`, 273, 269, 283)
+          )
 
           log.info("------------------------------------222-")
 

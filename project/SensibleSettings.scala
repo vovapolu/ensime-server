@@ -4,6 +4,7 @@ import scala.util.{ Properties, Try }
 import sbt._
 import Keys._
 import com.typesafe.sbt.SbtScalariform._
+import scala.util.Properties
 
 /**
  * A bunch of sensible defaults that fommil typically uses.
@@ -52,8 +53,10 @@ object Sensible {
     maxErrors := 1,
     fork := true,
 
-    // 4 x 1GB = 4GB
-    concurrentRestrictions in Global := Seq(Tags.limitAll(4)),
+    concurrentRestrictions in Global := {
+      val limited = Properties.envOrElse("SBT_TASK_LIMIT", "4").toInt
+      Seq(Tags.limitAll(limited))
+    },
 
     dependencyOverrides ++= Set(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,

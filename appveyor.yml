@@ -20,6 +20,7 @@ install:
   - cmd: SET PATH=C:\sbt\sbt\bin;%JDK_HOME%\bin;%PATH%
   - cmd: SET SBT_OPTS=-XX:MaxPermSize=256m -Xss2m -Xmx2g
   - cmd: SET AKKA_TEST_TIMEFACTOR=10
+  - cmd: SET SBT_TASK_LIMIT=2
 build_script:
   - sbt clean compile test:compile it:compile
 before_test:
