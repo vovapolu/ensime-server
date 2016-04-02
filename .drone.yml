@@ -8,6 +8,7 @@ build:
     - AKKA_TEST_TIMEFACTOR=10
   commands:
     - git log | head -n 20
+    - host `curl -s http://httpbin.org/ip | jq -r '.origin'` || true ;
     - sbt ++$SCALA_VERSION gen-ensime ;
       sbt ++$SCALA_VERSION clean test:compile it:compile doc ;
       if [ $(git diff | wc -l) -ge 1 ] ; then
