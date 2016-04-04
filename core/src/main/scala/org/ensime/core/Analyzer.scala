@@ -20,27 +20,27 @@ import scala.tools.nsc.Settings
 import scala.tools.nsc.interactive.Global
 import scala.util.Try
 
-case class CompilerFatalError(e: Throwable)
+final case class CompilerFatalError(e: Throwable)
 
 /**
  * Information necessary to create a javadoc or scaladoc URI for a
  * particular type or type member.
  */
-case class DocFqn(pack: String, typeName: String) {
+final case class DocFqn(pack: String, typeName: String) {
   def mkString: String = if (pack.isEmpty) typeName else pack + "." + typeName
   def inPackage(prefix: String): Boolean = pack == prefix || pack.startsWith(prefix + ".")
   def javaStdLib: Boolean = inPackage("java") || inPackage("javax")
   def androidStdLib: Boolean = inPackage("android")
   def scalaStdLib: Boolean = inPackage("scala")
 }
-case class DocSig(fqn: DocFqn, member: Option[String])
+final case class DocSig(fqn: DocFqn, member: Option[String])
 
 /**
  * We generate DocSigs for java and scala at the same time, since we
  * don't know a priori whether the docs will be in scaladoc or javadoc
  * format.
  */
-case class DocSigPair(scala: DocSig, java: DocSig)
+final case class DocSigPair(scala: DocSig, java: DocSig)
 
 class Analyzer(
     broadcaster: ActorRef,

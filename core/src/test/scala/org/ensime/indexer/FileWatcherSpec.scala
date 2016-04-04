@@ -13,11 +13,11 @@ import org.scalatest._
 import org.scalatest.tagobjects.Retryable
 
 sealed trait FileWatcherMessage
-case class Added(f: FileObject) extends FileWatcherMessage
-case class Removed(f: FileObject) extends FileWatcherMessage
-case class Changed(f: FileObject) extends FileWatcherMessage
-case class BaseAdded(f: FileObject) extends FileWatcherMessage
-case class BaseRemoved(f: FileObject) extends FileWatcherMessage
+final case class Added(f: FileObject) extends FileWatcherMessage
+final case class Removed(f: FileObject) extends FileWatcherMessage
+final case class Changed(f: FileObject) extends FileWatcherMessage
+final case class BaseAdded(f: FileObject) extends FileWatcherMessage
+final case class BaseRemoved(f: FileObject) extends FileWatcherMessage
 
 /**
  * These tests are insanely flakey so everything is retryable. The

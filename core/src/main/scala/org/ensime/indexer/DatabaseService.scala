@@ -105,7 +105,7 @@ class DatabaseService(dir: File) extends SLF4JLogging {
 }
 
 object DatabaseService {
-  case class FileCheck(id: Option[Int], filename: String, timestamp: Timestamp) {
+  final case class FileCheck(id: Option[Int], filename: String, timestamp: Timestamp) {
     def file(implicit vfs: EnsimeVFS) = vfs.vfile(filename)
     def lastModified = timestamp.getTime
     def changed(implicit vfs: EnsimeVFS) = file.getContent.getLastModifiedTime != lastModified
@@ -127,7 +127,7 @@ object DatabaseService {
   private val fileChecks = TableQuery[FileChecks]
   private val fileChecksCompiled = Compiled(TableQuery[FileChecks])
 
-  case class FqnSymbol(
+  final case class FqnSymbol(
       id: Option[Int],
       file: String, // the underlying file
       path: String, // the VFS handle (e.g. classes in jars)

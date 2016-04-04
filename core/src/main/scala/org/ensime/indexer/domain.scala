@@ -25,7 +25,7 @@ sealed trait FullyQualifiedName {
   def fqnString: String
 }
 
-case class PackageName(path: List[String]) extends FullyQualifiedName {
+final case class PackageName(path: List[String]) extends FullyQualifiedName {
   def contains(o: FullyQualifiedName) = o match {
     case PackageName(pn) => pn.startsWith(path)
     case ClassName(p, _) => contains(p)
@@ -114,7 +114,7 @@ object ClassName {
   }
 }
 
-case class MemberName(
+final case class MemberName(
     owner: ClassName,
     name: String
 ) extends FullyQualifiedName {
@@ -126,19 +126,19 @@ sealed trait DescriptorType {
   def internalString: String
 }
 
-case class ArrayDescriptor(fqn: DescriptorType) extends DescriptorType {
+final case class ArrayDescriptor(fqn: DescriptorType) extends DescriptorType {
   def reifier: ClassName = fqn match {
     case c: ClassName => c
     case a: ArrayDescriptor => a.reifier
   }
   def internalString = "[" + fqn.internalString
 }
-case class Descriptor(params: List[DescriptorType], ret: DescriptorType) {
+final case class Descriptor(params: List[DescriptorType], ret: DescriptorType) {
   def descriptorString =
     "(" + params.map(_.internalString).mkString("") + ")" + ret.internalString
 }
 
-case class RawClassfile(
+final case class RawClassfile(
   name: ClassName,
   generics: Option[String],
   superClass: Option[ClassName],
@@ -150,26 +150,26 @@ case class RawClassfile(
   source: RawSource
 )
 
-case class RawSource(
+final case class RawSource(
   filename: Option[String],
   line: Option[Int]
 )
 
-case class RawType(
+final case class RawType(
     fqn: String,
     access: Access
 ) {
   def fqnString = ClassName.cleanupPackage(fqn)
 }
 
-case class RawField(
+final case class RawField(
   name: MemberName,
   clazz: ClassName,
   generics: Option[String],
   access: Access
 )
 
-case class RawMethod(
+final case class RawMethod(
   name: MemberName,
   access: Access,
   descriptor: Descriptor,

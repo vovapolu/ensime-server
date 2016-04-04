@@ -39,9 +39,9 @@ object IndexService extends SLF4JLogging {
     def fqn: String
     def id = fqn
   }
-  case class ClassIndex(fqn: String, file: Option[FileCheck]) extends FqnIndex
-  case class MethodIndex(fqn: String, file: Option[FileCheck]) extends FqnIndex
-  case class FieldIndex(fqn: String, file: Option[FileCheck]) extends FqnIndex
+  final case class ClassIndex(fqn: String, file: Option[FileCheck]) extends FqnIndex
+  final case class MethodIndex(fqn: String, file: Option[FileCheck]) extends FqnIndex
+  final case class FieldIndex(fqn: String, file: Option[FileCheck]) extends FqnIndex
   abstract class AFqnIndexS[T <: FqnIndex](
       clazz: Class[T],
       cons: (String, Option[FileCheck]) => T

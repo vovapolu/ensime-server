@@ -13,7 +13,7 @@ import org.ensime.indexer.SearchService
 import org.ensime.model._
 
 // only used for queries by other components
-case class TypeCompletionsReq(prefix: String, maxResults: Int)
+final case class TypeCompletionsReq(prefix: String, maxResults: Int)
 
 class Indexer(
     index: SearchService,
