@@ -263,7 +263,7 @@ class SearchService(
   }
 }
 
-case class IndexFile(f: FileObject)
+final case class IndexFile(f: FileObject)
 
 class IndexingQueueActor(searchService: SearchService) extends Actor with ActorLogging {
   import context.system

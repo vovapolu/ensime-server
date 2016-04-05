@@ -10,7 +10,7 @@ import scalariform.formatter.preferences.FormattingPreferences
 // needed, we should move the functionality into a higher layer
 // RichConfig to keep the API clean.
 
-case class EnsimeConfig(
+final case class EnsimeConfig(
     rootDir: File,
     cacheDir: File,
     javaHome: File,
@@ -60,7 +60,7 @@ case class EnsimeConfig(
   def scalaLibrary: Option[File] = allJars.find(_.getName.startsWith("scala-library"))
 }
 
-case class EnsimeModule(
+final case class EnsimeModule(
     name: String,
     targets: List[File],
     testTargets: List[File],

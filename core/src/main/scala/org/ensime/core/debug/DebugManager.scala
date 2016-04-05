@@ -13,7 +13,7 @@ import org.ensime.api._
 
 import scala.collection.mutable
 
-case class DMClassPrepareEvent(prepareEvent: ClassPrepareEvent, eventSet: EventSet)
+final case class DMClassPrepareEvent(prepareEvent: ClassPrepareEvent, eventSet: EventSet)
 
 object DebugManager {
   def apply(

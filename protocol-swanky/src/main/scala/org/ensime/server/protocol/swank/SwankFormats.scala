@@ -23,7 +23,7 @@ import scala.util.{ Failure, Success, Try }
  * https://github.com/ensime/ensime-server/issues/834
  */
 
-case class SwankRPCFormatException(msg: String, callId: Int, cause: Throwable = null) extends Exception(msg, cause)
+final case class SwankRPCFormatException(msg: String, callId: Int, cause: Throwable = null) extends Exception(msg, cause)
 
 object SwankProtocolConversions extends DefaultSexpProtocol
     with SymbolAltFormat

@@ -10,7 +10,7 @@ import javax.lang.model.element.ElementKind
 import javax.lang.model.element.{ Element, TypeElement }
 import org.ensime.core.{ DocFqn, DocSig }
 
-case class JavaFqn(pack: Option[String], typename: Option[String], fieldOrMethod: Option[String]) {
+final case class JavaFqn(pack: Option[String], typename: Option[String], fieldOrMethod: Option[String]) {
   def toDocSig = DocSig(DocFqn(pack.getOrElse(""), typename.getOrElse("")), fieldOrMethod)
   def toFqnString = Array(pack, typename, fieldOrMethod).flatten.mkString(".")
   def toQueryString = Array(pack, typename.map(_.replace(".", "$")), fieldOrMethod).flatten.mkString(".")
