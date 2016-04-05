@@ -35,10 +35,7 @@ final case class PackageName(path: List[String]) extends FullyQualifiedName {
   def parent = PackageName(path.init)
 }
 
-sealed abstract class ClassName extends FullyQualifiedName with DescriptorType {
-  def pack: PackageName
-  def name: String
-
+final case class ClassName(pack: PackageName, name: String) extends FullyQualifiedName with DescriptorType {
   def contains(o: FullyQualifiedName) = o match {
     case ClassName(op, on) if pack == op && on.startsWith(name) =>
       (on == name) || on.startsWith(name + "$")
@@ -49,19 +46,11 @@ sealed abstract class ClassName extends FullyQualifiedName with DescriptorType {
   def fqnString =
     if (pack.path.isEmpty) name
     else ClassName.cleanupPackage(pack.fqnString + "." + name)
-}
 
-object ClassName {
-  def apply(pack: PackageName, name: String): ClassName = Impl(pack, name, internalString(pack, name))
+  private def nonPrimitiveInternalString: String =
+    "L" + (if (pack.path.isEmpty) name else pack.path.mkString("/") + "/" + name) + ";"
 
-  def unapply(c: ClassName): Option[(PackageName, String)] = Some((c.pack, c.name))
-
-  private final case class Impl(pack: PackageName, name: String, internalString: String) extends ClassName {
-    override def toString = s"ClassName($pack,$name)"
-  }
-
-  private def internalString(pack: PackageName, name: String): String = {
-    def fallback = "L" + (if (pack.path.isEmpty) name else pack.path.mkString("/") + "/" + name) + ";"
+  lazy val internalString: String = {
     if (pack.path.isEmpty)
       name match {
         case "boolean" => "Z"
@@ -73,11 +62,13 @@ object ClassName {
         case "float" => "F"
         case "double" => "D"
         case "void" => "V"
-        case _ => fallback
+        case _ => nonPrimitiveInternalString
       }
-    else fallback
+    else nonPrimitiveInternalString
   }
+}
 
+object ClassName {
   private val Root = PackageName(Nil)
   // we consider Primitives to be ClassNames
   private def Primitive(name: String): ClassName = ClassName(Root, name)
