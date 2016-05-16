@@ -24,8 +24,6 @@ import scala.concurrent.duration._
 import scala.util.Properties._
 import scala.util._
 
-final case class ShutdownRequest(reason: String, isError: Boolean = false)
-
 class ServerActor(
     config: EnsimeConfig,
     protocol: Protocol,
