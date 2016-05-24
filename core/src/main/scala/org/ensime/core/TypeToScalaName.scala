@@ -14,23 +14,43 @@ final class ScalaName(val underlying: String) extends AnyVal {
 }
 
 trait TypeToScalaName { self: Global with Helpers =>
-  def scalaName(tpe: Type, full: Boolean): ScalaName = {
-    if (isArrowType(tpe)) {
+  def scalaName(tpe: Type, full: Boolean): ScalaName = tpe match {
+    case _: MethodType | _: PolyType =>
       val tparams = tpe.paramss.map { sect =>
-        sect.map { p => scalaName(p.tpe, full).underlying } match {
-          case one :: Nil => one
-          case many => many.mkString("(", ", ", ")")
-        }
+        sect.map { p => scalaName(p.tpe, full).underlying }.mkString("(", ", ", ")")
       }.mkString(" => ")
       new ScalaName(tparams) + " => " + scalaName(tpe.finalResultType, full).underlying
-    } else {
-      val name = if (full) tpe.typeSymbol.fullName else tpe.typeSymbol.nameString
-      new ScalaName(name) + {
-        if (tpe.typeArgs.nonEmpty)
-          tpe.typeArgs.map(scalaName(_, full).underlying).mkString("[", ", ", "]")
-        else ""
+
+    case args: ArgsTypeRef if args.typeSymbol.fullName.startsWith("scala.Function") =>
+      val parts = tpe.typeArgs.map(scalaName(_, full).underlying)
+      new ScalaName(parts.init.mkString("(", ", ", ")")) + " => " + parts.last
+
+    case args: ArgsTypeRef if args.typeSymbol.fullName.startsWith("scala.Tuple") =>
+      val parts = tpe.typeArgs.map(scalaName(_, full).underlying)
+      new ScalaName(parts.mkString("(", ", ", ")"))
+
+    case args: ArgsTypeRef if args.typeSymbol.decodedName.forall(!_.isLetterOrDigit) =>
+      val parts = tpe.typeArgs.map(scalaName(_, full).underlying)
+      val name =
+        if (full) tpe.typeSymbol.fullNameString
+        else tpe.typeSymbol.nameString
+
+      new ScalaName(parts.init.mkString(" ")) + s" $name ${parts.last}"
+
+    case _ =>
+      val name = tpe match {
+        case c: ConstantType =>
+          scalaName(c.underlying, full).underlying + "(" + c.value.escapedStringValue + ")"
+        case r: RefinedType =>
+          r.parents.map(scalaName(_, full).underlying).mkString(" with ")
+        case _ =>
+          if (full) tpe.typeSymbol.fullNameString
+          else tpe.typeSymbol.nameString
       }
-    }
+      new ScalaName(name) + {
+        if (tpe.typeArgs.isEmpty) ""
+        else tpe.typeArgs.map(scalaName(_, full).underlying).mkString("[", ", ", "]")
+      }
   }
 
   def fullName(tpe: Type): ScalaName = scalaName(tpe, full = true)

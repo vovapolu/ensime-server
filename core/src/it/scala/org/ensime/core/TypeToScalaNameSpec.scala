@@ -11,18 +11,24 @@ class TypeToScalaNameSpec extends EnsimeSpec
     with ReallyRichPresentationCompilerFixture {
   import ReallyRichPresentationCompilerFixture._
 
-  val original = EnsimeConfigFixture.EmptyTestProject
+  val original = EnsimeConfigFixture.ShapelessTestProject
 
   it should "calculate the TypeInfo at point" in withPresCompiler { (config, cc) =>
     runForPositionInCompiledSource(
       config, cc,
       "package com.example",
+      "import shapeless._, labelled._, syntax.singleton._",
       "class Thing {",
       "    val in@int@t: Int = 13",
       "    def met@method1@hod1(i: Int): String = i.toString",
       "    val ar@arrow1@row1: Int => String = (i: Int) => met@call1@hod1(i)",
       "    def met@method2@hod2(i: Int, j: Long): String = i.toString",
       "    val arrow2: Int => Long => String = (i: Int, j: Long) => met@call2@hod2(i, j)",
+      "    val arrow0: () => Int = null ; ar@call0@row0()",
+      "    def tu@tuple2@ple2: (String, Int) = null",
+      "    def hl@hlist@ist: Int :: String :: HNil = null",
+      "    def re@refined@fined = 1.narrow",
+      "    def ex@exciting@citing = 'f' ->> 23.narrow",
       "}"
     ) { (p, label, cc) =>
         withClue(label) {
@@ -35,9 +41,10 @@ class TypeToScalaNameSpec extends EnsimeSpec
                 BasicTypeInfo("String", Class, "java.lang.String", Nil, Nil, None)
               case "call1" =>
                 ArrowTypeInfo(
-                  // intentionally no surrounding brackets for 1 parameter
-                  "Int => String",
-                  "scala.Int => java.lang.String",
+                  // we used to skip the surrounding brackets, but
+                  // it's confusing when chaining multiple functions
+                  "(Int) => String",
+                  "(scala.Int) => java.lang.String",
                   BasicTypeInfo(
                     "String",
                     Class,
@@ -47,17 +54,25 @@ class TypeToScalaNameSpec extends EnsimeSpec
                   List(ParamSectionInfo(List(("i", BasicTypeInfo("Int", Class, "scala.Int", Nil, Nil, None))), false))
                 )
               case "arrow1" =>
-                // this is a canary, we'd prefer it to return an ArrowTypeInfo
                 BasicTypeInfo(
-                  "Function1[Int, String]",
+                  "(Int) => String",
                   Trait,
-                  "scala.Function1[scala.Int, java.lang.String]",
+                  "(scala.Int) => java.lang.String",
                   List(
                     BasicTypeInfo("Int", Class, "scala.Int", Nil, Nil, None),
                     BasicTypeInfo("String", Class, "java.lang.String", Nil, Nil, None)
                   ),
                   Nil, None
                 )
+
+              case "call0" =>
+                ArrowTypeInfo(
+                  "() => Int",
+                  "() => scala.Int",
+                  BasicTypeInfo("Int", Class, "scala.Int", Nil, Nil, None),
+                  List(ParamSectionInfo(Nil, false))
+                )
+
               case "call2" =>
                 ArrowTypeInfo(
                   "(Int, Long) => String",
@@ -68,7 +83,49 @@ class TypeToScalaNameSpec extends EnsimeSpec
                     ("j", BasicTypeInfo("Long", Class, "scala.Long", Nil, Nil, None))
                   ), false))
                 )
+              case "tuple2" =>
+                BasicTypeInfo(
+                  "(String, Int)",
+                  Class,
+                  "(java.lang.String, scala.Int)",
+                  List(
+                    BasicTypeInfo("String", Class, "java.lang.String", Nil, Nil, None),
+                    BasicTypeInfo("Int", Class, "scala.Int", Nil, Nil, None)
+                  ),
+                  Nil, None
+                )
 
+              case "hlist" =>
+                BasicTypeInfo(
+                  "Int :: String :: HNil",
+                  Class,
+                  "scala.Int shapeless.:: java.lang.String shapeless.:: shapeless.HNil",
+                  List(
+                    BasicTypeInfo("Int", Class, "scala.Int", Nil, Nil, None),
+                    BasicTypeInfo("String :: HNil", Class, "java.lang.String shapeless.:: shapeless.HNil",
+                      List(
+                        BasicTypeInfo("String", Class, "java.lang.String", Nil, Nil, None),
+                        BasicTypeInfo("HNil", Trait, "shapeless.HNil", Nil, Nil, None)
+                      ), Nil, None)
+                  ), Nil, None
+                )
+
+              case "refined" =>
+                BasicTypeInfo(
+                  "Int(1)",
+                  Class,
+                  "scala.Int(1)",
+                  Nil, Nil, None
+                )
+
+              case "exciting" =>
+                // potential canary, we might want to prettify KeyTag
+                BasicTypeInfo(
+                  "Int(23) with KeyTag[Char('f'), Int(23)]",
+                  Class,
+                  "scala.Int(23) with shapeless.labelled.KeyTag[scala.Char('f'), scala.Int(23)]",
+                  Nil, Nil, None
+                )
             }
           }
         }
