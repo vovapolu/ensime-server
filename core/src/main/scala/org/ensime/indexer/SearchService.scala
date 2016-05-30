@@ -86,7 +86,7 @@ class SearchService(
     // known files from the DB then and check against the disk, than
     // check each file against DatabaseService.outOfDate
     def findStaleFileChecks(checks: Seq[FileCheck]): List[FileCheck] = {
-      log.info("findStaleFileChecks")
+      log.debug("findStaleFileChecks")
       for {
         check <- checks
         name = check.file.getName.getURI
@@ -97,7 +97,7 @@ class SearchService(
     // delete the stale data before adding anything new
     // returns number of rows deleted
     def deleteReferences(checks: List[FileCheck]): Future[Int] = {
-      log.info(s"removing ${checks.size} stale files from the index")
+      log.debug(s"removing ${checks.size} stale files from the index")
       deleteInBatches(checks.map(_.file))
     }
 
@@ -132,7 +132,7 @@ class SearchService(
 
     // index all the given bases and return number of rows written
     def indexBases(bases: Set[FileObject], checks: Seq[FileCheck]): Future[Int] = {
-      log.info("Indexing bases...")
+      log.debug("Indexing bases...")
       val checksLookup: Map[String, FileCheck] = checks.map(check => (check.filename -> check)).toMap
       val basesWithChecks: Set[(FileObject, Option[FileCheck])] = bases.map { base =>
         (base, checksLookup.get(base.getName().getURI()))
