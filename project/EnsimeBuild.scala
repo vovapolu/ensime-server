@@ -128,6 +128,7 @@ object EnsimeBuild extends Build {
     // test config needed to get the test jar
     testingSimpleJar % "test,it->test",
     testingTiming % "test,it",
+    testingMacros % "test, it",
     testingShapeless % "test,it",
     testingDebug % "test,it",
     testingJava % "test,it"
@@ -208,6 +209,10 @@ object EnsimeBuild extends Build {
   )
 
   lazy val testingTiming = Project("testingTiming", file("testing/timing"))
+
+  lazy val testingMacros = Project("testingMacros", file("testing/macros")) settings (
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+  )
 
   // just to have access to shapeless
   lazy val testingShapeless = Project("testingShapeless", file("testing/shapeless")).settings (
