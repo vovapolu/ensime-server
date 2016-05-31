@@ -45,6 +45,8 @@ class SearchService(
   /**
    * Changelog:
    *
+   * 1.4 - remove redundant descriptors, doh!
+   *
    * 1.3 - methods include descriptors in (now unique) FQNs
    *
    * 1.2 - added foreign key to FqnSymbols.file with cascade delete
@@ -57,7 +59,7 @@ class SearchService(
    *
    * 1.0 - initial schema
    */
-  private val version = "1.3"
+  private val version = "1.4"
 
   private val index = new IndexService(config.cacheDir / ("index-" + version))
   private val db = new DatabaseService(config.cacheDir / ("sql-" + version))
@@ -216,17 +218,16 @@ class SearchService(
 
         if (clazz.access != Public) Nil
         else {
-          FqnSymbol(None, name, path, clazz.name.fqnString, None, None, sourceUri, clazz.source.line) ::
+          FqnSymbol(None, name, path, clazz.name.fqnString, None, sourceUri, clazz.source.line) ::
             clazz.methods.toList.filter(_.access == Public).map { method =>
-              val descriptor = method.name.descriptor.descriptorString
-              FqnSymbol(None, name, path, method.name.fqnString, Some(descriptor), None, sourceUri, method.line)
+              FqnSymbol(None, name, path, method.name.fqnString, None, sourceUri, method.line)
             } ::: clazz.fields.toList.filter(_.access == Public).map { field =>
               val internal = field.clazz.internalString
-              FqnSymbol(None, name, path, field.name.fqnString, None, Some(internal), sourceUri, clazz.source.line)
-            } ::: depickler.getTypeAliases.toList.filter(_.access == Public).map { rawType =>
+              FqnSymbol(None, name, path, field.name.fqnString, Some(internal), sourceUri, clazz.source.line)
+            } ::: depickler.getTypeAliases.toList.filter(_.access == Public).filterNot(_.fqn.contains("<refinement>")).map { rawType =>
               // this is a hack, we shouldn't be storing Scala names in the JVM name space
               // in particular, it creates fqn names that clash with the above ones
-              FqnSymbol(None, name, path, rawType.fqn, None, None, sourceUri, None)
+              FqnSymbol(None, name, path, rawType.fqn, None, sourceUri, None)
             }
         }
     }
