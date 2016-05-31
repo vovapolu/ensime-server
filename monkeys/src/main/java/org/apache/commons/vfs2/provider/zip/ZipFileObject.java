@@ -33,8 +33,8 @@ public class ZipFileObject extends AbstractFileObject<ZipFileSystem>
 {
     /** The ZipEntry. */
     protected ZipEntry entry;
-    private final HashSet<String> children = new HashSet<String>();
-    // protected final ZipFile file;
+    // causes lots of duplication, create on demand
+    private volatile HashSet<String> children = null;
 
     private FileType type;
 
@@ -77,13 +77,15 @@ public class ZipFileObject extends AbstractFileObject<ZipFileSystem>
     /**
      * Attaches a child.
      * <p>
-     * TODO: Shouldn't this method have package-only visibility?
+     * Shouldn't this method have package-only visibility?
      * Cannot change this without breaking binary compatibility.
      *
      * @param childName The name of the child.
      */
     public void attachChild(final FileName childName)
     {
+        if (children == null)
+            children = new HashSet<String>();
         children.add(childName.getBaseName());
     }
 
@@ -127,7 +129,10 @@ public class ZipFileObject extends AbstractFileObject<ZipFileSystem>
             throw new RuntimeException(e);
         }
 
-        return children.toArray(new String[children.size()]);
+        if (children == null)
+            return new String[0];
+        else
+            return children.toArray(new String[children.size()]);
     }
 
     /**
