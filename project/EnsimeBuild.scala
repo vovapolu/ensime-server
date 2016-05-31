@@ -81,7 +81,7 @@ object EnsimeBuild extends Build {
     testutil % "test"
   ) settings (
       libraryDependencies ++= Seq(
-        "org.parboiled" %% "parboiled" % "2.1.2"
+        "org.parboiled" %% "parboiled" % "2.1.2" // 2.1.3 doesn't have a _2.10
       ) ++ Sensible.shapeless(scalaVersion.value)
     )
 
@@ -138,7 +138,7 @@ object EnsimeBuild extends Build {
       EnsimeKeys.unmanagedSourceArchives += (baseDirectory in ThisBuild).value / "openjdk-langtools/openjdk6-langtools-src.zip",
       libraryDependencies ++= Seq(
         "org.ensime" %% "java7-file-watcher" % "1.0.0",
-        "com.h2database" % "h2" % "1.4.191",
+        "com.h2database" % "h2" % "1.4.191", // 1.4.192 uses Java 7
         "com.typesafe.slick" %% "slick" % "3.1.1",
         "com.zaxxer" % "HikariCP-java6" % "2.3.13",
         // lucene 4.8+ needs Java 7: http://www.gossamer-threads.com/lists/lucene/general/225300
