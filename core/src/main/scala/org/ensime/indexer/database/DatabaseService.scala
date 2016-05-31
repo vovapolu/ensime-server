@@ -138,12 +138,10 @@ object DatabaseService {
       file: String, // the underlying file
       path: String, // the VFS handle (e.g. classes in jars)
       fqn: String,
-      descriptor: Option[String], // for methods
       internal: Option[String], // for fields
       source: Option[String], // VFS
       line: Option[Int],
       offset: Option[Int] = None // future features:
-  //    type: ??? --- better than descriptor/internal
   ) {
     // this is just as a helper until we can use more sensible
     // domain objects with slick
@@ -151,7 +149,7 @@ object DatabaseService {
 
     // legacy: note that we can't distinguish class/trait
     def declAs: DeclaredAs =
-      if (descriptor.isDefined) DeclaredAs.Method
+      if (fqn.contains("(")) DeclaredAs.Method
       else if (internal.isDefined) DeclaredAs.Field
       else DeclaredAs.Class
   }
@@ -165,9 +163,12 @@ object DatabaseService {
     def source = column[Option[String]]("source handle")
     def line = column[Option[Int]]("line in source")
     def offset = column[Option[Int]]("offset in source")
-    def * = (id.?, file, path, fqn, descriptor, internal, source, line, offset) <> (FqnSymbol.tupled, FqnSymbol.unapply)
-    def fqnIdx = index("idx_fqn", fqn, unique = false) // fqns are unique by type and sig
-    def uniq = index("idx_uniq", (fqn, descriptor, internal), unique = true)
+    def * = (id.?, file, path, fqn, internal, source, line, offset) <> (FqnSymbol.tupled, FqnSymbol.unapply)
+    // our FQNs have descriptors, making them unique. but when scala
+    // aliases use the same namespace we get collisions
+    def fqnIdx = index("idx_fqn", fqn, unique = false)
+
+    def fileIdx = index("idx_file", file, unique = false) // FASTER DELETES
     def filename = foreignKey("filename_fk", file, fileChecks)(_.filename, onDelete = ForeignKeyAction.Cascade)
   }
   private val fqnSymbols = TableQuery[FqnSymbols]

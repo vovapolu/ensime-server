@@ -50,7 +50,7 @@ object Sensible {
     javaOptions := Seq("-Xss2m", "-XX:MaxPermSize=256m", "-Xms384m", "-Xmx384m"),
     javaOptions += "-Dfile.encoding=UTF8",
     javaOptions ++= Seq("-XX:+UseConcMarkSweepGC", "-XX:+CMSIncrementalMode"),
-    javaOptions ++= yourkitAgent,
+    javaOptions in run ++= yourkitAgent, // interferes with sockets
 
     maxErrors := 1,
     fork := true,
