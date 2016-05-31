@@ -92,7 +92,7 @@ class IndexService(path: File) {
       case FqnSymbol(_, _, _, fqn, _, _, _, _, _) => ClassIndex(fqn, f).toDocument
     }
     if (boost) {
-      fqns foreach { _.boostText("fqn", 1.1f) }
+      fqns foreach { _.boostText("fqn", 1.3f) }
     }
 
     lucene.create(fqns, commit)
