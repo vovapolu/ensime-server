@@ -168,7 +168,7 @@ object DatabaseService {
     // aliases use the same namespace we get collisions
     def fqnIdx = index("idx_fqn", fqn, unique = false)
 
-    //def fileIdx = index("idx_file", file, unique = false) // FASTER DELETES
+    def fileIdx = index("idx_file", file, unique = false) // FASTER DELETES
     def filename = foreignKey("filename_fk", file, fileChecks)(_.filename, onDelete = ForeignKeyAction.Cascade)
   }
   private val fqnSymbols = TableQuery[FqnSymbols]
