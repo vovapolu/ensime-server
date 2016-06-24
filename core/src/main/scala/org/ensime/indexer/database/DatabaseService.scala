@@ -125,7 +125,7 @@ object DatabaseService {
   object FileCheck extends ((Option[Int], String, Timestamp) => FileCheck) {
     def apply(f: FileObject): FileCheck = {
       val name = f.getName.getURI
-      val ts = new Timestamp(f.getContent.getLastModifiedTime)
+      val ts = new Timestamp(if (!f.exists()) -1L else f.getContent.getLastModifiedTime)
       FileCheck(None, name, ts)
     }
   }
