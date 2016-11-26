@@ -95,7 +95,7 @@ object EnsimeBuild {
   lazy val s_express = Project("s-express", file("s-express")) settings (commonSettings) settings (
       HeaderKey.headers := Copyright.LgplMap,
       libraryDependencies ++= Seq(
-        "org.parboiled" %% "parboiled" % "2.1.3"
+        "com.lihaoyi" %% "fastparse" % "0.4.1"
       ) ++ Sensible.shapeless(scalaVersion.value)
     )
 
