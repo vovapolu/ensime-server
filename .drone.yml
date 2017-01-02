@@ -23,7 +23,6 @@ pipeline:
           sbt ++$SCALA_VERSION publish ;
         fi
       - if [ -z "$DRONE_PULL_REQUEST" ] ; then
-          mkdir ~/.ssh ; chmod 700 ~/.ssh ;
           echo "$SSH_KEY" > ~/.ssh/id_rsa ; chmod 600 ~/.ssh/id_rsa ;
           scp -o StrictHostKeyChecking=no target/*/*-assembly.jar typelevel@ensime.typelevel.org:ensime.typelevel.org/ ;
         fi
