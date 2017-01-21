@@ -221,7 +221,7 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
       ).getOrElse(List.empty)
     )
 
-  def askNotifyWhenReady(): Unit = ask(setNotifyWhenReady)
+  def askNotifyWhenReady(): Unit = ask(setNotifyWhenReady _)
 
   // WARNING: be really careful when creating BatchSourceFiles. there
   // are multiple constructors which do weird things, best to be very
@@ -257,7 +257,7 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
     case SourceFileInfo(ac @ ArchiveFile(a, e), None, Some(contentsIn)) => new BatchSourceFile(
       new VirtualFile(ac.fullPath), contentsIn.readString()(charset).toCharArray
     )
-
+    case _ => throw new IllegalArgumentException(s"Invalid contents of SourceFileInfo parameter: $file.")
   }
 
   def askLinkPos(sym: Symbol, path: EnsimeFile): Option[Position] =

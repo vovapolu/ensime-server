@@ -152,9 +152,9 @@ class SearchServiceSpec extends EnsimeSpec
   it should "not prioritise noisy inner classes" in withSearchService { implicit service =>
     def nonTrailingDollarSigns(fqn: String): Int = fqn.count(_ == '$') - (if (fqn.endsWith("$")) 1 else 0)
     def isSorted(hits: Seq[String]): Boolean =
-      hits.sliding(2).map {
+      hits.sliding(2).forall {
         case List(x, y) => nonTrailingDollarSigns(x) <= nonTrailingDollarSigns(y)
-      }.forall(identity)
+      }
 
     val sorted = new BeMatcher[Seq[String]] {
       override def apply(left: Seq[String]): MatchResult =
@@ -183,7 +183,7 @@ class SearchServiceSpec extends EnsimeSpec
     )
     matchersHits should be(sorted)
 
-    val regexHits = service.searchClasses("Regex", 10).map(_.fqn)
+    val regexHits = service.searchClasses("Regex", 8).map(_.fqn)
     regexHits.take(2) should contain theSameElementsAs Seq(
       "scala.util.matching.Regex",
       "scala.util.matching.Regex$"
@@ -209,11 +209,11 @@ class SearchServiceSpec extends EnsimeSpec
   }
 
   "lucene index" should "not contain duplicates" in withSearchService { implicit service =>
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
     val lucene = service.index.lucene
     val terms = List("org", "example", "bar")
     val query = new DisjunctionMaxQuery(
-      terms.map(service.index.buildTermClassMethodQuery), 0f
+      terms.map(service.index.buildTermClassMethodQuery).asJavaCollection, 0f
     )
     val fqns = lucene.search(query, 10).map(_.get("fqn"))
     fqns.distinct should ===(fqns)
