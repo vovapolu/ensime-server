@@ -15,6 +15,7 @@ import org.ensime.database.SlickBackCompat
 import org.ensime.database.SlickBackCompat.h2Api._
 import org.ensime.indexer.database.DatabaseService._
 import org.ensime.util.file._
+import org.ensime.util.fileobject._
 import org.ensime.vfs._
 
 class DatabaseService(dir: File) extends SLF4JLogging {
@@ -66,7 +67,7 @@ class DatabaseService(dir: File) extends SLF4JLogging {
 
   def removeFiles(files: List[FileObject]): Future[Int] =
     db.run {
-      val restrict = files.map(_.getName.getURI)
+      val restrict = files.map(_.uriString)
       // Deletion from fqnSymbols relies on fk cascade delete action
       fileChecks.filter(_.filename inSetBind restrict).delete
     }
@@ -76,7 +77,7 @@ class DatabaseService(dir: File) extends SLF4JLogging {
   }
 
   def outOfDate(f: FileObject)(implicit vfs: EnsimeVFS): Future[Boolean] = {
-    val uri = f.getName.getURI
+    val uri = f.uriString
     val modified = f.getContent.getLastModifiedTime
 
     db.run(
@@ -116,6 +117,24 @@ class DatabaseService(dir: File) extends SLF4JLogging {
       restrict.flatMap(grouped.get(_).map(_.head))
     }
   }
+
+  def findClasses(source: EnsimeFile): Future[Seq[FqnSymbol]] = {
+    import org.ensime.util.ensimefile._
+
+    val uri = source.uriString
+    db.run(fqnSymbols.filter(_.source === Option(uri)).result).map {
+      rows =>
+        rows.filter { row =>
+          // restrict in scala because slick doesn't support string substring
+          row.internal.isEmpty && !row.fqn.contains("(")
+        }
+    }
+  }
+
+  def findClasses(jdi: String): Future[Seq[FqnSymbol]] = {
+    db.run(fqnSymbols.filter(_.jdi === Option(jdi)).result)
+  }
+
 }
 
 object DatabaseService {
@@ -126,7 +145,7 @@ object DatabaseService {
   }
   object FileCheck extends ((Option[Int], String, Timestamp) => FileCheck) {
     def apply(f: FileObject): FileCheck = {
-      val name = f.getName.getURI
+      val name = f.uriString
       val ts = new Timestamp(if (!f.exists()) -1L else f.getContent.getLastModifiedTime)
       FileCheck(None, name, ts)
     }
@@ -149,7 +168,8 @@ object DatabaseService {
       internal: Option[String], // for fields
       source: Option[String], // VFS
       line: Option[Int],
-      offset: Option[Int] = None // future features:
+      offset: Option[Int] = None,
+      jdi: Option[String] = None // the JDI name for the source: bin/pkg/Source.scala
   ) {
     // this is just as a helper until we can use more sensible
     // domain objects with slick
@@ -171,7 +191,8 @@ object DatabaseService {
     def source = column[Option[String]]("source handle")
     def line = column[Option[Int]]("line in source")
     def offset = column[Option[Int]]("offset in source")
-    def * = (id.?, file, path, fqn, internal, source, line, offset) <> (FqnSymbol.tupled, FqnSymbol.unapply)
+    def jdi = column[Option[String]]("jdi name of source")
+    def * = (id.?, file, path, fqn, internal, source, line, offset, jdi) <> (FqnSymbol.tupled, FqnSymbol.unapply)
     // our FQNs have descriptors, making them unique. but when scala
     // aliases use the same namespace we get collisions
     def fqnIdx = index("idx_fqn", fqn, unique = false)

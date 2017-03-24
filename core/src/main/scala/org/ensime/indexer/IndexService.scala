@@ -17,6 +17,7 @@ import org.ensime.indexer.database.DatabaseService._
 import org.apache.lucene.analysis.core.KeywordAnalyzer
 import org.ensime.indexer.lucene._
 import org.ensime.util.list._
+import org.ensime.util.fileobject._
 import shapeless.Typeable
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -98,9 +99,9 @@ class IndexService(path: Path)(implicit ec: ExecutionContext) {
   def persist(check: FileCheck, symbols: List[FqnSymbol], commit: Boolean, boost: Boolean): Future[Unit] = {
     val f = Some(check)
     val fqns: List[Document] = symbols.map {
-      case FqnSymbol(_, _, _, fqn, _, _, _, _) if fqn.contains("(") => MethodIndex(fqn, f).toDocument
-      case FqnSymbol(_, _, _, fqn, Some(_), _, _, _) => FieldIndex(fqn, f).toDocument
-      case FqnSymbol(_, _, _, fqn, _, _, _, _) =>
+      case FqnSymbol(_, _, _, fqn, _, _, _, _, _) if fqn.contains("(") => MethodIndex(fqn, f).toDocument
+      case FqnSymbol(_, _, _, fqn, Some(_), _, _, _, _) => FieldIndex(fqn, f).toDocument
+      case FqnSymbol(_, _, _, fqn, _, _, _, _, _) =>
         val penalty = calculatePenalty(fqn)
         val document = ClassIndex(fqn, f).toDocument
         document.boostText("fqn", penalty)
@@ -128,7 +129,7 @@ class IndexService(path: Path)(implicit ec: ExecutionContext) {
   }
 
   def remove(fs: List[FileObject]): Future[Unit] = {
-    val terms = fs.map { f => new TermQuery(new Term("file", f.getName.getURI)) }
+    val terms = fs.map { f => new TermQuery(new Term("file", f.uriString)) }
     lucene.delete(terms, commit = false) // don't commit yet
   }
 

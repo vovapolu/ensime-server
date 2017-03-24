@@ -45,6 +45,8 @@ class SearchService(
   /**
    * Changelog:
    *
+   * 2.0.3 - added JDI source information
+   *
    * 2.0.2 - bump lucene and h2 versions
    *
    * 2.0.1 - change the lucene analyser
@@ -65,7 +67,7 @@ class SearchService(
    *
    * 1.0 - initial schema
    */
-  private val version = "2.0.2"
+  private val version = "2.0.3"
 
   private[indexer] val index = new IndexService((config.cacheDir / ("index-" + version)).toPath)
   private val db = new DatabaseService(config.cacheDir / ("sql-" + version))
@@ -95,7 +97,6 @@ class SearchService(
       log.debug("findStaleFileChecks")
       for {
         check <- checks
-        name = check.file.getName.getURI
         if !check.file.exists || check.changed
       } yield check
     }.toList
@@ -141,7 +142,7 @@ class SearchService(
       log.debug("Indexing bases...")
       val checksLookup: Map[String, FileCheck] = checks.map(check => (check.filename -> check)).toMap
       val basesWithChecks: Set[(FileObject, Option[FileCheck])] = bases.map { base =>
-        (base, checksLookup.get(base.getName().getURI()))
+        (base, checksLookup.get(base.uriString))
       }
       Future.sequence(basesWithChecks.map { case (file, check) => indexBase(file, check) }).map(_.sum)
     }
@@ -200,7 +201,7 @@ class SearchService(
           case jar =>
             log.debug(s"indexing $jar")
             val check = FileCheck(jar)
-            val vJar = vfs.vjar(jar)
+            val vJar = vfs.vjar(jar.asLocalFile)
             try scan(vJar) flatMap (extractSymbols(jar, _))
             finally vfs.nuke(vJar)
         }
@@ -214,19 +215,24 @@ class SearchService(
     f.pathWithinArchive match {
       case Some(relative) if blacklist.exists(relative.startsWith) => Nil
       case _ =>
-        val name = container.getName.getURI
-        val path = f.getName.getURI
+        val name = container.uriString
+        val path = f.uriString
         val indexer = new ClassfileIndexer(f)
         val (clazz, refs) = indexer.indexClassfile()
 
         val depickler = new ClassfileDepickler(f)
 
         val source = resolver.resolve(clazz.name.pack, clazz.source)
-        val sourceUri = source.map(_.getName.getURI)
+        val sourceUri = source.map(_.uriString)
+
+        val jdi = source.map { src =>
+          val pkg = clazz.name.pack.path.mkString("/")
+          s"$pkg/${src.getName.getBaseName}"
+        }
 
         if (clazz.access != Public) Nil
         else {
-          FqnSymbol(None, name, path, clazz.name.fqnString, None, sourceUri, clazz.source.line) ::
+          FqnSymbol(None, name, path, clazz.name.fqnString, None, sourceUri, clazz.source.line, None, jdi) ::
             clazz.methods.toList.filter(_.access == Public).map { method =>
               FqnSymbol(None, name, path, method.name.fqnString, None, sourceUri, method.line)
             } ::: clazz.fields.toList.filter(_.access == Public).map { field =>
@@ -255,6 +261,9 @@ class SearchService(
 
   /** only for exact fqns */
   def findUnique(fqn: String): Option[FqnSymbol] = Await.result(db.find(fqn), QUERY_TIMEOUT)
+
+  def findClasses(file: EnsimeFile): Seq[FqnSymbol] = Await.result(db.findClasses(file), QUERY_TIMEOUT)
+  def findClasses(jdi: String): Seq[FqnSymbol] = Await.result(db.findClasses(jdi), QUERY_TIMEOUT)
 
   /* DELETE then INSERT in H2 is ridiculously slow, so we put all modifications
    * into a blocking queue and dedicate a thread to block on draining the queue.
@@ -325,7 +334,7 @@ class IndexingQueueActor(searchService: SearchService) extends Actor with ActorL
 
   override def receive: Receive = {
     case IndexFile(f) =>
-      todo += f.getName.getURI -> f
+      todo += f.uriString -> f
       debounce()
 
     case Process if todo.isEmpty => // nothing to do
