@@ -5,7 +5,9 @@ package org.ensime.core
 import java.io.{ File, IOException }
 import java.util.jar.JarFile
 import java.util.regex.Pattern
-import org.apache.commons.lang.StringEscapeUtils
+
+import org.ensime.util.HtmlUtil
+
 import scala.io.Source
 
 // Scaladoc uses @usecase comment annotations to substitute kid-safe signatures
@@ -34,7 +36,9 @@ trait DocUsecaseHandling { self: DocResolver =>
               //              val re = s"""<a id="(${Pattern.quote(prefix)}.+?)"""".r
               val re = s"""<a id="(${Pattern.quote(prefix)}[^a-zA-Z\\d].*?)"""".r
               re.findFirstMatchIn(html).map { m =>
-                sig.copy(member = Some(StringEscapeUtils.unescapeHtml(m.group(1))))
+                {
+                  sig.copy(member = HtmlUtil.unescapeHtml(m.group(1)))
+                }
               }.getOrElse(sig)
             } finally jarFile.close()
           } catch { case e: IOException => sig }
@@ -87,5 +91,4 @@ trait DocUsecaseHandling { self: DocResolver =>
     "zipAll",
     "zipWithIndex"
   )
-
 }

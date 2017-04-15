@@ -179,7 +179,6 @@ object EnsimeBuild {
           }
           "org.scala-refactoring" % s"org.scala-refactoring.library_${suffix}" % "0.12.0"
         },
-        "commons-lang" % "commons-lang" % "2.6",
         "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0",
         "org.scala-debugger" %% "scala-debugger-api" % "1.1.0-M3"
       ) ++ shapeless.value
