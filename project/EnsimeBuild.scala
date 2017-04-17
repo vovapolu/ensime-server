@@ -86,7 +86,6 @@ object EnsimeBuild {
       "com.typesafe.akka" %% "akka-actor" % akkaVersion.value,
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.apache.commons" % "commons-vfs2" % "2.1" exclude ("commons-logging", "commons-logging"),
-      "com.google.guava" % "guava" % "21.0",
       "com.google.code.findbugs" % "jsr305" % "3.0.1" % "provided"
     ) ++ logback
   )
@@ -95,7 +94,6 @@ object EnsimeBuild {
     util, api
   ) settings (
       libraryDependencies ++= Seq(
-        "commons-io" % "commons-io" % "2.5",
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion.value,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion.value
       ) ++sensibleTestLibs(Compile)
@@ -295,7 +293,6 @@ object EnsimeTestingBuild {
     dependencyOverrides ++= Set("com.google.guava" % "guava" % "18.0"),
     libraryDependencies ++= Seq(
       "com.github.dvdme" % "ForecastIOLib" % "1.5.1" intransitive (),
-      "commons-io" % "commons-io" % "2.5" intransitive (),
       "com.google.guava" % "guava" % "18.0"
     )
   )

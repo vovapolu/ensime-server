@@ -8,9 +8,10 @@ import java.util.regex.Pattern
 import java.nio.file.Files
 
 import scala.collection.JavaConverters._
+
 import scala.util.Try
 
-import com.google.common.io.{ Files => GFiles }
+import org.ensime.util.path._
 import org.ensime.api.deprecating
 
 /**
@@ -64,20 +65,20 @@ package object file {
     def outputStream(): OutputStream = new FileOutputStream(file)
 
     def createWithParents(): Boolean = {
-      GFiles.createParentDirs(file)
+      file.getParentFile().mkdirs()
       file.createNewFile()
     }
 
     def readLines()(implicit cs: Charset): List[String] = {
-      GFiles.readLines(file, cs).asScala.toList
+      file.toPath().readLines()
     }
 
     def writeLines(lines: List[String])(implicit cs: Charset): Unit = {
-      GFiles.write(lines.mkString("", "\n", "\n"), file, cs)
+      Files.write(file.toPath(), lines.mkString("", "\n", "\n").getBytes(cs))
     }
 
     def writeString(contents: String)(implicit cs: Charset): Unit = {
-      GFiles.write(contents, file, cs)
+      Files.write(file.toPath(), contents.getBytes(cs))
     }
 
     @deprecating("prefer path")
@@ -91,7 +92,7 @@ package object file {
      */
     @deprecating("prefer path approaches")
     def tree: Stream[File] = {
-      file #:: GFiles.fileTreeTraverser().breadthFirstTraversal(file).asScala.toStream
+      Files.walk(file.toPath).iterator().asScala.toStream.map(_.toFile)
     }
 
     /**
