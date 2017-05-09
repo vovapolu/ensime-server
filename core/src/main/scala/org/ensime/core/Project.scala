@@ -7,6 +7,7 @@ import akka.event.LoggingReceive.withLabel
 import org.apache.commons.vfs2.FileObject
 import org.ensime.api._
 import org.ensime.core.debug.DebugActor
+import org.ensime.util.{ Debouncer, Timing }
 import org.ensime.vfs._
 import org.ensime.indexer._
 
@@ -28,7 +29,7 @@ class Project(
     broadcaster: ActorRef,
     implicit val config: EnsimeConfig
 ) extends Actor with ActorLogging with Stash {
-  import context.{ dispatcher, system }
+  import context.system
 
   import FileUtils._
 
@@ -49,11 +50,17 @@ class Project(
   private val searchService = new SearchService(config, resolver)
   private val sourceWatcher = new SourceWatcher(config, resolver :: Nil)
   private val reTypecheck = new FileChangeListener {
-    def reTypeCheck(): Unit = self ! AskReTypecheck
-    def fileAdded(f: FileObject): Unit = reTypeCheck()
-    def fileChanged(f: FileObject): Unit = reTypeCheck()
-    def fileRemoved(f: FileObject): Unit = reTypeCheck()
-    override def baseReCreated(f: FileObject): Unit = reTypeCheck()
+    private val askReTypeCheck =
+      Debouncer.forActor(
+        self,
+        AskReTypecheck,
+        delay = (5 * Timing.dilation).seconds,
+        maxDelay = (20 * Timing.dilation).seconds
+      )
+    def fileAdded(f: FileObject): Unit = askReTypeCheck.call()
+    def fileChanged(f: FileObject): Unit = askReTypeCheck.call()
+    def fileRemoved(f: FileObject): Unit = askReTypeCheck.call()
+    override def baseReCreated(f: FileObject): Unit = askReTypeCheck.call()
   }
   context.actorOf(Props(new ClassfileWatcher(config, searchService :: reTypecheck :: Nil)), "classFileWatcher")
 
@@ -130,10 +137,7 @@ class Project(
   def handleRequests: Receive = withLabel("handleRequests") {
     case ShutdownRequest => context.parent forward ShutdownRequest
     case AskReTypecheck =>
-      Option(rechecking).foreach(_.cancel())
-      rechecking = system.scheduler.scheduleOnce(
-        5 seconds, scalac, ReloadExistingFilesEvent
-      )
+      scalac ! ReloadExistingFilesEvent
     // HACK: to expedite initial dev, Java requests use the Scala API
     case m @ TypecheckFileReq(sfi) if sfi.file.isJava => javac forward m
     case m @ CompletionsReq(sfi, _, _, _, _) if sfi.file.isJava => javac forward m

@@ -7,6 +7,7 @@ import akka.event.slf4j.SLF4JLogging
 import org.apache.commons.vfs2._
 
 import org.ensime.api._
+import org.ensime.util.Debouncer
 import org.ensime.vfs._
 
 import org.ensime.util.file._
@@ -14,6 +15,7 @@ import org.ensime.util.fileobject._
 import org.ensime.util.list._
 import org.ensime.util.map._
 import scala.annotation.tailrec
+import scala.concurrent.duration._
 
 // mutable: lookup of user's source files are atomically updated
 class SourceResolver(
@@ -24,10 +26,8 @@ class SourceResolver(
     vfs: EnsimeVFS
 ) extends FileChangeListener with SLF4JLogging {
 
-  case object Process
-
-  def fileAdded(f: FileObject) = if (relevant(f)) debounceActor ! Process
-  def fileRemoved(f: FileObject) = fileAdded(f)
+  def fileAdded(f: FileObject) = if (relevant(f)) debouncedUpdate.call()
+  def fileRemoved(f: FileObject) = debouncedUpdate.call()
   def fileChanged(f: FileObject) = {}
 
   def relevant(f: FileObject): Boolean = f.getName.isFile && {
@@ -110,7 +110,12 @@ class SourceResolver(
 
   private var all = recalculate
 
-  val debounceActor = actorSystem.actorOf(Props(new ResolverDebounceActor(this)), "SourceResolver")
+  val debouncedUpdate = {
+    import actorSystem.dispatcher
+    Debouncer("SourceResolver", actorSystem.scheduler, delay = 5.seconds, maxDelay = 1.hour) { () =>
+      this.update()
+    }
+  }
 
   private def infer(base: FileObject, file: FileObject): PackageName = {
     // getRelativeName feels the wrong way round, but this is correct
@@ -119,26 +124,4 @@ class SourceResolver(
     PackageName((relative split "/").toList.init)
   }
 
-}
-
-class ResolverDebounceActor(sourceResolver: SourceResolver) extends Actor with ActorLogging {
-  import context.system
-
-  import scala.concurrent.duration._
-
-  case object ReCalculate
-
-  // debounce and give us a chance to batch (which is *much* faster)
-  var worker: Cancellable = _
-
-  private def debounce(): Unit = {
-    Option(worker).foreach(_.cancel())
-    import context.dispatcher
-    worker = system.scheduler.scheduleOnce(5 seconds, self, ReCalculate)
-  }
-
-  override def receive: Receive = {
-    case sourceResolver.Process ⇒ debounce()
-    case ReCalculate ⇒ sourceResolver.update()
-  }
 }

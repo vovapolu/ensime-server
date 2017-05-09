@@ -2,6 +2,7 @@
 // License: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.indexer
 
+import org.ensime.util.Debouncer
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{ Failure, Properties, Success }
@@ -438,8 +439,6 @@ object SearchService {
 final case class IndexFile(f: FileObject)
 
 class IndexingQueueActor(searchService: SearchService) extends Actor with ActorLogging {
-  import context.system
-
   import scala.concurrent.duration._
 
   case object Process
@@ -449,16 +448,9 @@ class IndexingQueueActor(searchService: SearchService) extends Actor with ActorL
   // the URI because FileObject doesn't implement equals
   private val todo = new mutable.HashMap[FileName, mutable.Set[FileObject]] with mutable.MultiMap[FileName, FileObject]
 
-  // debounce and give us a chance to batch (which is *much* faster)
-  private var worker: Cancellable = _
-
   private val advice = "If the problem persists, you may need to restart ensime."
 
-  private def debounce(): Unit = {
-    Option(worker).foreach(_.cancel())
-    import context.dispatcher
-    worker = system.scheduler.scheduleOnce(5 seconds, self, Process)
-  }
+  val processDebounce = Debouncer.forActor(self, Process, delay = 5.seconds, maxDelay = 1.hour)
 
   override def receive: Receive = {
     case IndexFile(f) =>
@@ -467,7 +459,7 @@ class IndexingQueueActor(searchService: SearchService) extends Actor with ActorL
         case classFile => searchService.getTopLevelClassFile(classFile)
       }
       todo.addBinding(topLevelClassFile.getName, topLevelClassFile)
-      debounce()
+      processDebounce.call()
 
     case Process if todo.isEmpty => // nothing to do
 
@@ -475,7 +467,7 @@ class IndexingQueueActor(searchService: SearchService) extends Actor with ActorL
       val batch = todo.take(250)
       batch.keys.foreach(todo.remove)
       if (todo.nonEmpty)
-        debounce()
+        processDebounce.call()
 
       import ExecutionContext.Implicits.global
 
