@@ -6,7 +6,7 @@ import akka.actor._
 import akka.event.LoggingReceive
 import org.ensime.api._
 import org.ensime.indexer.SearchService
-import org.ensime.indexer.graph.FqnSymbol
+import org.ensime.indexer.graph.{ ClassDef, FqnSymbol, Field, Method }
 import org.ensime.model._
 import org.ensime.vfs._
 
@@ -24,10 +24,21 @@ class Indexer(
     LineSourcePositionHelper.fromFqnSymbol(hit)(vfs)
   )
 
-  def oldSearchTypes(query: String, max: Int) =
-    index.searchClasses(query, max).filterNot {
-      name => name.fqn.endsWith("$") || name.fqn.endsWith("$class")
-    }.map(typeResult)
+  def oldSearchTypes(query: String, max: Int): List[TypeSearchResult] = {
+    // Remove $/$class from the end.
+    def strip(fqn: String): String = fqn.replaceAll("\\$(class)*$", "")
+
+    import org.ensime.util.list._
+
+    index.searchClasses(query, max)
+      .map {
+        case c: ClassDef => c.copy(fqn = strip(c.fqn))
+        case f: Field => f.copy(fqn = strip(f.fqn))
+        case m: Method => m.copy(fqn = strip(m.fqn))
+      }
+      .distinctBy(_.fqn)
+      .map(typeResult)
+  }
 
   private val typeDecls: Set[DeclaredAs] = Set(DeclaredAs.Class, DeclaredAs.Trait, DeclaredAs.Object)
   def oldSearchSymbols(terms: List[String], max: Int) =
