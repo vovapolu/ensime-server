@@ -56,7 +56,6 @@ import scala.tools.nsc.util._
 import scala.tools.refactoring.analysis.GlobalIndexes
 import akka.actor.ActorRef
 import org.ensime.api._
-import org.ensime.config._
 import org.ensime.indexer._
 import org.ensime.model._
 import org.ensime.util.ensimefile._
@@ -169,31 +168,12 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
     x.get
   }
 
-  def askUnloadAllFiles(): Unit = askOption(unloadAllFiles())
-
-  def askUnloadFile(f: SourceFileInfo): Unit = {
-    val sourceFile = createSourceFile(f)
-    askOption(unloadFile(sourceFile))
-  }
-
-  def askRemoveAllDeleted(): Option[Unit] = askOption(removeAllDeleted())
-
-  def askRemoveDeleted(f: File) = askOption(removeDeleted(AbstractFile.getFile(f)))
-
-  def askReloadAllFiles() = {
-    val all = {
-      for {
-        file <- config.scalaSourceFiles
-        source = createSourceFile(file)
-      } yield source
-    } ++ activeUnits().map(_.source)
-    askReloadFiles(all)
+  def askUnloadFiles(sources: List[SourceFileInfo], remove: Boolean): Unit = {
+    val files = sources.map(createSourceFile)
+    askOption(unloadFiles(files, remove)).get
   }
 
   def loadedFiles: List[SourceFile] = activeUnits().map(_.source)
-
-  def askReloadExistingFiles() =
-    askReloadFiles(loadedFiles)
 
   def askInspectTypeAt(p: Position): Option[TypeInspectInfo] =
     askOption(inspectTypeAt(p)).flatten
@@ -238,7 +218,7 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
       val missingFilePaths = missingFiles.map { f => "\"" + f.file + "\"" }.mkString(",")
       EnsimeServerError(s"file(s): $missingFilePaths do not exist")
     } else {
-      val scalas = existing.collect { case sfi @ SourceFileInfo(RawFile(path), _, _) if path.toString.endsWith(".scala") => sfi }
+      val scalas = existing.collect { case sfi: SourceFileInfo if sfi.file.isScala => sfi }
       val sourceFiles: List[SourceFile] = scalas.map(createSourceFile)(collection.breakOut)
       f(sourceFiles)
     }
@@ -326,21 +306,21 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
   def createSourceFile(file: AbstractFile): BatchSourceFile =
     createSourceFile(file.path)
   def createSourceFile(file: SourceFileInfo): BatchSourceFile = file match {
-    case SourceFileInfo(rf @ RawFile(f), None, None) => new BatchSourceFile(
+    case SourceFileInfo(rf @ RawFile(f), None, None, _) => new BatchSourceFile(
       new PlainFile(f.toFile), rf.readStringDirect().toCharArray
     )
-    case SourceFileInfo(ac @ ArchiveFile(archive, entry), None, None) =>
+    case SourceFileInfo(ac @ ArchiveFile(archive, entry), None, None, _) =>
       new BatchSourceFile(
         new VirtualFile(ac.fullPath), ac.readStringDirect().toCharArray
       )
-    case SourceFileInfo(rf @ RawFile(f), Some(contents), None) =>
+    case SourceFileInfo(rf @ RawFile(f), Some(contents), None, _) =>
       new BatchSourceFile(new PlainFile(f.toFile), contents.toCharArray)
-    case SourceFileInfo(ac @ ArchiveFile(a, e), Some(contents), None) => new BatchSourceFile(
+    case SourceFileInfo(ac @ ArchiveFile(a, e), Some(contents), None, _) => new BatchSourceFile(
       new VirtualFile(ac.fullPath), contents.toCharArray
     )
-    case SourceFileInfo(rf @ RawFile(f), None, Some(contentsIn)) =>
+    case SourceFileInfo(rf @ RawFile(f), None, Some(contentsIn), _) =>
       new BatchSourceFile(new PlainFile(f.toFile), contentsIn.readString()(charset).toCharArray)
-    case SourceFileInfo(ac @ ArchiveFile(a, e), None, Some(contentsIn)) => new BatchSourceFile(
+    case SourceFileInfo(ac @ ArchiveFile(a, e), None, Some(contentsIn), _) => new BatchSourceFile(
       new VirtualFile(ac.fullPath), contentsIn.readString()(charset).toCharArray
     )
     case _ => throw new IllegalArgumentException(s"Invalid contents of SourceFileInfo parameter: $file.")
@@ -404,34 +384,21 @@ class RichPresentationCompiler(
     symsByFile(sym.sourceFile) += sym
   }
 
-  def unloadAllFiles(): Unit = {
-    allSources.foreach(removeUnitOf)
-  }
+  def unloadFiles(files: List[SourceFile], remove: Boolean): Unit = {
+    files.foreach { f =>
+      removeUnitOf(f)
 
-  def unloadFile(s: SourceFile): Unit = removeUnitOf(s)
-
-  /**
-   * Remove symbols defined by files that no longer exist.
-   * Note that these symbols will not be collected by
-   * syncTopLevelSyms, since the units in question will
-   * never be reloaded again.
-   */
-  def removeAllDeleted(): Unit = {
-    allSources = allSources.filter { _.file.exists }
-    val deleted = symsByFile.keys.filter { !_.exists }
-    for (f <- deleted) {
-      removeDeleted(f)
+      // more aggressive, e.g. if the file was deleted/removed by the user
+      if (remove) {
+        val af = f.file
+        val syms = symsByFile(af)
+        for (s <- syms) {
+          s.owner.info.decls unlink s
+        }
+        symsByFile.remove(af)
+        unitOfFile.remove(af)
+      }
     }
-  }
-
-  /** Remove symbols defined by file that no longer exist. */
-  def removeDeleted(f: AbstractFile): Unit = {
-    val syms = symsByFile(f)
-    for (s <- syms) {
-      s.owner.info.decls unlink s
-    }
-    symsByFile.remove(f)
-    unitOfFile.remove(f)
   }
 
   private def typePublicMembers(tpe: Type): Iterable[TypeMember] = {

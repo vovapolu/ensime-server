@@ -87,11 +87,6 @@ class JerkyFormatsSpec extends EnsimeSpec with SprayJsonTestSupport with EnsimeT
     )
 
     roundtrip(
-      TypecheckAllReq: RpcRequest,
-      """{"typehint":"TypecheckAllReq"}"""
-    )
-
-    roundtrip(
       DocUriAtPointReq(Left(file1), OffsetRange(1, 10)): RpcRequest,
       s"""{"typehint":"DocUriAtPointReq","file":"$file1","point":{"from":1,"to":10}}"""
     )
@@ -190,11 +185,6 @@ class JerkyFormatsSpec extends EnsimeSpec with SprayJsonTestSupport with EnsimeT
     roundtrip(
       StructureViewReq(sourceFileInfo): RpcRequest,
       s"""{"typehint":"StructureViewReq","fileInfo":{"file":"$file1","contents":"{/* code here */}","contentsIn":"$file2"}}"""
-    )
-
-    roundtrip(
-      AstAtPointReq(sourceFileInfo, OffsetRange(1, 100)): RpcRequest,
-      s"""{"typehint":"AstAtPointReq","file":{"file":"$file1","contents":"{/* code here */}","contentsIn":"$file2"},"offset":{"from":1,"to":100}}"""
     )
 
     roundtrip(
@@ -535,11 +525,6 @@ class JerkyFormatsSpec extends EnsimeSpec with SprayJsonTestSupport with EnsimeT
     roundtrip(
       new TypeInspectInfo(typeInfo, List(interfaceInfo)): EnsimeServerMessage,
       """{"typehint":"TypeInspectInfo","type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeParams":[],"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"interfaces":[{"type":{"name":"type1","fullName":"FOO.type1","typehint":"BasicTypeInfo","typeParams":[],"typeArgs":[],"members":[],"declAs":{"typehint":"Method"}},"viaView":"DEF"}],"infoType":"typeInspect"}"""
-    )
-
-    roundtrip(
-      astInfo: EnsimeServerMessage,
-      """{"typehint":"AstInfo", "ast":"List(Apply(Select(Literal(Constant(1)), TermName(\"$plus\")), List(Literal(Constant(1)))))"}"""
     )
   }
 
