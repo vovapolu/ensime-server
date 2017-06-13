@@ -37,9 +37,10 @@ class BasicWorkflow extends EnsimeSpec
 
           project ! TypecheckModule(EnsimeProjectId("testing_simple", "compile"))
           expectMsg(VoidResponse)
-          all(asyncHelper.receiveN(2)) should matchPattern {
+          all(asyncHelper.receiveN(3)) should matchPattern {
             case CompilerRestartedEvent =>
             case n: NewScalaNotesEvent =>
+            case FullTypeCheckCompleteEvent =>
           }
 
           project ! TypeByNameReq("org.example.Bloo")
@@ -47,14 +48,14 @@ class BasicWorkflow extends EnsimeSpec
 
           project ! UnloadAllReq
           expectMsg(VoidResponse)
-          asyncHelper.expectMsg(CompilerRestartedEvent)
-
+          all(asyncHelper.receiveN(2)) should matchPattern {
+            case CompilerRestartedEvent =>
+            case FullTypeCheckCompleteEvent =>
+          }
           // trigger typeCheck
           project ! TypecheckFilesReq(List(Left(fooFile), Left(barFile)))
           expectMsg(VoidResponse)
-
           asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
-
           // Asking to typecheck mising file should report an error not kill system
 
           val missingFile = sourceRoot / "missing.scala"
