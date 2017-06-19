@@ -2,17 +2,15 @@
 // License: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.indexer
 
+import java.util.UUID
+
 import akka.actor.Actor
 import akka.event.slf4j.SLF4JLogging
 import org.apache.commons.vfs2._
-import scala.util.Properties._
-
 import org.ensime.api._
 import org.ensime.config.richconfig._
-import org.ensime.vfs._
-
 import org.ensime.util.file._
-import java.util.UUID
+import org.ensime.vfs._
 
 trait FileChangeListener {
   def fileAdded(f: FileObject): Unit
@@ -37,15 +35,16 @@ trait Watcher {
  * http://docs.oracle.com/javase/7/docs/api/java/nio/file/WatchService.html
  */
 class ClassfileWatcher(
-    config: EnsimeConfig,
     listeners: Seq[FileChangeListener]
 )(
     implicit
-    vfs: EnsimeVFS
+    vfs: EnsimeVFS,
+    config: EnsimeConfig,
+    serverConfig: EnsimeServerConfig
 ) extends Actor with SLF4JLogging {
 
   private val impls =
-    if (propOrFalse("ensime.disableClassMonitoring")) Nil
+    if (serverConfig.disableClassMonitoring) Nil
     else {
       val jarJava7WatcherBuilder = new JarJava7WatcherBuilder()
       val classJava7WatcherBuilder = new ClassJava7WatcherBuilder()
@@ -165,8 +164,7 @@ private class ClassJava7WatcherBuilder() extends Java7WatcherBuilder {
 }
 
 class Java7WatchServiceBuilder extends SLF4JLogging {
-  import org.ensime.filewatcher.FileWatchService
-  import org.ensime.filewatcher.WatcherListener
+  import org.ensime.filewatcher.{ FileWatchService, WatcherListener }
 
   val fileWatchService: FileWatchService = new FileWatchService
   def build(

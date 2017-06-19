@@ -5,8 +5,7 @@ package org.ensime.core
 import java.io.File
 
 import scala.util.Try
-
-import org.ensime.api.{ EnsimeFile, EnsimeConfig }
+import org.ensime.api._
 import org.ensime.util.LegacyArchiveExtraction
 import org.ensime.util.ensimefile._
 import org.ensime.util.file._
@@ -22,13 +21,14 @@ object Canon extends Poly1 {
   // people extend File, so we have to handle subtypes
   implicit def caseFile[F <: File]: Case[F] { type Result = File } = at[F](f => f.canon)
 
-  private val legacyJarUrls: Boolean = sys.props.getOrElse("ensime.legacy.jarurls", "true").toBoolean
+  var serverConfig: EnsimeServerConfig = null
+
   var config: EnsimeConfig = null // yes, I know...
   // we really want extractor to be a constructor parameter to a Canon instance
-  private def extractor: Option[LegacyArchiveExtraction] =
-    if (!legacyJarUrls || config == null) None
-    else Some(new LegacyArchiveExtraction(config.cacheDir.file))
 
+  private def extractor: Option[LegacyArchiveExtraction] =
+    if (serverConfig == null || !serverConfig.legacyJarUrls || config == null) None
+    else Some(new LegacyArchiveExtraction(config.cacheDir.file))
   implicit def caseEnsimeFile[EF <: EnsimeFile]: Case[EF] { type Result = EnsimeFile } = at[EF] { f =>
     extractor.flatMap { extractor => Try(extractor.write(f)).toOption }.getOrElse(f).canon
   }

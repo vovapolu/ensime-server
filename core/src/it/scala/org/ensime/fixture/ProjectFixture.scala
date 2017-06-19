@@ -31,7 +31,8 @@ object ProjectFixture extends Matchers {
   private[fixture] def startup(
     implicit
     testkit: TestKitFix,
-    config: EnsimeConfig
+    config: EnsimeConfig,
+    serverConfig: EnsimeServerConfig
   ): (TestActorRef[Project], TestProbe) = {
     import testkit._
 
