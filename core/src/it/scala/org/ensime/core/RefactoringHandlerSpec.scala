@@ -7,11 +7,12 @@ import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 import java.util.Date
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 import org.ensime.api._
 import org.ensime.fixture._
 import org.ensime.util.EnsimeSpec
 import org.scalatest.Assertions
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class RefactoringHandlerSpec extends EnsimeSpec
     with IsolatedAnalyzerFixture
@@ -19,9 +20,15 @@ class RefactoringHandlerSpec extends EnsimeSpec
     with RefactoringHandlerTestUtils {
 
   val encoding = "UTF-16"
-  def original = EnsimeConfigFixture.EmptyTestProject.copy(
-    compilerArgs = List("-encoding", encoding)
-  )
+  def original = {
+    val empty = EnsimeConfigFixture.EmptyTestProject
+    val origScalacOptions = empty.projects.head.scalacOptions
+    empty.copy(
+      projects = List(empty.projects.head.copy(
+        scalacOptions = origScalacOptions ::: List("-encoding", encoding)
+      ))
+    )
+  }
 
   // transitionary methods
   def ContentsSourceFileInfo(file: File, contents: String) =
