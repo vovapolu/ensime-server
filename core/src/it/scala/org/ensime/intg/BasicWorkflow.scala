@@ -34,6 +34,15 @@ class BasicWorkflow extends EnsimeSpec
           val fooFilePath = fooFile.getAbsolutePath
           val barFile = sourceRoot / "org/example/Bar.scala"
           val barPath = barFile.toPath
+          val testRoot = scalaTest(config)
+          val blooSpecFile = testRoot / "org/example/BlooSpec.scala"
+
+          project ! TypecheckFilesReq(List(Left(blooSpecFile)))
+          expectMsg(VoidResponse)
+          asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
+
+          project ! UnloadFileReq(SourceFileInfo(EnsimeFile(blooSpecFile)))
+          expectMsg(VoidResponse)
 
           project ! TypecheckModule(EnsimeProjectId("testing_simple", "compile"))
           expectMsg(VoidResponse)
@@ -45,7 +54,8 @@ class BasicWorkflow extends EnsimeSpec
 
           project ! UnloadAllReq
           expectMsg(VoidResponse)
-          all(asyncHelper.receiveN(2)) should matchPattern {
+          expectMsg(VoidResponse)
+          all(asyncHelper.receiveN(4)) should matchPattern {
             case CompilerRestartedEvent =>
             case FullTypeCheckCompleteEvent =>
           }
