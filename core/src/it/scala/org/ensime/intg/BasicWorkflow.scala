@@ -86,7 +86,18 @@ class BasicWorkflow extends EnsimeSpec
           //-----------------------------------------------------------------------------------------------
           // symbolAtPoint
           project ! SymbolAtPointReq(Left(fooFile), 128)
-          val symbolAtPointOpt: SymbolInfo = expectMsgType[SymbolInfo]
+          expectMsgType[SymbolInfo]
+
+          project ! SymbolAtPointReq(Left(fooFile), 68) // scala.Int symbol
+          val symInfo = expectMsgType[SymbolInfo]
+          symInfo.`type`.pos should matchPattern {
+            case Some(OffsetSourcePosition(_, _)) =>
+          }
+
+          val sourceFileLocation = symInfo.`type`.pos.get.asInstanceOf[OffsetSourcePosition].file
+          project ! SymbolDesignationsReq(Right(SourceFileInfo(sourceFileLocation, None, None)), -1, 9999, SourceSymbol.allSymbols)
+          val symbolDesignations = expectMsgType[SymbolDesignations]
+          symbolDesignations.syms should not be empty
 
           //-----------------------------------------------------------------------------------------------
           // public symbol search - java.io.File
