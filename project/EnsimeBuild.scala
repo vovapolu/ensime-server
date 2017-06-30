@@ -258,6 +258,7 @@ object EnsimeBuild {
         case PathList("org", "apache", "commons", "vfs2", xs @ _*) => MergeStrategy.first // assumes our classpath is setup correctly
         case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.concat // assumes our classpath is setup correctly
         case PathList("LICENSE") => MergeStrategy.concat // WORKAROUND https://github.com/sbt/sbt-assembly/issues/224
+        case PathList("LICENSE.apache2") => MergeStrategy.first // WORKAROUND https://github.com/sbt/sbt-assembly/issues/224
         case PathList("NOTICE") => MergeStrategy.concat // WORKAROUND https://github.com/sbt/sbt-assembly/issues/224
         case other => MergeStrategy.defaultMergeStrategy(other)
       },
