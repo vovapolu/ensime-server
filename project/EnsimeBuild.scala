@@ -57,8 +57,7 @@ object EnsimeBuild {
   lazy val commonSettings = Seq(
     dependencyOverrides ++= Set(
        "com.typesafe.akka" %% "akka-actor" % akkaVersion.value,
-       "com.typesafe.akka" %% "akka-testkit" % akkaVersion.value,
-       "io.spray" %% "spray-json" % "1.3.2"
+       "com.typesafe.akka" %% "akka-testkit" % akkaVersion.value
     ),
 
     // disabling shared memory gives a small performance boost to
@@ -129,6 +128,15 @@ object EnsimeBuild {
       ) ++sensibleTestLibs(Compile)
     )
 
+  lazy val json = project settings(commonSettings) settings (
+    licenses := Seq(LGPL3),
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
+      "org.specs2" %% "specs2-core" % "3.8.6" % Test,
+      "org.specs2" %% "specs2-scalacheck" % "3.8.6" % Test
+    ) ++ shapeless.value
+  )
+
   lazy val s_express = Project("s-express", file("s-express")) settings (commonSettings) settings (
       licenses := Seq(LGPL3),
       libraryDependencies ++= Seq(
@@ -140,12 +148,12 @@ object EnsimeBuild {
   // the JSON protocol
   lazy val jerky = Project("jerky", file("protocol-jerky")) settings (commonSettings) dependsOn (
     util,
+    json,
     api,
     testutil % Test,
     api % "test->test" // for the test data
   ) settings (
       libraryDependencies ++= Seq(
-        "com.github.fommil" %% "spray-json-shapeless" % "1.4.0",
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion.value
       ) ++ shapeless.value
     )
