@@ -18,6 +18,7 @@
 package spray.json
 
 import annotation.implicitNotFound
+import shapeless._
 
 /**
  * Provides the JSON deserialization for type T.
@@ -51,6 +52,9 @@ object JsonWriter {
  * Provides the JSON deserialization and serialization for type T.
  */
 trait JsonFormat[T] extends JsonReader[T] with JsonWriter[T]
+object JsonFormat {
+  def apply[T](implicit f: Strict[JsonFormat[T]]): JsonFormat[T] = f.value
+}
 
 /**
  * A special JsonReader capable of reading a legal JSON root object, i.e. either a JSON array or a JSON object.
@@ -69,3 +73,6 @@ trait RootJsonWriter[T] extends JsonWriter[T]
  * or a JSON object.
  */
 trait RootJsonFormat[T] extends JsonFormat[T] with RootJsonReader[T] with RootJsonWriter[T]
+object RootJsonFormat {
+  def apply[T](implicit f: Strict[RootJsonFormat[T]]): RootJsonFormat[T] = f.value
+}

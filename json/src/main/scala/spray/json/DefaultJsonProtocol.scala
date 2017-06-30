@@ -24,7 +24,7 @@ trait DefaultJsonProtocol
   extends BasicFormats
   with StandardFormats
   with CollectionFormats
-  with ProductFormats
+  with FamilyFormats
   with AdditionalFormats
 
 object DefaultJsonProtocol extends DefaultJsonProtocol

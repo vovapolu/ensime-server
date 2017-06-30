@@ -16,8 +16,9 @@
 
 package spray
 
-package object json {
+import shapeless._
 
+package object json {
   type JsField = (String, JsValue)
 
   def deserializationError(msg: String, cause: Throwable = null, fieldNames: List[String] = Nil) = throw new DeserializationException(msg, cause, fieldNames)
@@ -28,6 +29,19 @@ package object json {
 
   implicit def pimpAny[T](any: T) = new PimpedAny(any)
   implicit def pimpString(string: String) = new PimpedString(string)
+
+  // slightly better alternatives to the xError methods above
+  @inline
+  def deserError[T: Typeable](msg: String, cause: Throwable = null): Nothing =
+    throw new DeserializationException(s"deserialising ${Typeable[T].describe}: $msg", cause)
+
+  @inline
+  def unexpectedJson[T: Typeable](got: JsValue): Nothing =
+    deserializationError(s"unexpected $got")
+
+  @inline
+  def serError[T: Typeable](msg: String): Nothing =
+    throw new SerializationException(s"serialising ${Typeable[T].describe}: $msg")
 }
 
 package json {
