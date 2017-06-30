@@ -24,11 +24,13 @@ package object json {
   def deserializationError(msg: String, cause: Throwable = null, fieldNames: List[String] = Nil) = throw new DeserializationException(msg, cause, fieldNames)
   def serializationError(msg: String) = throw new SerializationException(msg)
 
-  def jsonReader[T](implicit reader: JsonReader[T]) = reader
-  def jsonWriter[T](implicit writer: JsonWriter[T]) = writer
+  implicit class EnrichedAny[T](val any: T) extends AnyVal {
+    def toJson(implicit writer: JsonWriter[T]): JsValue = writer.write(any)
+  }
 
-  implicit def pimpAny[T](any: T) = new PimpedAny(any)
-  implicit def pimpString(string: String) = new PimpedString(string)
+  implicit class EnrichedString(val string: String) extends AnyVal {
+    def parseJson: JsValue = JsonParser(string)
+  }
 
   // slightly better alternatives to the xError methods above
   @inline
@@ -48,14 +50,4 @@ package json {
 
   case class DeserializationException(msg: String, cause: Throwable = null, fieldNames: List[String] = Nil) extends RuntimeException(msg, cause)
   class SerializationException(msg: String) extends RuntimeException(msg)
-
-  private[json] class PimpedAny[T](any: T) {
-    def toJson(implicit writer: JsonWriter[T]): JsValue = writer.write(any)
-  }
-
-  private[json] class PimpedString(string: String) {
-    @deprecated("deprecated in favor of parseJson", "1.2.6")
-    def asJson: JsValue = parseJson
-    def parseJson: JsValue = JsonParser(string)
-  }
 }

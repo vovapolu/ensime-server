@@ -1,8 +1,10 @@
 package spray.json
 
-import org.specs2.mutable.Specification
 import org.scalacheck._
-import org.specs2.ScalaCheck
+import org.scalatest._
+
+import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import Matchers._
 
 object JsValueGenerators {
   import Gen._
@@ -48,15 +50,15 @@ object JsValueGenerators {
   implicit val arbitraryValue: Arbitrary[JsValue] = Arbitrary(genValue(5))
 }
 
-class RoundTripSpecs extends Specification with ScalaCheck {
+class RoundTripSpecs extends WordSpec with GeneratorDrivenPropertyChecks {
   import JsValueGenerators.arbitraryValue
 
   "Parsing / Printing round-trip" should {
-    "starting from JSON using compactPrint" in prop { (json: JsValue) =>
-      json.compactPrint.parseJson must_== json
+    "starting from JSON using compactPrint" in forAll { (json: JsValue) =>
+      json.compactPrint.parseJson shouldEqual json
     }
-    "starting from JSON using prettyPrint" in prop { (json: JsValue) =>
-      json.prettyPrint.parseJson must_== json
+    "starting from JSON using prettyPrint" in forAll { (json: JsValue) =>
+      json.prettyPrint.parseJson shouldEqual json
     }
   }
 }

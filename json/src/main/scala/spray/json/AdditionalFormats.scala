@@ -29,7 +29,10 @@ trait AdditionalFormats {
 
   implicit object RootJsObjectFormat extends RootJsonFormat[JsObject] {
     def write(value: JsObject) = value
-    def read(value: JsValue) = value.asJsObject
+    def read(value: JsValue) = value match {
+      case o: JsObject => o
+      case _ => deserError[JsObject]("expected JsObject")
+    }
   }
 
   implicit object RootJsArrayFormat extends RootJsonFormat[JsArray] {
@@ -83,15 +86,6 @@ trait AdditionalFormats {
    */
   def lift[T <: AnyRef](reader: RootJsonReader[T]): RootJsonFormat[T] =
     rootFormat(lift(reader: JsonReader[T]))
-
-  /**
-   * Lazy wrapper around serialization. Useful when you want to serialize (mutually) recursive structures.
-   */
-  def lazyFormat[T](format: => JsonFormat[T]) = new JsonFormat[T] {
-    lazy val delegate = format;
-    def write(x: T) = delegate.write(x);
-    def read(value: JsValue) = delegate.read(value);
-  }
 
   /**
    * Explicitly turns a JsonFormat into a RootJsonFormat.

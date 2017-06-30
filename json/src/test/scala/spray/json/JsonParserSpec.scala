@@ -16,9 +16,9 @@
 
 package spray.json
 
-import org.specs2.mutable._
+import org.scalatest._
 
-class JsonParserSpec extends Specification {
+class JsonParserSpec extends WordSpec {
 
   "The JsonParser" should {
     "parse 'null' to JsNull" in {

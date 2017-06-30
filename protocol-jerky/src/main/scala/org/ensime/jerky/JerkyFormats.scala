@@ -3,7 +3,6 @@
 package org.ensime.jerky
 
 import spray.json._
-import fommil.sjs._
 import shapeless._
 import org.ensime.api._
 import org.ensime.util.file._

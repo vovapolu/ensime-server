@@ -149,9 +149,53 @@ class JsonParser(input: ParserInput) {
   }
 
   private def `char`() =
-    // simple bloom-filter that quick-matches the most frequent case of characters that are ok to append
-    // (it doesn't match control chars, EOI, '"', '?', '\', 'b' and certain higher, non-ASCII chars)
-    if (((1L << cursorChar) & ((31 - cursorChar) >> 31) & 0x7ffffffbefffffffL) != 0L) appendSB(cursorChar)
+    // https://github.com/spray/spray-json/issues/233#issuecomment-312420790
+    //
+    // The idea is to reduce the most common code path down to a
+    // single branch instruction. (The match in the else branch
+    // requires at least 5 comparisons for the common case.)
+    //
+    // We do this by using the cursorChar value to index into a bit
+    // field and checking whether the respective bit is set. If it is
+    // we know that the character is good to append right away.
+    //
+    // The single expression
+    //
+    // ((1L << cursorChar) & ((31 - cursorChar) >> 31) & 0x7ffffffbefffffffL) != 0L
+    //
+    // is equivalent to this one:
+    //
+    // if (cursorChar > 31) {
+    //   val bitField = 0x7ffffffbefffffffL // has a 1-bit for 'good' chars
+    //   val mask = 1L << cursorChar // select the right bit (loosing precision)
+    //   (bitField & mask) != 0 // test whether the bit is set in the bitField
+    // } else false
+    //
+    // Since a Long can only hold 64 bits we can only distinguish 64
+    // cases.
+    //
+    // It's a bloom filter because the shift instruction (<<) only
+    // uses the lowest 6 bits of the cursorChar value and disregards
+    // all others. This means that all characters which have the same
+    // lowest 6 bits are mapped to the same bit in the bitField. So,
+    // if a bit is not set in the bitField, we still have to apply our
+    // regular tests to determine how to treat the character. But the
+    // nice thing is, since most characters are ok, the bitField has a
+    // lot one 1-bits, which makes the bloom filter quite effective.
+    //
+    // simple bloom-filter that quick-matches the most frequent case
+    // of characters that are ok to append (it doesn't match control
+    // chars, EOI, '"', '?', '\', 'b' and certain higher, non-ASCII
+    // chars)
+    //
+    // (31 - cursorChar) >> 31 is branchless for if (cursorChar > 31) 0xFFFFFFFF else 0.
+    //
+    // The Long variant would be (31L - cursorChar) >> 63
+    //
+    // Handling numeric widening, prefer:
+    //
+    // ((31 - cursorChar) >> 31).toLong or (31L - cursorChar.toLong) >> 63
+    if (((1L << cursorChar.toInt) & ((31L - cursorChar.toLong) >> 63) & 0x7ffffffbefffffffL) != 0L) appendSB(cursorChar)
     else cursorChar match {
       case '"' | EOI => false
       case '\\' =>
@@ -190,7 +234,7 @@ class JsonParser(input: ParserInput) {
 
   @tailrec private def ws(): Unit =
     // fast test whether cursorChar is one of " \n\r\t"
-    if (((1L << cursorChar) & ((cursorChar - 64) >> 31) & 0x100002600L) != 0L) { advance(); ws() }
+    if (((1L << cursorChar.toInt) & ((cursorChar.toLong - 64L) >> 63) & 0x100002600L) != 0L) { advance(); ws() }
 
   ////////////////////////// HELPERS //////////////////////////
 

@@ -16,18 +16,21 @@
 
 package spray.json
 
-import org.specs2.mutable.Specification
+import org.scalatest._
+import Matchers._
 
-class CustomFormatSpec extends Specification with DefaultJsonProtocol {
+class CustomFormatSpec extends WordSpec with DefaultJsonProtocol {
 
   case class MyType(name: String, value: Int)
 
   implicit val MyTypeProtocol = new RootJsonFormat[MyType] {
-    def read(json: JsValue) = {
-      json.asJsObject.getFields("name", "value") match {
-        case Seq(JsString(name), JsNumber(value)) => MyType(name, value.toInt)
-        case _ => deserializationError("Expected fields: 'name' (JSON string) and 'value' (JSON number)")
-      }
+    def read(json: JsValue) = json match {
+      case JsObject(fields) =>
+        (fields.get("name"), fields.get("value")) match {
+          case (Some(JsString(name)), Some(JsNumber(value))) => MyType(name, value.toInt)
+          case _ => deserializationError("Expected fields: 'name' (JSON string) and 'value' (JSON number)")
+        }
+      case _ => deserError[MyType]("expected JsObject")
     }
     def write(obj: MyType) = JsObject("name" -> JsString(obj.name), "value" -> JsNumber(obj.value))
   }
@@ -35,10 +38,10 @@ class CustomFormatSpec extends Specification with DefaultJsonProtocol {
   "A custom JsonFormat built with 'asJsonObject'" should {
     val value = MyType("bob", 42)
     "correctly deserialize valid JSON content" in {
-      """{ "name": "bob", "value": 42 }""".parseJson.convertTo[MyType] mustEqual value
+      """{ "name": "bob", "value": 42 }""".parseJson.convertTo[MyType] shouldEqual value
     }
     "support full round-trip (de)serialization" in {
-      value.toJson.convertTo[MyType] mustEqual value
+      value.toJson.convertTo[MyType] shouldEqual value
     }
   }
 

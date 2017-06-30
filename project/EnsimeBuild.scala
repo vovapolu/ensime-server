@@ -131,9 +131,7 @@ object EnsimeBuild {
   lazy val json = project settings(commonSettings) settings (
     licenses := Seq(LGPL3),
     libraryDependencies ++= Seq(
-      "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
-      "org.specs2" %% "specs2-core" % "3.8.6" % Test,
-      "org.specs2" %% "specs2-scalacheck" % "3.8.6" % Test
+      "org.scalacheck" %% "scalacheck" % "1.13.5" % Test
     ) ++ shapeless.value
   )
 

@@ -29,6 +29,7 @@ trait JsonReader[T] {
 }
 
 object JsonReader {
+  def apply[T](implicit reader: JsonReader[T]): JsonReader[T] = reader
   implicit def func2Reader[T](f: JsValue => T): JsonReader[T] = new JsonReader[T] {
     def read(json: JsValue) = f(json)
   }
@@ -43,6 +44,7 @@ trait JsonWriter[T] {
 }
 
 object JsonWriter {
+  def apply[T](implicit writer: JsonWriter[T]): JsonWriter[T] = writer
   implicit def func2Writer[T](f: T => JsValue): JsonWriter[T] = new JsonWriter[T] {
     def write(obj: T) = f(obj)
   }

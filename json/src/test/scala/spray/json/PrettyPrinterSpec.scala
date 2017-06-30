@@ -17,9 +17,10 @@
 package spray.json
 
 import scala.collection.immutable.ListMap
-import org.specs2.mutable._
+import org.scalatest._
+import Matchers._
 
-class PrettyPrinterSpec extends Specification {
+class PrettyPrinterSpec extends WordSpec {
 
   "The PrettyPrinter" should {
     "print a more complicated JsObject nicely aligned" in {
@@ -40,7 +41,7 @@ class PrettyPrinterSpec extends Specification {
           |  "zero": 0
           |}""".stripMargin
       }
-      PrettyPrinter(JsObject(ListMap(fields.toSeq.sortBy(_._1): _*))) mustEqual {
+      PrettyPrinter(JsObject(ListMap(fields.toSeq.sortBy(_._1): _*))) shouldEqual {
         """{
           |  "Boolean no": false,
           |  "Boolean yes": true,

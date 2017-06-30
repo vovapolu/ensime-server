@@ -39,7 +39,7 @@ trait BasicFormats {
   }
 
   implicit object FloatJsonFormat extends JsonFormat[Float] {
-    def write(x: Float) = JsNumber(x)
+    def write(x: Float) = JsNumber(x.toDouble)
     def read(value: JsValue) = value match {
       case JsNumber(x) => x.floatValue
       case JsNull => Float.NaN
@@ -57,7 +57,7 @@ trait BasicFormats {
   }
 
   implicit object ByteJsonFormat extends JsonFormat[Byte] {
-    def write(x: Byte) = JsNumber(x)
+    def write(x: Byte) = JsNumber(x.toInt)
     def read(value: JsValue) = value match {
       case JsNumber(x) => x.byteValue
       case x => deserializationError("Expected Byte as JsNumber, but got " + x)
@@ -65,7 +65,7 @@ trait BasicFormats {
   }
 
   implicit object ShortJsonFormat extends JsonFormat[Short] {
-    def write(x: Short) = JsNumber(x)
+    def write(x: Short) = JsNumber(x.toInt)
     def read(value: JsValue) = value match {
       case JsNumber(x) => x.shortValue
       case x => deserializationError("Expected Short as JsNumber, but got " + x)
@@ -98,7 +98,7 @@ trait BasicFormats {
 
   implicit object UnitJsonFormat extends JsonFormat[Unit] {
     def write(x: Unit) = JsNumber(1)
-    def read(value: JsValue) {}
+    def read(value: JsValue): Unit = {}
   }
 
   implicit object BooleanJsonFormat extends JsonFormat[Boolean] {

@@ -18,8 +18,6 @@
 
 package spray.json
 
-import collection.immutable
-
 /**
  * The general type of a JSON AST node.
  */
@@ -28,54 +26,31 @@ sealed abstract class JsValue {
   def toString(printer: (JsValue => String)) = printer(this)
   def compactPrint = CompactPrinter(this)
   def prettyPrint = PrettyPrinter(this)
-  def convertTo[T: JsonReader]: T = jsonReader[T].read(this)
-
-  /**
-   * Returns `this` if this JsValue is a JsObject, otherwise throws a DeserializationException with the given error msg.
-   */
-  def asJsObject(errorMsg: String = "JSON object expected"): JsObject = deserializationError(errorMsg)
-
-  /**
-   * Returns `this` if this JsValue is a JsObject, otherwise throws a DeserializationException.
-   */
-  def asJsObject: JsObject = asJsObject()
-
-  @deprecated("Superceded by 'convertTo'", "1.1.0")
-  def fromJson[T: JsonReader]: T = convertTo
+  def convertTo[T: JsonReader]: T = JsonReader[T].read(this)
 }
 
 /**
  * A JSON object.
  */
-case class JsObject(fields: Map[String, JsValue]) extends JsValue {
-  override def asJsObject(errorMsg: String) = this
-  def getFields(fieldNames: String*): immutable.Seq[JsValue] = fieldNames.flatMap(fields.get)(collection.breakOut)
-}
+final case class JsObject(fields: Map[String, JsValue]) extends JsValue
 object JsObject {
   val empty = JsObject(Map.empty[String, JsValue])
   def apply(members: JsField*) = new JsObject(Map(members: _*))
-  @deprecated("Use JsObject(JsValue*) instead", "1.3.0")
-  def apply(members: List[JsField]) = new JsObject(Map(members: _*))
 }
 
 /**
  * A JSON array.
  */
-case class JsArray(elements: Vector[JsValue]) extends JsValue {
-  @deprecated("Use JsArray(Vector[JsValue]) instead", "1.3.0")
-  def this(elements: List[JsValue]) = this(elements.toVector)
-}
+final case class JsArray(elements: Vector[JsValue]) extends JsValue
 object JsArray {
   val empty = JsArray(Vector.empty)
   def apply(elements: JsValue*) = new JsArray(elements.toVector)
-  @deprecated("Use JsArray(Vector[JsValue]) instead", "1.3.0")
-  def apply(elements: List[JsValue]) = new JsArray(elements.toVector)
 }
 
 /**
  * A JSON string.
  */
-case class JsString(value: String) extends JsValue
+final case class JsString(value: String) extends JsValue
 
 object JsString {
   val empty = JsString("")
@@ -85,7 +60,7 @@ object JsString {
 /**
  * A JSON number.
  */
-case class JsNumber(value: BigDecimal) extends JsValue
+final case class JsNumber(value: BigDecimal) extends JsValue
 object JsNumber {
   val zero: JsNumber = apply(0)
   def apply(n: Int) = new JsNumber(BigDecimal(n))
