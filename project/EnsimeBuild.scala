@@ -57,8 +57,7 @@ object EnsimeBuild {
   lazy val commonSettings = Seq(
     dependencyOverrides ++= Set(
        "com.typesafe.akka" %% "akka-actor" % akkaVersion.value,
-       "com.typesafe.akka" %% "akka-testkit" % akkaVersion.value,
-       "io.spray" %% "spray-json" % "1.3.2"
+       "com.typesafe.akka" %% "akka-testkit" % akkaVersion.value
     ),
 
     // disabling shared memory gives a small performance boost to
@@ -129,6 +128,13 @@ object EnsimeBuild {
       ) ++sensibleTestLibs(Compile)
     )
 
+  lazy val json = project settings(commonSettings) settings (
+    licenses := Seq(LGPL3),
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck" % "1.13.5" % Test
+    ) ++ shapeless.value
+  )
+
   lazy val s_express = Project("s-express", file("s-express")) settings (commonSettings) settings (
       licenses := Seq(LGPL3),
       libraryDependencies ++= Seq(
@@ -140,12 +146,12 @@ object EnsimeBuild {
   // the JSON protocol
   lazy val jerky = Project("jerky", file("protocol-jerky")) settings (commonSettings) dependsOn (
     util,
+    json,
     api,
     testutil % Test,
     api % "test->test" // for the test data
   ) settings (
       libraryDependencies ++= Seq(
-        "com.github.fommil" %% "spray-json-shapeless" % "1.4.0",
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion.value
       ) ++ shapeless.value
     )
@@ -252,6 +258,7 @@ object EnsimeBuild {
         case PathList("org", "apache", "commons", "vfs2", xs @ _*) => MergeStrategy.first // assumes our classpath is setup correctly
         case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.concat // assumes our classpath is setup correctly
         case PathList("LICENSE") => MergeStrategy.concat // WORKAROUND https://github.com/sbt/sbt-assembly/issues/224
+        case PathList("LICENSE.apache2") => MergeStrategy.first // WORKAROUND https://github.com/sbt/sbt-assembly/issues/224
         case PathList("NOTICE") => MergeStrategy.concat // WORKAROUND https://github.com/sbt/sbt-assembly/issues/224
         case other => MergeStrategy.defaultMergeStrategy(other)
       },

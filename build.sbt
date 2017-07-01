@@ -1,6 +1,7 @@
 lazy val monkeys = EnsimeBuild.monkeys
 lazy val util = EnsimeBuild.util
 lazy val testutil = EnsimeBuild.testutil
+lazy val json = EnsimeBuild.json
 lazy val s_express = EnsimeBuild.s_express
 lazy val api = EnsimeBuild.api
 lazy val jerky = EnsimeBuild.jerky
