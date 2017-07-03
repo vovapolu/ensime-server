@@ -223,7 +223,11 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
             val source = u.source
             source.map(s => RawFile(Paths.get(new URI(s))))
           }(collection.breakOut)
-          uniqueFiles + RawFile(sym.sourceFile.file.toPath)
+          if (sym.sourceFile != null) {
+            uniqueFiles + RawFile(sym.sourceFile.file.toPath)
+          } else {
+            uniqueFiles
+          }
         }
       }
     }

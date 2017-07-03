@@ -340,6 +340,14 @@ class BasicWorkflow extends EnsimeSpec
           expectMsg(VoidResponse)
 
           asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
+
+          //-----------------------------------------------------------------------------------------------
+          // uses of symbol at point with a symbol defined in classfiles
+
+          project ! UsesOfSymbolAtPointReq(Left(fooFile), 162) // point on String.length
+          expectMsgType[ERangePositions].positions shouldBe empty
+
+          asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
           asyncHelper.expectNoMsg(3 seconds)
         }
       }
