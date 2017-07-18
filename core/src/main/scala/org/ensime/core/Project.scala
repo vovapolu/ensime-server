@@ -47,19 +47,30 @@ class Project(
   private implicit val vfs: EnsimeVFS = EnsimeVFS()
   private val resolver = new SourceResolver(config)
   private val searchService = new SearchService(config, resolver)
-  private val sourceWatcher = new SourceWatcher(config, resolver :: Nil)
+
+  private var dependentProjects: Map[EnsimeProjectId, List[EnsimeProjectId]] = _
+
   private val reTypecheck = new FileChangeListener {
-    private val askReTypeCheck =
-      Debouncer.forActor(
+    private val askReTypeCheck: Map[EnsimeProjectId, Debouncer] = config.projects.map(p =>
+      p.id -> Debouncer.forActor(
         self,
-        RestartScalaCompilerReq(None, ReloadStrategy.KeepLoaded),
+        RestartScalaCompilerReq(Some(p.id), ReloadStrategy.KeepLoaded),
         delay = (5 * Timing.dilation).seconds,
         maxDelay = (20 * Timing.dilation).seconds
-      )
-    def fileAdded(f: FileObject): Unit = askReTypeCheck.call()
-    def fileChanged(f: FileObject): Unit = askReTypeCheck.call()
-    def fileRemoved(f: FileObject): Unit = askReTypeCheck.call()
-    override def baseReCreated(f: FileObject): Unit = askReTypeCheck.call()
+      ))(collection.breakOut)
+    def fileChanged(f: FileObject): Unit = {
+      val projectId = config.findProject(f)
+      projectId foreach { projectId =>
+        (projectId :: dependentProjects.getOrElse(projectId, Nil)).foreach(askReTypeCheck.get(_).foreach(_.call()))
+      }
+    }
+    def fileAdded(f: FileObject): Unit = {
+      fileChanged(f)
+    }
+    def fileRemoved(f: FileObject): Unit = {
+      fileChanged(f)
+    }
+    override def baseReCreated(f: FileObject): Unit = askReTypeCheck.values.foreach(_.call())
   }
   context.actorOf(Props(new ClassfileWatcher(config, searchService :: reTypecheck :: Nil)), "classFileWatcher")
 
@@ -83,7 +94,9 @@ class Project(
 
   override def preStart(): Unit = {
     delayedBroadcaster = system.actorOf(FloodGate(broadcaster), "delay")
-
+    dependentProjects = config.projects.map(
+      p => p.id -> config.projects.filter(_.depends.contains(p.id)).map(_.id)
+    )(collection.breakOut)
     searchService.refresh().onComplete {
       case Success((deletes, inserts)) =>
         // legacy clients expect to see IndexerReady on connection.
@@ -125,7 +138,6 @@ class Project(
 
   override def postStop(): Unit = {
     // make sure the "reliable" dependencies are cleaned up
-    Try(sourceWatcher.shutdown())
     Try(Await.result(searchService.shutdown(), Duration.Inf))
     Try(vfs.close())
   }
