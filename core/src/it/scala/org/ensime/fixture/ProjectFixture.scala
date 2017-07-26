@@ -28,11 +28,12 @@ object LoggingTestProbe {
 }
 
 object ProjectFixture extends Matchers {
+  import EnsimeConfigFixture.serverConfig
+
   private[fixture] def startup(
     implicit
     testkit: TestKitFix,
-    config: EnsimeConfig,
-    serverConfig: EnsimeServerConfig
+    config: EnsimeConfig
   ): (TestActorRef[Project], TestProbe) = {
     import testkit._
 

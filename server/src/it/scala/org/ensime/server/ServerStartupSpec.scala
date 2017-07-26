@@ -6,9 +6,8 @@ import java.net._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.{ Properties, Try }
+import scala.util.Try
 
-import akka.actor.Props
 import org.ensime.AkkaBackCompat
 import org.ensime.fixture._
 import org.ensime.util.EnsimeSpec
@@ -22,15 +21,13 @@ class ServerStartupSpec extends EnsimeSpec
 
   val original = EnsimeConfigFixture.EmptyTestProject
 
-  Properties.setProp("ensime.server.test", "true")
-
   "Server" should "start up and bind to random ports" in {
     withEnsimeConfig { implicit config =>
       withTestKit { implicit tk =>
         import tk._
 
         val protocol = new SwankProtocol
-        system.actorOf(Props(new ServerActor(config, protocol)), "ensime-main")
+        system.actorOf(ServerActor.props(protocol), "ensime-main")
 
         eventually(timeout(scaled(10 seconds)), interval(scaled(1 second))) {
           PortUtil.port(config.cacheDir.file, "http").isDefined
@@ -53,7 +50,7 @@ class ServerStartupSpec extends EnsimeSpec
         (config.cacheDir.file / "port").write(preferredTcp.toString)
 
         val protocol = new SwankProtocol
-        system.actorOf(Props(new ServerActor(config, protocol)), "ensime-main")
+        system.actorOf(ServerActor.props(protocol), "ensime-main")
 
         eventually(timeout(scaled(10 seconds)), interval(scaled(1 second))) {
           val http = new Socket
@@ -88,7 +85,7 @@ class ServerStartupSpec extends EnsimeSpec
           eventually { assert(socket.isBound()) }
 
           val protocol = new SwankProtocol
-          system.actorOf(Props(new ServerActor(config, protocol)), "ensime-main")
+          system.actorOf(ServerActor.props(protocol), "ensime-main")
 
           Await.result(system.whenTerminated, akkaTimeout.duration)
         } finally {
@@ -114,7 +111,7 @@ class ServerStartupSpec extends EnsimeSpec
           eventually { assert(socket.isBound()) }
 
           val protocol = new SwankProtocol
-          system.actorOf(Props(new ServerActor(config, protocol)), "ensime-main")
+          system.actorOf(ServerActor.props(protocol), "ensime-main")
 
           Await.result(system.whenTerminated, akkaTimeout.duration)
         } finally {

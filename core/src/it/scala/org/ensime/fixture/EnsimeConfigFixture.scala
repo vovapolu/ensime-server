@@ -6,6 +6,7 @@ import java.io.{ File => JFile }
 import java.nio.charset.Charset
 import java.nio.file.{ Files, Paths }
 
+import com.typesafe.config._
 import org.ensime.api._
 import org.ensime.config._
 import org.ensime.config.richconfig._
@@ -26,6 +27,8 @@ trait EnsimeConfigFixture {
   def usePreWarmedIndex: Boolean = true
 
   def copyTargets: Boolean = true
+
+  implicit def serverConfig: EnsimeServerConfig = EnsimeConfigFixture.serverConfig
 
   def withEnsimeConfig(testCode: EnsimeConfig => Any): Any
 
@@ -59,6 +62,10 @@ object EnsimeConfigFixture {
     System.err.flush()
     sys.exit(1)
   }
+
+  // during tests we ignore user settings, but never exit
+  implicit lazy val serverConfig: EnsimeServerConfig =
+    parseServerConfig(ConfigFactory.load())
 
   private implicit def charset = Charset.defaultCharset()
   lazy val EnsimeTestProject = EnsimeConfigProtocol.parse(dotEnsime.readString())

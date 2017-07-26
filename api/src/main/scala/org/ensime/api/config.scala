@@ -31,11 +31,14 @@ final case class EnsimeProject(
 )
 
 final case class EnsimeServerConfig(
+  config: RawFile,
   shutDownOnDisconnect: Boolean,
   exit: Boolean,
   protocol: String,
   exitAfterIndex: Boolean,
-  disableSourceMonitoring: Boolean,
   disableClassMonitoring: Boolean,
-  legacyJarUrls: Boolean
+  legacy: LegacyConfig
+)
+final case class LegacyConfig(
+  jarurls: Boolean
 )

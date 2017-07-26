@@ -3,10 +3,11 @@
 package org.ensime.config
 
 import java.io.File
-import java.nio.file.Path
+import java.nio.file.{ Path, Paths }
 
 import scala.collection.breakOut
 
+import com.typesafe.config._
 import org.apache.commons.vfs2.FileObject
 import org.ensime.api._
 import org.ensime.util.file._
@@ -15,6 +16,19 @@ import org.ensime.util.ensimefile._
 import org.ensime.vfs.`package`.EnsimeVFS
 
 package object richconfig {
+
+  // avoids a pureconfig / ficus dependency...
+  def parseServerConfig(c: Config): EnsimeServerConfig = {
+    EnsimeServerConfig(
+      RawFile(Paths.get(c.getString("ensime.config")).canon),
+      c.getBoolean("ensime.explode.on.disconnect"),
+      c.getBoolean("ensime.exit"),
+      c.getString("ensime.protocol"),
+      c.getBoolean("ensime.exitAfterIndex"),
+      c.getBoolean("ensime.disableClassMonitoring"),
+      LegacyConfig(c.getBoolean("ensime.legacy.jarurls"))
+    )
+  }
 
   implicit class RichEnsimeConfig(val c: EnsimeConfig) extends AnyVal {
     // doesn't do the transitive lookups
