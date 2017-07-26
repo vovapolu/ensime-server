@@ -96,8 +96,13 @@ class JerkyFormatsSpec extends EnsimeSpec with SprayJsonTestSupport with EnsimeT
     )
 
     roundtrip(
-      UsesOfSymbolAtPointReq(Left(file1), 100): RpcRequest,
-      s"""{"typehint":"UsesOfSymbolAtPointReq","file":"$file1","point":100}"""
+      UsesOfSymbolAtPointReq(sourceFileInfo, 100): RpcRequest,
+      s"""{"typehint":"UsesOfSymbolAtPointReq","file":{"file":"$file1","contents":"{/* code here */}","contentsIn":"$file2"},"point":100}"""
+    )
+
+    roundtrip(
+      HierarchyOfTypeAtPointReq(sourceFileInfo, 100): RpcRequest,
+      s"""{"typehint":"HierarchyOfTypeAtPointReq","file":{"file":"$file1","contents":"{/* code here */}","contentsIn":"$file2"},"point":100}"""
     )
 
     roundtrip(
@@ -502,14 +507,19 @@ class JerkyFormatsSpec extends EnsimeSpec with SprayJsonTestSupport with EnsimeT
       typeSearchRes: EnsimeServerMessage,
       s"""{"name":"abc","localName":"a","pos":{"typehint":"LineSourcePosition","file":"$abd","line":10},"typehint":"TypeSearchResult","declAs":{"typehint":"Trait"}}"""
     )
+
+    roundtrip(
+      SourcePositions(sourcePos2 :: Nil): EnsimeServerMessage,
+      s"""{"typehint":"SourcePositions","positions":[{"typehint":"LineSourcePosition","file":"$file1","line":59}]}"""
+    )
+
+    roundtrip(
+      hierarchyInfo: EnsimeServerMessage,
+      s"""{"typehint":"HierarchyInfo","ancestors":[{"fqn":"java.lang.object","declAs":{"typehint":"Class"}}],"inheritors":[{"scalaName":"def.foo","fqn":"def$$foo","declAs":{"typehint":"Class"},"sourcePosition":{"typehint":"LineSourcePosition","file":"$file1","line":59}}]}"""
+    )
   }
 
   it should "support ranges and semantic highlighting" in {
-    roundtrip(
-      ERangePositions(ERangePosition(batchSourceFile, 75, 70, 90) :: Nil): EnsimeServerMessage,
-      s"""{"typehint":"ERangePositions","positions":[{"file":"/abc","offset":75,"start":70,"end":90}]}"""
-    )
-
     roundtrip(
       FileRange("/abc", 7, 9): EnsimeServerMessage,
       s"""{"typehint":"FileRange","file":"/abc","start":7,"end":9}"""

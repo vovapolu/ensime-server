@@ -18,7 +18,6 @@ class AnalyzerManager(
   private val sauron = context.actorOf(analyzerCreator(config.projects.map(_.id)))
   // maps the active modules to their analyzers
   private var analyzers: Map[EnsimeProjectId, ActorRef] = Map.empty
-
   private def getOrSpawnNew(optionalId: Option[EnsimeProjectId]): ActorRef =
     optionalId match {
       case Some(id) =>
@@ -115,7 +114,9 @@ class AnalyzerManager(
       }))
     case req @ CompletionsReq(fileInfo, _, _, _, _) =>
       getOrSpawnNew(config.findProject(fileInfo)) forward req
-    case req @ UsesOfSymbolAtPointReq(file, _) =>
+    case req @ FqnOfSymbolAtPointReq(file, point) =>
+      getOrSpawnNew(config.findProject(file)) forward req
+    case req @ FqnOfTypeAtPointReq(file, point) =>
       getOrSpawnNew(config.findProject(file)) forward req
     case req @ SymbolAtPointReq(file, point: Int) =>
       getOrSpawnNew(config.findProject(file)) forward req

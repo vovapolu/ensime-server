@@ -94,8 +94,13 @@ class SwankyFormatsSpec extends EnsimeSpec with EnsimeTestData {
     )
 
     roundtrip(
-      UsesOfSymbolAtPointReq(Left(file1), 100): RpcRequest,
-      s"""(:ensime-api-uses-of-symbol-at-point-req (:file "$file1" :point 100))"""
+      UsesOfSymbolAtPointReq(sourceFileInfo, 100): RpcRequest,
+      s"""(:ensime-api-uses-of-symbol-at-point-req (:file (:file "$file1" :contents "{/* code here */}" :contents-in "$file2") :point 100))"""
+    )
+
+    roundtrip(
+      HierarchyOfTypeAtPointReq(sourceFileInfo, 100): RpcRequest,
+      s"""(:ensime-api-hierarchy-of-type-at-point-req (:file (:file "$file1" :contents "{/* code here */}" :contents-in "$file2") :point 100))"""
     )
 
     roundtrip(
@@ -511,14 +516,19 @@ class SwankyFormatsSpec extends EnsimeSpec with EnsimeTestData {
       typeSearchRes: SymbolSearchResult,
       s"""(:ensime-api-type-search-result (:name "abc" :local-name "a" :decl-as :ensime-api-trait :pos (:ensime-api-line-source-position (:file "$abd" :line 10))))"""
     )
+
+    roundtrip(
+      SourcePositions(sourcePos2 :: Nil),
+      s"""(:ensime-api-source-positions (:positions ((:ensime-api-line-source-position (:file "$file1" :line 59)))))"""
+    )
+
+    roundtrip(
+      hierarchyInfo: HierarchyInfo,
+      s"""(:ensime-api-hierarchy-info (:ancestors ((:fqn "java.lang.object" :decl-as :ensime-api-class)) :inheritors ((:scala-name "def.foo" :fqn "def$$foo" :decl-as :ensime-api-class :source-position (:ensime-api-line-source-position (:file "$file1" :line 59))))))"""
+    )
   }
 
   it should "roundtrip ranges and semantic highlighting" in {
-    roundtrip(
-      ERangePositions(ERangePosition(batchSourceFile, 75, 70, 90) :: Nil),
-      """(:ensime-api-e-range-positions (:positions ((:file "/abc" :offset 75 :start 70 :end 90))))"""
-    )
-
     roundtrip(
       FileRange("/abc", 7, 9): FileRange,
       """(:ensime-api-file-range (:file "/abc" :start 7 :end 9))"""

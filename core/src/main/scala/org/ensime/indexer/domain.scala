@@ -22,6 +22,8 @@ object Access {
     else Default
 }
 
+final case class FullyQualifiedReference(fqn: FullyQualifiedName, line: Option[Int])
+
 sealed trait FullyQualifiedName {
   def contains(o: FullyQualifiedName): Boolean
   def fqnString: String
@@ -194,7 +196,7 @@ final case class Descriptor(params: List[DescriptorType], ret: DescriptorType) {
 
 sealed trait RawSymbol {
   def fqn: String
-  def internalRefs: Set[FullyQualifiedName]
+  def internalRefs: List[FullyQualifiedReference]
 }
 
 final case class RawClassfile(
@@ -209,7 +211,7 @@ final case class RawClassfile(
     methods: Queue[RawMethod],
     source: RawSource,
     isScala: Boolean,
-    internalRefs: Set[FullyQualifiedName]
+    internalRefs: List[FullyQualifiedReference]
 ) extends RawSymbol {
   override def fqn: String = name.fqnString
 }
@@ -224,7 +226,7 @@ final case class RawField(
     clazz: DescriptorType,
     generics: Option[String],
     access: Access,
-    internalRefs: Set[FullyQualifiedName]
+    internalRefs: List[FullyQualifiedReference]
 ) extends RawSymbol {
   override def fqn: String = name.fqnString
 }
@@ -234,7 +236,7 @@ final case class RawMethod(
     access: Access,
     generics: Option[String],
     line: Option[Int],
-    internalRefs: Set[FullyQualifiedName]
+    internalRefs: List[FullyQualifiedReference]
 ) extends RawSymbol {
   override def fqn: String = name.fqnString
 }

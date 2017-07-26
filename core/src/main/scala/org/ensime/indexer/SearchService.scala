@@ -50,6 +50,8 @@ class SearchService(
   /**
    * Changelog:
    *
+   * 2.0.4 - find usages and show implementations using Indexer
+   *
    * 2.0.3g - graphpocalypse
    *
    * 2.0.3 - added JDI source information
@@ -76,7 +78,7 @@ class SearchService(
    *
    * 1.0 - initial schema
    */
-  private val version = "2.0.3g"
+  private val version = "2.0.4"
 
   private[indexer] val index = new IndexService(config.cacheDir.file / ("index-" + version))
   private val db = new GraphService((config.cacheDir.file / ("graph-" + version)).toFile)
@@ -245,7 +247,7 @@ class SearchService(
     files: collection.Set[FileObject],
     rootClassFile: FileObject
   ): List[SourceSymbolInfo] = {
-    def getInternalRefs(isUserFile: Boolean, s: RawSymbol): Set[FullyQualifiedName] = if (isUserFile && !noReverseLookups) s.internalRefs else Set.empty
+    def getInternalRefs(isUserFile: Boolean, s: RawSymbol): List[FullyQualifiedReference] = if (isUserFile && !noReverseLookups) s.internalRefs else List.empty
 
     val depickler = new ClassfileDepickler(rootClassFile)
     val scalapClasses = depickler.getClasses
@@ -330,9 +332,12 @@ class SearchService(
   def findUnique(fqn: String): Option[FqnSymbol] = Await.result(db.find(fqn), QUERY_TIMEOUT)
 
   /** returns hierarchy of a type identified by fqn */
-  def getTypeHierarchy(fqn: String, hierarchyType: Hierarchy.Direction): Future[Option[Hierarchy]] = db.getClassHierarchy(fqn, hierarchyType)
+  def getTypeHierarchy(fqn: String, hierarchyType: Hierarchy.Direction, levels: Option[Int] = None): Future[Option[Hierarchy]] = db.getClassHierarchy(fqn, hierarchyType, levels)
 
-  /** returns FqnSymbol which reference given fqn */
+  /** returns locations where given fqn is referred*/
+  def findUsageLocations(fqn: String): Future[Iterable[UsageLocation]] = db.findUsageLocations(fqn)
+
+  /** returns FqnSymbols where given fqn is referred*/
   def findUsages(fqn: String): Future[Iterable[FqnSymbol]] = db.findUsages(fqn)
 
   // blocking badness
@@ -385,7 +390,7 @@ object SearchService {
   sealed trait SourceSymbolInfo {
     def file: FileCheck
     def fqn: String
-    def internalRefs: Set[FullyQualifiedName]
+    def internalRefs: List[FullyQualifiedReference]
     def scalapSymbol: Option[RawScalapSymbol]
   }
 
@@ -393,7 +398,7 @@ object SearchService {
       file: FileCheck
   ) extends SourceSymbolInfo {
     override def fqn: String = ""
-    override def internalRefs: Set[FullyQualifiedName] = Set.empty
+    override def internalRefs: List[FullyQualifiedReference] = List.empty
     override def scalapSymbol: Option[RawScalapSymbol] = None
   }
 
@@ -401,7 +406,7 @@ object SearchService {
       file: FileCheck,
       path: String,
       source: Option[String],
-      internalRefs: Set[FullyQualifiedName],
+      internalRefs: List[FullyQualifiedReference],
       bytecodeSymbol: RawClassfile,
       scalapSymbol: Option[RawScalapClass],
       jdi: Option[String]
@@ -412,7 +417,7 @@ object SearchService {
   final case class MethodSymbolInfo(
       file: FileCheck,
       source: Option[String],
-      internalRefs: Set[FullyQualifiedName],
+      internalRefs: List[FullyQualifiedReference],
       bytecodeSymbol: RawMethod,
       scalapSymbol: Option[RawScalapMethod]
   ) extends SourceSymbolInfo {
@@ -422,7 +427,7 @@ object SearchService {
   final case class FieldSymbolInfo(
       file: FileCheck,
       source: Option[String],
-      internalRefs: Set[FullyQualifiedName],
+      internalRefs: List[FullyQualifiedReference],
       bytecodeSymbol: RawField,
       scalapSymbol: Option[RawScalapField]
   ) extends SourceSymbolInfo {
@@ -436,7 +441,7 @@ object SearchService {
   ) extends SourceSymbolInfo {
     override def scalapSymbol: Option[RawScalapSymbol] = Some(t)
     override def fqn: String = t.javaName.fqnString
-    override def internalRefs: Set[FullyQualifiedName] = Set.empty
+    override def internalRefs: List[FullyQualifiedReference] = List.empty
   }
 }
 

@@ -5,9 +5,11 @@ package org.ensime.intg
 import org.ensime.api._
 import org.ensime.core.RefactoringHandlerTestUtils
 import org.ensime.fixture._
+import org.ensime.indexer.FullyQualifiedName
 import org.ensime.util.EnsimeSpec
 import org.ensime.util.ensimefile.Implicits.DefaultCharset
 import org.ensime.util.file._
+import org.ensime.util.ensimefile._
 
 class ReverseLookupsSpec extends EnsimeSpec
     with IsolatedProjectFixture
@@ -24,14 +26,17 @@ class ReverseLookupsSpec extends EnsimeSpec
           import testKit._
           val sourceRoot = scalaMain(config)
           val fooFile = sourceRoot / "org/example/Foo.scala"
+          val packageFile = sourceRoot / "org/example/package.scala"
 
           // uses of `testMethod`
-          project ! UsesOfSymbolAtPointReq(Left(fooFile), 119)
-          val uses = expectMsgType[ERangePositions]
-          uses.positions.map(usage => (s"${File(usage.file).getName}", usage.offset, usage.start, usage.end)) should contain theSameElementsAs List(
-            ("Foo.scala", 114, 110, 172),
-            ("Foo.scala", 273, 269, 283),
-            ("package.scala", 94, 80, 104)
+          project ! FqnOfSymbolAtPointReq(SourceFileInfo(EnsimeFile(fooFile), None, None), 119)
+          var fqn = expectMsgType[FullyQualifiedName].fqnString
+
+          project ! FindUsages(fqn)
+          val uses = expectMsgType[SourcePositions]
+          uses.positions should contain theSameElementsAs List(
+            LineSourcePosition(EnsimeFile(fooFile), 17),
+            LineSourcePosition(EnsimeFile(packageFile), 7)
           )
         }
       }

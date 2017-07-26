@@ -2,12 +2,17 @@
 // License: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.core
 
+import java.net.URI
+import java.nio.file.Paths
+
 import akka.actor._
 import akka.event.LoggingReceive
+import akka.pattern.pipe
 import org.ensime.api._
 import org.ensime.indexer.SearchService
-import org.ensime.indexer.graph.{ ClassDef, FqnSymbol, Field, Method }
+import org.ensime.indexer.graph._
 import org.ensime.model._
+import org.ensime.util.ensimefile.EnsimeFile
 import org.ensime.vfs._
 
 // only used for queries by other components
@@ -64,6 +69,45 @@ class Indexer(
     case TypeCompletionsReq(query: String, maxResults: Int) =>
       sender ! SymbolSearchResults(oldSearchTypes(query, maxResults))
 
+    case FindUsages(fqn: String) =>
+      import context.dispatcher
+      val usages = index.findUsageLocations(fqn)
+      val response = usages.map { usages =>
+        val results: List[LineSourcePosition] = usages.flatMap { u =>
+          val file = u.file
+          file.map { f =>
+            LineSourcePosition(
+              EnsimeFile(Paths.get(new URI(f)).toString),
+              u.line.getOrElse(u.line.getOrElse(0))
+            )
+          }
+        }(collection.breakOut)
+        SourcePositions(results)
+      }
+      pipe(response) to sender
+
+    case FindHierarchy(fqn: String) =>
+      import context.dispatcher
+
+      def toClassInfos(h: Hierarchy): List[ClassInfo] = {
+        def toClassInfo(c: ClassDef) = ClassInfo(c.scalaName, c.fqn, c.declAs, LineSourcePositionHelper.fromFqnSymbol(c))
+        h match {
+          case TypeHierarchy(aClass, typeRefs) =>
+            typeRefs.map {
+              case TypeHierarchy(aCls, _) => toClassInfo(aCls)
+              case c: ClassDef => toClassInfo(c)
+            }(collection.breakOut)
+          case _ => Nil
+        }
+      }
+
+      val ancestors = index.getTypeHierarchy(fqn, Hierarchy.Supertypes, Some(1)).map(_.map(toClassInfos))
+      val inheritors = index.getTypeHierarchy(fqn, Hierarchy.Subtypes, Some(1)).map(_.map(toClassInfos))
+      val symbolTreeInfo = for {
+        anc <- ancestors
+        inh <- inheritors
+      } yield HierarchyInfo(anc.getOrElse(Nil), inh.getOrElse(Nil))
+      pipe(symbolTreeInfo) to sender
   }
 }
 object Indexer {

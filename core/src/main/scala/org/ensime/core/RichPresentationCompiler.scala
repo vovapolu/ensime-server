@@ -145,21 +145,6 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
   def askReloadAndTypeFiles(files: Iterable[SourceFile]) =
     askOption(reloadAndTypeFiles(files))
 
-  def askUsesOfSymAtPos(pos: Position)(implicit ec: ExecutionContext): Future[List[RangePosition]] = {
-    askLoadedTyped(pos.source)
-    val symbol = askSymbolAt(pos)
-    symbol match {
-      case None => Future.successful(Nil)
-      case Some(sym) =>
-        val source = pos.source
-        val loadedFiles = loadUsesOfSym(sym)
-        loadedFiles.map { lfs =>
-          val files = lfs.map(_.file) + source.file.file.toPath
-          askUsesOfSym(sym, files)
-        }
-    }
-  }
-
   def askUsesOfSym(sym: Symbol, files: SCISet[Path]): List[RangePosition] =
     askOption(usesOfSymbol(sym.pos, files).toList).getOrElse(List.empty)
 
@@ -201,14 +186,6 @@ trait RichCompilerControl extends CompilerControl with RefactoringControl with C
   }
 
   import org.ensime.util.file.File
-  def loadUsesOfSym(sym: Symbol)(implicit ec: ExecutionContext): Future[SCISet[RawFile]] = {
-    val files = usesOfSym(sym)
-    files.map { rfs =>
-      val sfis = rfs.map(rf => SourceFileInfo(rf))
-      handleReloadAndRetypeFiles(sfis)
-      rfs
-    }
-  }
 
   def usesOfSym(sym: Symbol)(implicit ec: ExecutionContext): Future[SCISet[RawFile]] = {
     val noReverseLookups = search.noReverseLookups

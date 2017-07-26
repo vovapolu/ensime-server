@@ -7,14 +7,15 @@ package org.ensime.indexer.orientdb
 
 import scala.Predef.{ any2stringadd => _, _ }
 import scala.collection.JavaConverters._
-import scala.concurrent.{ ExecutionContext, Future, blocking }
+import scala.concurrent.{ blocking, ExecutionContext, Future }
 import scala.util.Try
+
 import akka.event.slf4j.SLF4JLogging
 import com.orientechnologies.orient.core.metadata.schema.OClass
 import com.tinkerpop.blueprints._
 import com.tinkerpop.blueprints.impls.orient._
-import org.ensime.indexer.graph.GraphService.{ IsParent, UsedIn, EnclosingClass }
 import org.ensime.indexer.graph._
+import org.ensime.indexer.graph.GraphService.{ EnclosingClass, IsParent, UsedAt, UsedIn }
 import org.ensime.indexer.orientdb.api._
 import org.ensime.indexer.orientdb.schema.api._
 import org.ensime.util.stringymap.api._
@@ -149,7 +150,7 @@ package object syntax {
       bdf: BigDataFormat[E]
     ): Iterable[VertexT[S]] = v.underlying.getVertices(Direction.IN, bdf.label).asScala.map(VertexT[S])
 
-    def getOutVertices[S, E <: EdgeT[T, S]](
+    def getOutVertices[S, E](
       implicit
       bdf: BigDataFormat[E]
     ): Iterable[VertexT[S]] = v.underlying.getVertices(Direction.OUT, bdf.label).asScala.map(VertexT[S])
@@ -276,7 +277,7 @@ package object syntax {
       p: SPrimitive[P],
       cdefFormat: BigDataFormat[ClassDef]
     ): Boolean = {
-      import GraphService.{ DefinedInS, EnclosingClassS }
+      import GraphService.{ DefinedInS, EnclosingClassS, UsedAtS }
 
       // this is domain specific and should not be here (a general Orient layer)
       def removeRecursive(
@@ -290,6 +291,10 @@ package object syntax {
           .asScala
           .filter(_.getProperty[String]("typehint") != cdefFormat.label)
           .foreach(removeRecursive)
+
+        v.getVertices(Direction.OUT, UsedAtS.label)
+          .asScala
+          .foreach(v => Try(graph.removeVertex(v)))
 
         // race conditions can cause this to fail and then we loop
         // forever. If we fail to delete it, meh.
@@ -333,7 +338,8 @@ package object syntax {
     // this is domain specific and should not be here (a general Orient layer)
     def classHierarchy[P: Ordering](
       value: P,
-      hierarchyType: Hierarchy.Direction
+      hierarchyType: Hierarchy.Direction,
+      levels: Option[Int]
     )(
       implicit
       graph: OrientBaseGraph,
@@ -344,27 +350,36 @@ package object syntax {
       import GraphService.IsParentS
 
       def traverseClassHierarchy(
-        v: VertexT[ClassDef]
+        v: VertexT[ClassDef],
+        noOfTimesLeft: Option[Int] = None
       ): Hierarchy = {
         val vertices: Iterable[VertexT[ClassDef]] = hierarchyType match {
           case Hierarchy.Subtypes => v.getInVertices[ClassDef, IsParent.type]
           case Hierarchy.Supertypes => v.getOutVertices[ClassDef, IsParent.type]
         }
-
         vertices.toList match {
           case Nil => v.toDomain
-          case xs => TypeHierarchy(v.toDomain, xs.sortBy(_.getProperty[P](u.key)).map(traverseClassHierarchy))
+          case xs =>
+            noOfTimesLeft match {
+              case None =>
+                TypeHierarchy(v.toDomain, xs.sortBy(_.getProperty[P](u.key)).map(traverseClassHierarchy(_)))
+              case Some(n) if n > 0 =>
+                TypeHierarchy(v.toDomain, xs.sortBy(_.getProperty[P](u.key)).map(traverseClassHierarchy(_, Some(n - 1))))
+              case _ =>
+                TypeHierarchy(v.toDomain, xs.map(_.toDomain))
+            }
+
         }
       }
 
       readUniqueV[ClassDef, P](value) match {
-        case Some(vertexT) => Some(traverseClassHierarchy(vertexT))
+        case Some(vertexT) => Some(traverseClassHierarchy(vertexT, levels.map(_ - 1)))
         case None => None
       }
     }
 
     // this is domain specific and should not be here (a general Orient layer)
-    def findUsages[P](
+    def findUsageLocations[P](
       value: P
     )(
       implicit
@@ -372,8 +387,8 @@ package object syntax {
       bdf: BigDataFormat[FqnSymbol],
       oid: OrientIdFormat[FqnSymbol, P],
       p: SPrimitive[P]
-    ): Seq[VertexT[FqnSymbol]] = {
-      import GraphService.{ UsedInS, EnclosingClassS }
+    ): Seq[VertexT[UsageLocation]] = {
+      import GraphService.{ UsedAtS, EnclosingClassS }
 
       def traverseEnclosingClasses(v: VertexT[FqnSymbol]): Iterable[VertexT[FqnSymbol]] = {
         val vertices = v.getInVertices[FqnSymbol, EnclosingClass.type]
@@ -383,7 +398,26 @@ package object syntax {
       readUniqueV[FqnSymbol, P](value) match {
         case Some(vertexT) =>
           val innerClasses = traverseEnclosingClasses(vertexT).toList
-          (vertexT :: innerClasses).flatMap(_.getOutVertices[FqnSymbol, UsedIn.type]).distinct
+          (vertexT :: innerClasses).flatMap(_.getOutVertices[UsageLocation, UsedAt.type]).distinct
+        case None => Seq.empty
+      }
+    }
+
+    def findUsages[P](
+      value: P
+    )(
+      implicit
+      graph: OrientBaseGraph,
+      bdf: BigDataFormat[FqnSymbol],
+      oid: OrientIdFormat[FqnSymbol, P],
+      p: SPrimitive[P]
+    ): Seq[VertexT[FqnSymbol]] = {
+      import GraphService.UsedInS
+
+      readUniqueV[FqnSymbol, P](value) match {
+        case Some(vertexT) =>
+          val intermediary: Seq[VertexT[UsageLocation]] = findUsageLocations(value)
+          intermediary.map(_.getOutVertices[FqnSymbol, UsedIn.type].head).distinct
         case None => Seq.empty
       }
     }

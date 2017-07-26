@@ -8,9 +8,10 @@ import org.ensime.api
 import org.ensime.api.{ BasicTypeInfo => _, EnsimeFile => _, _ }
 import org.ensime.core._
 import org.ensime.fixture._
+import org.ensime.indexer.FullyQualifiedName
 import org.ensime.model.BasicTypeInfo
 import org.ensime.util.EnsimeSpec
-import org.ensime.util.ensimefile._
+import org.ensime.util.ensimefile.EnsimeFile
 import org.ensime.util.ensimefile.Implicits.DefaultCharset
 import org.ensime.util.file._
 
@@ -134,16 +135,27 @@ class BasicWorkflow extends EnsimeSpec
 
           val packageFile = sourceRoot / "org/example/package.scala"
           val packageFilePath = packageFile.getAbsolutePath
-          project ! UsesOfSymbolAtPointReq(Left(fooFile), 119) // point on testMethod
-          expectMsgType[ERangePositions].positions should contain theSameElementsAs List(
-            ERangePosition(`fooFilePath`, 114, 110, 172),
-            ERangePosition(`fooFilePath`, 273, 269, 283),
-            ERangePosition(`packageFilePath`, 94, 80, 104)
+
+          project ! FqnOfSymbolAtPointReq(SourceFileInfo(EnsimeFile(fooFile), None, None), 119)
+          var fqn = expectMsgType[FullyQualifiedName].fqnString
+
+          project ! FindUsages(fqn) // point on testMethod
+          expectMsgType[SourcePositions].positions should contain theSameElementsAs List(
+            LineSourcePosition(EnsimeFile(fooFile), 17),
+            LineSourcePosition(EnsimeFile(packageFile), 7)
           )
 
-          asyncHelper.fishForMessage() {
-            case FullTypeCheckCompleteEvent => true
-            case _ => false
+          //-----------------------------------------------------------------------------------------------
+          // tree of symbol at point
+          project ! FqnOfTypeAtPointReq(SourceFileInfo(EnsimeFile(fooFile), None, None), 56)
+          fqn = expectMsgType[FullyQualifiedName].fqnString
+
+          project ! FindHierarchy(fqn) // point on class Bar
+          expectMsgType[HierarchyInfo] should matchPattern {
+            case HierarchyInfo(
+              List(ClassInfo(None, "java.lang.Object", DeclaredAs.Class, _)),
+              List(ClassInfo(Some("org.example.Foo.Foo"), "org.example.Foo$Foo", DeclaredAs.Class, _))
+              ) =>
           }
 
           // note that the line numbers appear to have been stripped from the
@@ -322,13 +334,12 @@ class BasicWorkflow extends EnsimeSpec
           val toBeUnloaded = SourceFileInfo(EnsimeFile(sourceRoot / "org/example2/ToBeUnloaded.scala"))
           val toBeUnloaded2 = SourceFileInfo(EnsimeFile(sourceRoot / "org/example/package.scala"))
 
-          project ! TypecheckFilesReq(List(Left(bazFile), Right(toBeUnloaded)))
+          project ! TypecheckFilesReq(List(Left(bazFile), Right(toBeUnloaded), Right(toBeUnloaded2)))
           expectMsg(VoidResponse)
           all(asyncHelper.receiveN(2)) should matchPattern {
             case note: NewScalaNotesEvent =>
             case FullTypeCheckCompleteEvent =>
           }
-
           project ! UnloadFileReq(toBeUnloaded)
           expectMsg(VoidResponse)
           project ! UnloadFileReq(toBeUnloaded2)
@@ -341,13 +352,6 @@ class BasicWorkflow extends EnsimeSpec
 
           asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
 
-          //-----------------------------------------------------------------------------------------------
-          // uses of symbol at point with a symbol defined in classfiles
-
-          project ! UsesOfSymbolAtPointReq(Left(fooFile), 162) // point on String.length
-          expectMsgType[ERangePositions].positions shouldBe empty
-
-          asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
           asyncHelper.expectNoMsg(3 seconds)
         }
       }

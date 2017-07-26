@@ -46,10 +46,10 @@ sealed trait FqnSymbol {
 }
 
 object FqnSymbol {
-  private[graph] def fromFullyQualifiedName(name: FullyQualifiedName): Option[FqnSymbol] = name match {
-    case cn: ClassName if !cn.isPrimitive => Some(ClassDef(name.fqnString, null, null, None, None, null, None, None, None))
-    case fn: FieldName => Some(Field(name.fqnString, None, None, None, null, None))
-    case mn: MethodName => Some(Method(name.fqnString, None, None, null, None))
+  private[graph] def fromFullyQualifiedReference(ref: FullyQualifiedReference): Option[FqnSymbol] = ref.fqn match {
+    case cn: ClassName if !cn.isPrimitive => Some(ClassDef(ref.fqn.fqnString, null, null, None, None, null, None, None, None))
+    case fn: FieldName => Some(Field(ref.fqn.fqnString, None, None, None, null, None))
+    case mn: MethodName => Some(Method(ref.fqn.fqnString, None, None, null, None))
     case _ => None
   }
 }
@@ -100,6 +100,8 @@ final case class Method(
 
   override def declAs: DeclaredAs = DeclaredAs.Method
 }
+
+final case class UsageLocation(file: Option[String], line: Option[Int])
 
 final case class FileCheck(filename: String, timestamp: Timestamp) {
   def file(implicit vfs: EnsimeVFS): FileObject = vfs.vfile(filename)
@@ -222,7 +224,6 @@ class GraphService(dir: File) extends SLF4JLogging {
       val scalaName = s.scalapSymbol.map(_.scalaName)
       val typeSignature = s.scalapSymbol.map(_.typeSignature)
       val declAs = s.scalapSymbol.map(_.declaredAs)
-
       val vertex = s match {
         case EmptySourceSymbolInfo(fileCheck) =>
           if (!checks.contains(fileCheck.filename)) {
@@ -271,7 +272,7 @@ class GraphService(dir: File) extends SLF4JLogging {
           Some(fieldV)
       }
       s.internalRefs.foreach { ref =>
-        val sym = FqnSymbol.fromFullyQualifiedName(ref)
+        val sym = FqnSymbol.fromFullyQualifiedReference(ref)
         val usage: Option[VertexT[FqnSymbol]] = sym.map {
           case cd: ClassDef => RichGraph.insertIfNotExists[ClassDef, String](cd)
           case m: Method => RichGraph.insertIfNotExists[Method, String](m)
@@ -280,7 +281,11 @@ class GraphService(dir: File) extends SLF4JLogging {
         for {
           u <- usage
           v <- vertex
-        } yield RichGraph.insertE(u, v, UsedIn)
+        } yield {
+          val intermediary: VertexT[UsageLocation] = RichGraph.insertV[UsageLocation](UsageLocation(v.toDomain.source, ref.line))
+          RichGraph.insertE(u, intermediary, UsedAt)
+          RichGraph.insertE(intermediary, v, UsedIn)
+        }
       }
     }
 
@@ -322,8 +327,12 @@ class GraphService(dir: File) extends SLF4JLogging {
       RichGraph.readUniqueV[FqnSymbol, String](fqn.fqn).map(_.toDomain))
   }
 
-  def getClassHierarchy(fqn: String, hierarchyType: Hierarchy.Direction): Future[Option[Hierarchy]] = withGraphAsync { implicit g =>
-    RichGraph.classHierarchy[String](fqn, hierarchyType)
+  def getClassHierarchy(fqn: String, hierarchyType: Hierarchy.Direction, levels: Option[Int]): Future[Option[Hierarchy]] = withGraphAsync { implicit g =>
+    RichGraph.classHierarchy[String](fqn, hierarchyType, levels)
+  }
+
+  def findUsageLocations(fqn: String): Future[Iterable[UsageLocation]] = withGraphAsync { implicit g =>
+    RichGraph.findUsageLocations[String](fqn).map(_.toDomain)
   }
 
   def findUsages(fqn: String): Future[Iterable[FqnSymbol]] = withGraphAsync { implicit g =>
@@ -344,7 +353,8 @@ class GraphService(dir: File) extends SLF4JLogging {
 object GraphService {
   private[indexer] case object DefinedIn extends EdgeT[ClassDef, FileCheck]
   private[indexer] case object EnclosingClass extends EdgeT[FqnSymbol, ClassDef]
-  private[indexer] case object UsedIn extends EdgeT[FqnSymbol, FqnSymbol]
+  private[indexer] case object UsedAt extends EdgeT[FqnSymbol, UsageLocation]
+  private[indexer] case object UsedIn extends EdgeT[UsageLocation, FqnSymbol]
   private[indexer] case object IsParent extends EdgeT[ClassDef, ClassDef]
 
   // the domain-specific formats for schema generation
@@ -393,9 +403,12 @@ object GraphService {
 
   implicit val FqnSymbolBdf: BigDataFormat[FqnSymbol] = cachedImplicit
 
+  implicit val LineNumberBdf: BigDataFormat[UsageLocation] = cachedImplicit
+
   implicit val DefinedInS: BigDataFormat[DefinedIn.type] = cachedImplicit
   implicit val EnclosingClassS: BigDataFormat[EnclosingClass.type] = cachedImplicit
   implicit val UsedInS: BigDataFormat[UsedIn.type] = cachedImplicit
+  implicit val UsedAtS: BigDataFormat[UsedAt.type] = cachedImplicit
   implicit val IsParentS: BigDataFormat[IsParent.type] = cachedImplicit
 
   implicit val UniqueFileCheckV: OrientIdFormat[FileCheck, String] =
