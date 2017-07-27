@@ -28,6 +28,8 @@ object LoggingTestProbe {
 }
 
 object ProjectFixture extends Matchers {
+  import EnsimeConfigFixture.serverConfig
+
   private[fixture] def startup(
     implicit
     testkit: TestKitFix,

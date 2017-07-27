@@ -6,7 +6,6 @@ import scala.collection.immutable.ListSet
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util._
-import scala.util.Properties._
 
 import akka.actor._
 import akka.event.LoggingReceive.withLabel
@@ -15,7 +14,8 @@ import org.ensime.api._
 import org.ensime.config.richconfig._
 import org.ensime.core.debug.DebugActor
 import org.ensime.indexer._
-import org.ensime.util.{ Debouncer, FileUtils, Timing }
+import org.ensime.util.{ Debouncer, Timing }
+import org.ensime.util.FileUtils._
 import org.ensime.util.ensimefile._
 import org.ensime.vfs._
 
@@ -27,10 +27,10 @@ final case class ShutdownRequest(reason: String, isError: Boolean = false)
  */
 class Project(
     broadcaster: ActorRef,
-    implicit val config: EnsimeConfig
+    implicit val config: EnsimeConfig,
+    implicit val serverConfig: EnsimeServerConfig
 ) extends Actor with ActorLogging with Stash {
   import context.system
-  import FileUtils._
 
   /* The main components of the ENSIME server */
   private var scalac: ActorRef = _
@@ -72,7 +72,7 @@ class Project(
     }
     override def baseReCreated(f: FileObject): Unit = askReTypeCheck.values.foreach(_.call())
   }
-  context.actorOf(Props(new ClassfileWatcher(config, searchService :: reTypecheck :: Nil)), "classFileWatcher")
+  context.actorOf(Props(new ClassfileWatcher(searchService :: reTypecheck :: Nil)), "classFileWatcher")
 
   def receive: Receive = awaitingConnectionInfoReq
 
@@ -103,7 +103,7 @@ class Project(
         // we could also just blindly send this on each connection.
         delayedBroadcaster ! Broadcaster.Persist(IndexerReadyEvent)
         log.debug(s"created $inserts and removed $deletes searchable rows")
-        if (propOrFalse("ensime.exitAfterIndex"))
+        if (serverConfig.exitAfterIndex)
           context.parent ! ShutdownRequest("Index only run", isError = false)
       case Failure(problem) =>
         log.warning(s"Refresh failed: ${problem.toString}")
@@ -174,6 +174,6 @@ class Project(
 }
 
 object Project {
-  def apply(target: ActorRef)(implicit config: EnsimeConfig): Props =
-    Props(classOf[Project], target, config)
+  def apply(target: ActorRef)(implicit config: EnsimeConfig, serverConfig: EnsimeServerConfig): Props =
+    Props(classOf[Project], target, config, serverConfig)
 }

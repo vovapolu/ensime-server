@@ -30,3 +30,15 @@ final case class EnsimeProject(
   libraryDocs: List[RawFile]
 )
 
+final case class EnsimeServerConfig(
+  config: RawFile,
+  shutDownOnDisconnect: Boolean,
+  exit: Boolean,
+  protocol: String,
+  exitAfterIndex: Boolean,
+  disableClassMonitoring: Boolean,
+  legacy: LegacyConfig
+)
+final case class LegacyConfig(
+  jarurls: Boolean
+)
