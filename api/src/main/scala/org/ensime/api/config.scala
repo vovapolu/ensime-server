@@ -32,6 +32,7 @@ final case class EnsimeProject(
 
 final case class EnsimeServerConfig(
   config: RawFile,
+  imports: ImportsConfig,
   shutDownOnDisconnect: Boolean,
   exit: Boolean,
   protocol: String,
@@ -41,4 +42,11 @@ final case class EnsimeServerConfig(
 )
 final case class LegacyConfig(
   jarurls: Boolean
+)
+final case class ImportsConfig(
+  strategy: String,
+  groups: List[String],
+  scalaPackageStrategy: Boolean,
+  maxIndividualImports: Int,
+  collapseExclude: Set[String]
 )

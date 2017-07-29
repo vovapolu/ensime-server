@@ -6,6 +6,7 @@ import java.io.File
 import java.nio.file.{ Path, Paths }
 
 import scala.collection.breakOut
+import scala.collection.JavaConverters._
 
 import com.typesafe.config._
 import org.apache.commons.vfs2.FileObject
@@ -21,12 +22,22 @@ package object richconfig {
   def parseServerConfig(c: Config): EnsimeServerConfig = {
     EnsimeServerConfig(
       RawFile(Paths.get(c.getString("ensime.config")).canon),
+      parseServerImportsConfig(c.getConfig("ensime.imports")),
       c.getBoolean("ensime.explode.on.disconnect"),
       c.getBoolean("ensime.exit"),
       c.getString("ensime.protocol"),
       c.getBoolean("ensime.exitAfterIndex"),
       c.getBoolean("ensime.disableClassMonitoring"),
       LegacyConfig(c.getBoolean("ensime.legacy.jarurls"))
+    )
+  }
+  private def parseServerImportsConfig(c: Config): ImportsConfig = {
+    ImportsConfig(
+      c.getString("strategy"),
+      c.getStringList("groups").asScala.toList,
+      c.getBoolean("scalaPackageStrategy"),
+      c.getInt("maxIndividualImports"),
+      c.getStringList("collapseExclude").asScala.toSet
     )
   }
 
