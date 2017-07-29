@@ -9,6 +9,8 @@ import org.ensime.core._
 import org.ensime.vfs._
 import org.ensime.indexer.SearchService
 
+import EnsimeConfigFixture.serverConfig
+
 trait AnalyzerFixture {
   def withAnalyzer(testCode: (EnsimeConfig, TestActorRef[Analyzer]) => Any): Any
 }

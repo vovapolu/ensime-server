@@ -289,6 +289,7 @@ class RichPresentationCompiler(
 )(
   implicit
   val vfs: EnsimeVFS,
+  val serverConfig: EnsimeServerConfig,
   val ec: ExecutionContext
 ) extends Global(settings, richReporter)
     with ModelBuilders with RichCompilerControl

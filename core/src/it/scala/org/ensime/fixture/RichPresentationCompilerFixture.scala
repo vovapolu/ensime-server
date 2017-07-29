@@ -67,6 +67,8 @@ object RichPresentationCompilerFixture {
     val indexer = TestProbe()
     val parent = TestProbe()
 
+    import EnsimeConfigFixture.serverConfig
+
     new RichPresentationCompiler(
       config, settings, reporter, parent.ref, indexer.ref, search
     )

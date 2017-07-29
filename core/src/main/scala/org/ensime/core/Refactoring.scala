@@ -91,6 +91,22 @@ trait RefactoringImpl {
 
   import org.ensime.util.FileUtils._
 
+  lazy val importsConfig = Some(
+    OrganizeImports.OrganizeImportsConfig(
+      importsStrategy = OrganizeImports.ImportsStrategy(
+        serverConfig.imports.strategy
+      ),
+      groups = serverConfig.imports.groups,
+      scalaPackageStrategy = serverConfig.imports.scalaPackageStrategy,
+      collapseToWildcardConfig = Some(
+        OrganizeImports.CollapseToWildcardConfig(
+          serverConfig.imports.maxIndividualImports,
+          serverConfig.imports.collapseExclude
+        )
+      )
+    )
+  )
+
   protected def doRename(procId: Int, tpe: RefactorType, name: String, file: File, start: Int, end: Int, files: Set[String]) =
     new RefactoringEnvironment(file.getPath, start, end) {
       val refactoring = new Rename with GlobalIndexes {
@@ -155,10 +171,7 @@ trait RefactoringImpl {
 
       val result = performRefactoring(procId, tpe, new refactoring.RefactoringParameters(
         options = organizeImportOptions(refactoring),
-        config = Some(OrganizeImports.OrganizeImportsConfig(
-          importsStrategy = Some(OrganizeImports.ImportsStrategy.CollapseImports),
-          groups = List("java", "scala")
-        ))
+        config = importsConfig
       ))
     }.result
 

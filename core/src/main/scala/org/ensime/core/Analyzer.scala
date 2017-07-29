@@ -53,6 +53,7 @@ class Analyzer(
     search: SearchService,
     scoped: List[EnsimeProjectId],
     implicit val config: EnsimeConfig,
+    implicit val serverConfig: EnsimeServerConfig,
     implicit val vfs: EnsimeVFS
 ) extends Actor with Stash with ActorLogging with RefactoringHandler {
 
@@ -314,6 +315,7 @@ object Analyzer {
   )(
     implicit
     config: EnsimeConfig,
+    serverConfig: EnsimeServerConfig,
     vfs: EnsimeVFS
-  ) = Props(new Analyzer(broadcaster, indexer, search, scoped, config, vfs))
+  ) = Props(new Analyzer(broadcaster, indexer, search, scoped, config, serverConfig, vfs))
 }
