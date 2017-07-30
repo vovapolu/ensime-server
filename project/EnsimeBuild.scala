@@ -23,7 +23,7 @@ object ProjectPlugin extends AutoPlugin {
   override def trigger = allRequirements
 
   override def buildSettings = Seq(
-    scalaVersion := "2.12.2",
+    scalaVersion := "2.12.3",
     organization := "org.ensime",
 
     // so M2 releases don't impact SNAPSHOT versioning
@@ -35,6 +35,9 @@ object ProjectPlugin extends AutoPlugin {
     sonatypeGithub := ("ensime", "ensime-server"),
     licenses := Seq(GPL3),
     startYear := Some(2010)
+  ) ++ addCommandAlias(
+    "fmt",
+    ";testutil/createHeaders ;createHeaders ;test:createHeaders ;it:createHeaders ;testutil/scalariformFormat ;scalariformFormat ;test:scalariformFormat ;it:scalariformFormat"
   )
 
   override def projectSettings = Seq(
@@ -225,7 +228,7 @@ object EnsimeBuild {
   }
 
   val luceneVersion = "6.4.2" // 6.6 deprecates index time boosting
-  val nettyVersion = "4.1.12.Final"
+  val nettyVersion = "4.1.13.Final"
   lazy val server = Project("server", file("server")).dependsOn(
     core, swanky, jerky,
     s_express % "test->test",
@@ -275,12 +278,12 @@ object EnsimeBuild {
 
   private def akkaVersion: Def.Initialize[String] = Def.setting {
     CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, minor)) if minor >= 11 => "2.5.2"
+      case Some((2, minor)) if minor >= 11 => "2.5.3"
       case Some((2, 10)) => "2.3.16"
     }
   }
 
-  private val orientVersion = "2.2.21"
+  private val orientVersion = "2.2.24"
 }
 
 // projects used in the integration tests, not published
