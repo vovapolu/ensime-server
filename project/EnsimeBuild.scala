@@ -23,7 +23,7 @@ object ProjectPlugin extends AutoPlugin {
   override def trigger = allRequirements
 
   override def buildSettings = Seq(
-    scalaVersion := "2.12.2",
+    scalaVersion := "2.12.3",
     organization := "org.ensime",
 
     // so M2 releases don't impact SNAPSHOT versioning
