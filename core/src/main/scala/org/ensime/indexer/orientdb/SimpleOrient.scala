@@ -388,7 +388,7 @@ package object syntax {
       oid: OrientIdFormat[FqnSymbol, P],
       p: SPrimitive[P]
     ): Seq[VertexT[UsageLocation]] = {
-      import GraphService.{ UsedAtS, EnclosingClassS }
+      import GraphService.{ UsedAtS, UsedInS, EnclosingClassS }
 
       def traverseEnclosingClasses(v: VertexT[FqnSymbol]): Iterable[VertexT[FqnSymbol]] = {
         val vertices = v.getInVertices[FqnSymbol, EnclosingClass.type]
@@ -398,7 +398,13 @@ package object syntax {
       readUniqueV[FqnSymbol, P](value) match {
         case Some(vertexT) =>
           val innerClasses = traverseEnclosingClasses(vertexT).toList
-          (vertexT :: innerClasses).flatMap(_.getOutVertices[UsageLocation, UsedAt.type]).distinct
+          (vertexT :: innerClasses).flatMap(_.getOutVertices[UsageLocation, UsedAt.type])
+            .distinct
+            .filterNot { vertex =>
+              val usedIn = vertex.getOutVertices[FqnSymbol, UsedIn.type].head
+              val enclosingClass = usedIn.getOutVertices[FqnSymbol, EnclosingClass.type].toList
+              (usedIn :: enclosingClass).contains(vertexT)
+            }
         case None => Seq.empty
       }
     }

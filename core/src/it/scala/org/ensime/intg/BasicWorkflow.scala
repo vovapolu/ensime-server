@@ -35,6 +35,8 @@ class BasicWorkflow extends EnsimeSpec
           val fooFilePath = fooFile.getAbsolutePath
           val barFile = sourceRoot / "org/example/Bar.scala"
           val barPath = barFile.toPath
+          val buzFile = sourceRoot / "org/example/Buz.scala"
+          val buzPath = buzFile.toPath
           val testRoot = scalaTest(config)
           val blooSpecFile = testRoot / "org/example/BlooSpec.scala"
 
@@ -128,7 +130,7 @@ class BasicWorkflow extends EnsimeSpec
           //-----------------------------------------------------------------------------------------------
           // uses of symbol at point
 
-          project ! TypecheckFilesReq(List(Left(fooFile)))
+          project ! TypecheckFilesReq(List(Left(fooFile), Left(buzFile)))
           expectMsg(VoidResponse)
 
           asyncHelper.expectMsg(FullTypeCheckCompleteEvent)
@@ -145,6 +147,15 @@ class BasicWorkflow extends EnsimeSpec
             LineSourcePosition(EnsimeFile(packageFile), 7)
           )
 
+          project ! FqnOfSymbolAtPointReq(SourceFileInfo(EnsimeFile(buzFile), None, None), 102)
+          fqn = expectMsgType[FullyQualifiedName].fqnString
+          println(fqn)
+
+          project ! FindUsages(fqn)
+          expectMsgType[SourcePositions].positions should contain theSameElementsAs List(
+            LineSourcePosition(EnsimeFile(buzFile), 13),
+            LineSourcePosition(EnsimeFile(buzFile), 14)
+          )
           //-----------------------------------------------------------------------------------------------
           // tree of symbol at point
           project ! FqnOfTypeAtPointReq(SourceFileInfo(EnsimeFile(fooFile), None, None), 56)
