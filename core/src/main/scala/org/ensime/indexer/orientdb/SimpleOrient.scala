@@ -277,7 +277,7 @@ package object syntax {
       p: SPrimitive[P],
       cdefFormat: BigDataFormat[ClassDef]
     ): Boolean = {
-      import GraphService.{ DefinedInS, EnclosingClassS, UsedAtS }
+      import GraphService.{ DefinedInS, EnclosingClassS, UsedAtS, UsedInS }
 
       // this is domain specific and should not be here (a general Orient layer)
       def removeRecursive(
@@ -296,6 +296,9 @@ package object syntax {
           .asScala
           .foreach(v => Try(graph.removeVertex(v)))
 
+        v.getVertices(Direction.IN, UsedInS.label)
+          .asScala
+          .foreach(v => Try(graph.removeVertex(v)))
         // race conditions can cause this to fail and then we loop
         // forever. If we fail to delete it, meh.
         Try(graph.removeVertex(v))
