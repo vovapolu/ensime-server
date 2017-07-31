@@ -300,10 +300,12 @@ object SwankProtocolResponse {
     }
   }
 
-  implicit object SourcePositionsFormat extends SexpFormat[SourcePositions] {
-    def write(sp: SourcePositions): Sexp = sp.positions.toSexp
-    def read(sexp: Sexp): SourcePositions = SourcePositions(
-      sexp.convertTo[List[SourcePosition]]
+  implicit def SourceHintFormat: SexpFormat[SourceHint] = { def SourceHintFormat = ???; implicitly[SexpFormat[SourceHint]] }
+
+  implicit object SourceHintsFormat extends SexpFormat[SourceHints] {
+    def write(sp: SourceHints): Sexp = sp.sourceHints.toSexp
+    def read(sexp: Sexp): SourceHints = SourceHints(
+      sexp.convertTo[List[SourceHint]]
     )
   }
 
@@ -547,7 +549,7 @@ object SwankProtocolResponse {
       case value: InterfaceInfo => value.toSexp
       case value: SymbolSearchResults => value.toSexp
       case value: ImportSuggestions => value.toSexp
-      case value: SourcePositions => value.toSexp
+      case value: SourceHints => value.toSexp
       case value: FileRange => value.toSexp
       case value: SymbolDesignations => value.toSexp
       case value: RefactorFailure => value.toSexp

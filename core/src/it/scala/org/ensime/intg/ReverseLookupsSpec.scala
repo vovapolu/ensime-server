@@ -33,10 +33,10 @@ class ReverseLookupsSpec extends EnsimeSpec
           var fqn = expectMsgType[FullyQualifiedName].fqnString
 
           project ! FindUsages(fqn)
-          val uses = expectMsgType[SourcePositions]
-          uses.positions should contain theSameElementsAs List(
-            LineSourcePosition(EnsimeFile(fooFile), 17),
-            LineSourcePosition(EnsimeFile(packageFile), 7)
+          val uses = expectMsgType[SourceHints]
+          uses.sourceHints should contain theSameElementsAs List(
+            SourceHint(LineSourcePosition(EnsimeFile(fooFile), 17), Some("println(foo.testMethod(7, \"seven\"))")),
+            SourceHint(LineSourcePosition(EnsimeFile(packageFile), 7), Some("new Foo.Foo().testMethod(1, \"\")"))
           )
         }
       }

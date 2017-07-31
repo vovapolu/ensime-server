@@ -518,8 +518,8 @@ class SwankyFormatsSpec extends EnsimeSpec with EnsimeTestData {
     )
 
     roundtrip(
-      SourcePositions(sourcePos2 :: Nil),
-      s"""(:ensime-api-source-positions (:positions ((:ensime-api-line-source-position (:file "$file1" :line 59)))))"""
+      SourceHints(sourceHint :: Nil),
+      s"""(:ensime-api-source-hints (:source-hints ((:position (:ensime-api-line-source-position (:file "$file1" :line 57)) :preview "{/* code here */}"))))"""
     )
 
     roundtrip(
