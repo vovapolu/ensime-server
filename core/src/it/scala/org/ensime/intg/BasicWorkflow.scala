@@ -140,9 +140,10 @@ class BasicWorkflow extends EnsimeSpec
           var fqn = expectMsgType[FullyQualifiedName].fqnString
 
           project ! FindUsages(fqn) // point on testMethod
-          expectMsgType[SourceHints].sourceHints should contain theSameElementsAs List(
-            SourceHint(LineSourcePosition(EnsimeFile(fooFile), 17), Some("println(foo.testMethod(7, \"seven\"))")),
-            SourceHint(LineSourcePosition(EnsimeFile(packageFile), 7), Some("new Foo.Foo().testMethod(1, \"\")"))
+          val sourcePositions = expectMsgType[SourcePositions]
+          (sourcePositions.positions zip sourcePositions.previews) should contain theSameElementsAs List(
+            (LineSourcePosition(EnsimeFile(fooFile), 17), "println(foo.testMethod(7, \"seven\"))"),
+            (LineSourcePosition(EnsimeFile(packageFile), 7), "new Foo.Foo().testMethod(1, \"\")")
           )
 
           //-----------------------------------------------------------------------------------------------

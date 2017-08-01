@@ -509,8 +509,8 @@ class JerkyFormatsSpec extends EnsimeSpec with SprayJsonTestSupport with EnsimeT
     )
 
     roundtrip(
-      SourceHints(sourceHint :: Nil): EnsimeServerMessage,
-      s"""{"typehint":"SourceHints","sourceHints":[{"position":{"typehint":"LineSourcePosition","file":"$file1","line":57},"preview":"{/* code here */}"}]}"""
+      SourcePositions(sourcePos2 :: Nil, "{/* code here */}" :: Nil): EnsimeServerMessage,
+      s"""{"typehint":"SourcePositions","positions":[{"typehint":"LineSourcePosition","file":"$file1","line":59}], "previews":["{/* code here */}"]}"""
     )
 
     roundtrip(

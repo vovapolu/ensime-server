@@ -235,8 +235,7 @@ final case class EmptySourcePosition() extends SourcePosition
 final case class OffsetSourcePosition(file: EnsimeFile, offset: Int) extends SourcePosition
 final case class LineSourcePosition(file: EnsimeFile, line: Int) extends SourcePosition
 
-case class SourceHint(position: SourcePosition, preview: Option[String])
-case class SourceHints(sourceHints: List[SourceHint]) extends RpcResponse
+final case class SourcePositions(positions: List[SourcePosition], previews: List[String]) extends RpcResponse
 
 // See if `TypeInfo` can be used instead
 final case class ClassInfo(scalaName: Option[String], fqn: String, declAs: DeclaredAs, sourcePosition: Option[SourcePosition])

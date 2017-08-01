@@ -73,26 +73,26 @@ class Indexer(
       import context.dispatcher
       val usages = index.findUsageLocations(fqn)
       val response = usages.map { usages =>
-        val sourcePositions: List[LineSourcePosition] = usages.flatMap { u =>
+        val positions: List[LineSourcePosition] = usages.take(1000).flatMap { u =>
           val file = u.file
           file.map { f =>
             LineSourcePosition(
               EnsimeFile(Paths.get(new URI(f)).toString),
-              u.line.getOrElse(0) // should we ignore the usageLocations with no line number altogether ?
+              u.line.getOrElse(0)
             )
           }
         }(collection.breakOut)
-        val files = sourcePositions.foldLeft[Set[EnsimeFile]](Set.empty) { (files, pos) =>
+        val files = positions.foldLeft[Set[EnsimeFile]](Set.empty) { (files, pos) =>
           if (pos.line > 0) files + pos.file else files
         }
         val contents: Map[EnsimeFile, Array[String]] = files.map(f => f -> f.readAllLines.toArray)(collection.breakOut)
-        val sourceHints: List[SourceHint] = sourcePositions.map(pos => SourceHint(pos, contents.get(pos.file) match {
+        val previews: List[String] = positions.map(pos => contents.get(pos.file) match {
           case Some(content) if pos.line > 0 =>
-            Some(content(pos.line - 1).trim)
+            content(pos.line - 1).trim
           case _ =>
-            None
-        }))
-        SourceHints(sourceHints)
+            "no preview available"
+        })
+        SourcePositions(positions, previews)
       }
       pipe(response) to sender
 
