@@ -86,7 +86,7 @@ class Indexer(
           if (pos.line > 0) files + pos.file else files
         }
         val contents: Map[EnsimeFile, Array[String]] = files.map(f => f -> f.readAllLines.toArray)(collection.breakOut)
-        val positionHints: List[PositionHint] = positions.map(pos => PositionHint(pos, contents.get(pos.file) match {
+        val positionHints: List[PositionHint] = positions.distinct.map(pos => PositionHint(pos, contents.get(pos.file) match {
           case Some(content) if pos.line > 0 =>
             Some(content(pos.line - 1).trim)
           case _ =>
