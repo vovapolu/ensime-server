@@ -531,8 +531,8 @@ class SwankFormatsSpec extends EnsimeSpec with EnsimeTestData {
     )
 
     marshal(
-      SourcePositions(sourcePos2 :: Nil, "{/* code here */}" :: Nil),
-      s"""(((:type line :file "$file1" :line 59)) ("{/* code here */}"))"""
+      SourcePositions(PositionHint(sourcePos2, Some("{/* code here */}")) :: Nil),
+      s"""((:position (:type line :file "$file1" :line 59) :preview "{/* code here */}"))"""
     )
 
     marshal(

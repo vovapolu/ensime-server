@@ -86,13 +86,13 @@ class Indexer(
           if (pos.line > 0) files + pos.file else files
         }
         val contents: Map[EnsimeFile, Array[String]] = files.map(f => f -> f.readAllLines.toArray)(collection.breakOut)
-        val previews: List[String] = positions.map(pos => contents.get(pos.file) match {
+        val positionHints: List[PositionHint] = positions.map(pos => PositionHint(pos, contents.get(pos.file) match {
           case Some(content) if pos.line > 0 =>
-            content(pos.line - 1).trim
+            Some(content(pos.line - 1).trim)
           case _ =>
-            "no preview available"
-        })
-        SourcePositions(positions, previews)
+            None
+        }))
+        SourcePositions(positionHints)
       }
       pipe(response) to sender
 

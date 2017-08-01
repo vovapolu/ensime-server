@@ -300,21 +300,11 @@ object SwankProtocolResponse {
     }
   }
 
-  /*  implicit def SourceHintFormat: SexpFormat[SourceHint] = { def SourceHintFormat = ???; implicitly[SexpFormat[SourceHint]] }
-
-  implicit object SourceHintsFormat extends SexpFormat[SourceHints] {
-    def write(sp: SourceHints): Sexp = sp.sourceHints.toSexp
-    def read(sexp: Sexp): SourceHints = SourceHints(
-      sexp.convertTo[List[SourceHint]]
-    )
-  }*/
-
   implicit object SourcePositionsFormat extends SexpFormat[SourcePositions] {
-    def write(sp: SourcePositions): Sexp = SexpList(
-      sp.positions.toSexp,
-      sp.previews.toSexp
+    def write(sp: SourcePositions): Sexp = sp.positions.toSexp
+    def read(sexp: Sexp): SourcePositions = SourcePositions(
+      sexp.convertTo[List[PositionHint]]
     )
-    def read(sexp: Sexp): SourcePositions = ???
   }
 
   implicit object NoteSeverityFormat extends TraitFormat[NoteSeverity] {
