@@ -312,9 +312,8 @@ class SearchServiceSpec extends EnsimeSpec
 
   it should "find usages of a regular class" in withSearchService { implicit service =>
     val usages = findUsages("org.reverselookups.MyException")
-    usages.length should ===(6)
+    usages.length should ===(5)
     usages.map(u => unifyMethodName(u.toSearchResult)) should contain theSameElementsAs List(
-      "Method org.reverselookups.MyException#<init>(): org.reverselookups.MyException",
       "Method org.reverselookups.ReverseLookups#throws(): scala.Unit",
       "Method org.reverselookups.ReverseLookups#catches(): scala.Int",
       "Method org.reverselookups.Overloads#foo[T <: org.reverselookups.MyException](t: T): scala.Unit",

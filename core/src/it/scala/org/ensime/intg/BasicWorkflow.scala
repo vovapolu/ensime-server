@@ -141,8 +141,8 @@ class BasicWorkflow extends EnsimeSpec
 
           project ! FindUsages(fqn) // point on testMethod
           expectMsgType[SourcePositions].positions should contain theSameElementsAs List(
-            LineSourcePosition(EnsimeFile(fooFile), 17),
-            LineSourcePosition(EnsimeFile(packageFile), 7)
+            PositionHint(LineSourcePosition(EnsimeFile(fooFile), 17), Some("println(foo.testMethod(7, \"seven\"))")),
+            PositionHint(LineSourcePosition(EnsimeFile(packageFile), 7), Some("new Foo.Foo().testMethod(1, \"\")"))
           )
 
           //-----------------------------------------------------------------------------------------------

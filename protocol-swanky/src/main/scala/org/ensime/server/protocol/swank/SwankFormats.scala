@@ -303,7 +303,7 @@ object SwankProtocolResponse {
   implicit object SourcePositionsFormat extends SexpFormat[SourcePositions] {
     def write(sp: SourcePositions): Sexp = sp.positions.toSexp
     def read(sexp: Sexp): SourcePositions = SourcePositions(
-      sexp.convertTo[List[SourcePosition]]
+      sexp.convertTo[List[PositionHint]]
     )
   }
 

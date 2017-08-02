@@ -12,7 +12,7 @@ import org.ensime.api._
 import org.ensime.indexer.SearchService
 import org.ensime.indexer.graph._
 import org.ensime.model._
-import org.ensime.util.ensimefile.EnsimeFile
+import org.ensime.util.ensimefile._
 import org.ensime.vfs._
 
 // only used for queries by other components
@@ -73,16 +73,26 @@ class Indexer(
       import context.dispatcher
       val usages = index.findUsageLocations(fqn)
       val response = usages.map { usages =>
-        val results: List[LineSourcePosition] = usages.flatMap { u =>
+        val positions: List[LineSourcePosition] = usages.take(1000).flatMap { u =>
           val file = u.file
           file.map { f =>
             LineSourcePosition(
               EnsimeFile(Paths.get(new URI(f)).toString),
-              u.line.getOrElse(u.line.getOrElse(0))
+              u.line.getOrElse(0)
             )
           }
         }(collection.breakOut)
-        SourcePositions(results)
+        val files = positions.foldLeft[Set[EnsimeFile]](Set.empty) { (files, pos) =>
+          if (pos.line > 0) files + pos.file else files
+        }
+        val contents: Map[EnsimeFile, Array[String]] = files.map(f => f -> f.readAllLines.toArray)(collection.breakOut)
+        val positionHints: List[PositionHint] = positions.map(pos => PositionHint(pos, contents.get(pos.file) match {
+          case Some(content) if pos.line > 0 =>
+            Some(content(pos.line - 1).trim)
+          case _ =>
+            None
+        }))
+        SourcePositions(positionHints)
       }
       pipe(response) to sender
 

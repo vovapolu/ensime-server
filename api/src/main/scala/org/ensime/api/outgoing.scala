@@ -235,7 +235,8 @@ final case class EmptySourcePosition() extends SourcePosition
 final case class OffsetSourcePosition(file: EnsimeFile, offset: Int) extends SourcePosition
 final case class LineSourcePosition(file: EnsimeFile, line: Int) extends SourcePosition
 
-case class SourcePositions(positions: List[SourcePosition]) extends RpcResponse
+final case class PositionHint(position: SourcePosition, preview: Option[String])
+final case class SourcePositions(positions: List[PositionHint]) extends RpcResponse
 
 // See if `TypeInfo` can be used instead
 final case class ClassInfo(scalaName: Option[String], fqn: String, declAs: DeclaredAs, sourcePosition: Option[SourcePosition])
@@ -504,7 +505,7 @@ final case class EnsimeImplementation(
 final case class ConnectionInfo(
   pid: Option[Int] = None,
   implementation: EnsimeImplementation = EnsimeImplementation("ENSIME"),
-  version: String = "1.9.5"
+  version: String = "1.9.6"
 ) extends RpcResponse
 
 sealed trait ImplicitInfo
