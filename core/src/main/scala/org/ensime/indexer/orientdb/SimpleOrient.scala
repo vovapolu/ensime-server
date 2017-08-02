@@ -402,7 +402,6 @@ package object syntax {
         case Some(vertexT) =>
           val innerClasses = traverseEnclosingClasses(vertexT).toList
           (vertexT :: innerClasses).flatMap(_.getOutVertices[UsageLocation, UsedAt.type])
-            .distinct
             .filterNot { vertex =>
               val usedIn = vertex.getOutVertices[FqnSymbol, UsedIn.type].head
               val enclosingClass = usedIn.getOutVertices[FqnSymbol, EnclosingClass.type].toList

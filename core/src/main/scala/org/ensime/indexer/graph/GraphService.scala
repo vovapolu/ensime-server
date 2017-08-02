@@ -332,7 +332,7 @@ class GraphService(dir: File) extends SLF4JLogging {
   }
 
   def findUsageLocations(fqn: String): Future[Iterable[UsageLocation]] = withGraphAsync { implicit g =>
-    RichGraph.findUsageLocations[String](fqn).map(_.toDomain)
+    RichGraph.findUsageLocations[String](fqn).map(_.toDomain).distinct
   }
 
   def findUsages(fqn: String): Future[Iterable[FqnSymbol]] = withGraphAsync { implicit g =>
