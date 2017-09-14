@@ -134,6 +134,10 @@ class Project(
     }
     debugger = context.actorOf(DebugActor.props(delayedBroadcaster, searchService), "debugging")
     docs = context.actorOf(DocResolver(), "docs")
+    if (!serverConfig.legacy.connectionInfoReq) {
+      broadcaster ! GreetingInfo()
+      context.become(handleRequests)
+    }
   }
 
   override def postStop(): Unit = {
@@ -167,8 +171,7 @@ class Project(
     case m: DocSigPair => docs forward m
 
     // added here to prevent errors when client sends this repeatedly (e.g. as a keepalive
-    case ConnectionInfoReq =>
-      sender() ! ConnectionInfo()
+    case ConnectionInfoReq => sender() ! ConnectionInfo()
   }
 
 }
