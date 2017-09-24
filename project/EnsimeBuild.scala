@@ -41,7 +41,7 @@ object ProjectPlugin extends AutoPlugin {
   )
 
   override def projectSettings = Seq(
-    scalacOptions -= "-Ywarn-value-discard",
+    scalacOptions in Compile -= "-Ywarn-value-discard",
     scalacOptions ++= Seq("-language:postfixOps", "-language:implicitConversions"),
     scalariformPreferences := SbtScalariform.defaultPreferences
   )
@@ -51,8 +51,8 @@ object EnsimeBuild {
   // common to the ensimeBuild, but not the testing projects
   lazy val commonSettings = Seq(
     dependencyOverrides ++= Set(
-       "com.typesafe.akka" %% "akka-actor" % akkaVersion.value,
-       "com.typesafe.akka" %% "akka-testkit" % akkaVersion.value
+       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
+       "com.typesafe.akka" %% "akka-testkit" % akkaVersion
     ),
 
     // disabling shared memory gives a small performance boost to
@@ -107,7 +107,7 @@ object EnsimeBuild {
     api
   ) settings (
     libraryDependencies ++= List(
-      "com.typesafe.akka" %% "akka-actor" % akkaVersion.value,
+      "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.apache.commons" % "commons-vfs2" % "2.1" exclude ("commons-logging", "commons-logging"),
       "com.google.code.findbugs" % "jsr305" % "3.0.2" % "provided"
@@ -118,8 +118,8 @@ object EnsimeBuild {
     util, api
   ) settings (
       libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-testkit" % akkaVersion.value,
-        "com.typesafe.akka" %% "akka-slf4j" % akkaVersion.value
+        "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
+        "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
       ) ++sensibleTestLibs(Compile)
     )
 
@@ -133,7 +133,7 @@ object EnsimeBuild {
   lazy val s_express = Project("s-express", file("s-express")) settings (commonSettings) settings (
       licenses := Seq(LGPL3),
       libraryDependencies ++= Seq(
-        "com.lihaoyi" %% "fastparse" % "0.4.3",
+        "com.lihaoyi" %% "fastparse" % "0.4.4",
         "org.scalacheck" %% "scalacheck" % "1.13.5" % Test
       ) ++ shapeless.value ++ logback
     )
@@ -147,7 +147,7 @@ object EnsimeBuild {
     api % "test->test" // for the test data
   ) settings (
       libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-slf4j" % akkaVersion.value
+        "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
       ) ++ shapeless.value
     )
 
@@ -158,7 +158,7 @@ object EnsimeBuild {
     api % "test->test" // for the test data
   ) settings (
       libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-slf4j" % akkaVersion.value
+        "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
       ) ++ shapeless.value
     )
 
@@ -193,8 +193,8 @@ object EnsimeBuild {
         "org.ow2.asm" % "asm-commons" % "5.2",
         "org.ow2.asm" % "asm-util" % "5.2",
         "org.scala-lang" % "scalap" % scalaVersion.value,
-        "com.typesafe.akka" %% "akka-actor" % akkaVersion.value,
-        "com.typesafe.akka" %% "akka-slf4j" % akkaVersion.value,
+        "com.typesafe.akka" %% "akka-actor" % akkaVersion,
+        "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
         {
           // see notes in https://github.com/ensime/ensime-server/pull/1446
           val suffix = CrossVersion.partialVersion(scalaVersion.value) match {
@@ -219,7 +219,7 @@ object EnsimeBuild {
   }
 
   val luceneVersion = "6.4.2" // 6.6 deprecates index time boosting
-  val nettyVersion = "4.1.13.Final"
+  val nettyVersion = "4.1.15.Final"
   lazy val server = Project("server", file("server")).dependsOn(
     core, swanky, jerky,
     s_express % "test->test",
@@ -267,14 +267,8 @@ object EnsimeBuild {
       assemblyJarName in assembly := s"ensime_${scalaBinaryVersion.value}-${version.value}-assembly.jar"
     )
 
-  private def akkaVersion: Def.Initialize[String] = Def.setting {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, minor)) if minor >= 11 => "2.5.3"
-      case Some((2, 10)) => "2.3.16"
-    }
-  }
-
-  private val orientVersion = "2.2.24"
+  private val akkaVersion = "2.5.4"
+  private val orientVersion = "2.2.27"
 }
 
 // projects used in the integration tests, not published
