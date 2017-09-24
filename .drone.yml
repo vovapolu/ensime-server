@@ -37,6 +37,5 @@ matrix:
   SCALA_VERSION:
     - 2.12.3
     - 2.11.11
-    - 2.10.6
 
 branches: [ 1.0, 2.0 ]

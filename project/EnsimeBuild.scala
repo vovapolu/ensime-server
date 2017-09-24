@@ -41,14 +41,6 @@ object ProjectPlugin extends AutoPlugin {
   )
 
   override def projectSettings = Seq(
-    scalacOptions := {
-      val orig = scalacOptions.value
-      if (scalaVersion.value.startsWith("2.10"))
-        orig.filterNot(_.startsWith("-Ywarn-numeric-widen")) // false positives
-      else
-        orig
-    },
-
     scalacOptions -= "-Ywarn-value-discard",
     scalacOptions ++= Seq("-language:postfixOps", "-language:implicitConversions"),
     scalariformPreferences := SbtScalariform.defaultPreferences
@@ -206,7 +198,6 @@ object EnsimeBuild {
         {
           // see notes in https://github.com/ensime/ensime-server/pull/1446
           val suffix = CrossVersion.partialVersion(scalaVersion.value) match {
-            case Some((2, 10)) => "2.10.6"
             case Some((2, 11)) => "2.11.8"
             case _             => "2.12.2"
           }
