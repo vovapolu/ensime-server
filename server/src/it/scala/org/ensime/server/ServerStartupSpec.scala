@@ -26,12 +26,10 @@ class ServerStartupSpec extends EnsimeSpec
       withTestKit { implicit tk =>
         import tk._
 
-        val protocol = new SwankProtocol
-        system.actorOf(ServerActor.props(protocol), "ensime-main")
+        system.actorOf(ServerActor.props(), "ensime-main")
 
         eventually(timeout(scaled(10 seconds)), interval(scaled(1 second))) {
           PortUtil.port(config.cacheDir.file, "http").isDefined
-          PortUtil.port(config.cacheDir.file, "port").isDefined
         }
       }
     }
@@ -44,52 +42,20 @@ class ServerStartupSpec extends EnsimeSpec
 
         // this can fail randomly. No general solution.
         val preferredHttp = 10001
-        val preferredTcp = 10002
 
         (config.cacheDir.file / "http").write(preferredHttp.toString)
-        (config.cacheDir.file / "port").write(preferredTcp.toString)
 
-        val protocol = new SwankProtocol
-        system.actorOf(ServerActor.props(protocol), "ensime-main")
+        system.actorOf(ServerActor.props(), "ensime-main")
 
         eventually(timeout(scaled(10 seconds)), interval(scaled(1 second))) {
           val http = new Socket
-          val tcp = new Socket
 
           try {
             http.connect(new InetSocketAddress("127.0.0.1", preferredHttp))
-            tcp.connect(new InetSocketAddress("127.0.0.1", preferredTcp))
-
-            http.isConnected() && tcp.isConnected()
+            http.isConnected()
           } finally {
             Try(http.close())
-            Try(tcp.close())
           }
-        }
-      }
-    }
-  }
-
-  it should "shutdown if preferred TCP port is not available" in {
-    withEnsimeConfig { implicit config =>
-      withTestKit { implicit tk =>
-        import tk._
-
-        val preferredTcp = 10004
-        (config.cacheDir.file / "port").write(preferredTcp.toString)
-        val socket = new ServerSocket()
-
-        try {
-          val tcpHog = socket.bind(new InetSocketAddress("127.0.0.1", preferredTcp))
-
-          eventually { assert(socket.isBound()) }
-
-          val protocol = new SwankProtocol
-          system.actorOf(ServerActor.props(protocol), "ensime-main")
-
-          Await.result(system.whenTerminated, akkaTimeout.duration)
-        } finally {
-          socket.close()
         }
       }
     }
@@ -110,8 +76,7 @@ class ServerStartupSpec extends EnsimeSpec
 
           eventually { assert(socket.isBound()) }
 
-          val protocol = new SwankProtocol
-          system.actorOf(ServerActor.props(protocol), "ensime-main")
+          system.actorOf(ServerActor.props(), "ensime-main")
 
           Await.result(system.whenTerminated, akkaTimeout.duration)
         } finally {

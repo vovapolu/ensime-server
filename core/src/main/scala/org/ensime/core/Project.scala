@@ -2,13 +2,11 @@
 // License: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.core
 
-import scala.collection.immutable.ListSet
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util._
 
 import akka.actor._
-import akka.event.LoggingReceive.withLabel
 import org.apache.commons.vfs2.FileObject
 import org.ensime.api._
 import org.ensime.config.richconfig._
@@ -74,34 +72,13 @@ class Project(
   }
   context.actorOf(Props(new ClassfileWatcher(searchService :: reTypecheck :: Nil)), "classFileWatcher")
 
-  def receive: Receive = awaitingConnectionInfoReq
-
-  // The original ensime protocol won't send any messages to the
-  // client until it has obliged a request for the connection info.
-  // Although this is irrelevant now, it is expected by clients and
-  // must be maintained. Ideally we'd remove this request and make
-  // the response be an async message.
-  def awaitingConnectionInfoReq: Receive = withLabel("awaitingConnectionInfoReq") {
-    case ShutdownRequest => context.parent forward ShutdownRequest
-    case ConnectionInfoReq =>
-      sender() ! ConnectionInfo()
-      context.become(handleRequests)
-      unstashAll()
-      delayedBroadcaster ! FloodGate.Activate
-    case other =>
-      stash()
-  }
-
   override def preStart(): Unit = {
-    delayedBroadcaster = system.actorOf(FloodGate(broadcaster), "delay")
     dependentProjects = config.projects.map(
       p => p.id -> config.projects.filter(_.depends.contains(p.id)).map(_.id)
     )(collection.breakOut)
     searchService.refresh().onComplete {
       case Success((deletes, inserts)) =>
-        // legacy clients expect to see IndexerReady on connection.
-        // we could also just blindly send this on each connection.
-        delayedBroadcaster ! Broadcaster.Persist(IndexerReadyEvent)
+        broadcaster ! Broadcaster.Persist(IndexerReadyEvent)
         log.debug(s"created $inserts and removed $deletes searchable rows")
         if (serverConfig.exitAfterIndex)
           context.parent ! ShutdownRequest("Index only run", isError = false)
@@ -112,32 +89,17 @@ class Project(
 
     indexer = context.actorOf(Indexer(searchService), "indexer")
     if (config.scalaLibrary.isDefined || Set("scala", "dotty")(config.name)) {
-
-      // we merge scala and java AnalyzerReady messages into a single
-      // AnalyzerReady message, fired only after java *and* scala are ready
-      val merger = context.actorOf(Props(new Actor {
-        var senders = ListSet.empty[ActorRef]
-        def receive: Receive = {
-          case Broadcaster.Persist(AnalyzerReadyEvent) if senders.size == 1 =>
-            delayedBroadcaster ! Broadcaster.Persist(AnalyzerReadyEvent)
-          case Broadcaster.Persist(AnalyzerReadyEvent) => senders += sender()
-          case msg => delayedBroadcaster forward msg
-        }
-      }))
-
-      scalac = context.actorOf(AnalyzerManager(merger, Analyzer(merger, indexer, searchService, _)), "scalac")
-      javac = context.actorOf(JavaAnalyzer(merger, indexer, searchService), "javac")
+      scalac = context.actorOf(AnalyzerManager(broadcaster, Analyzer(broadcaster, indexer, searchService, _)), "scalac")
+      javac = context.actorOf(JavaAnalyzer(broadcaster, indexer, searchService), "javac")
     } else {
       log.warning("Detected a pure Java project. Scala queries are not available.")
       scalac = system.deadLetters
-      javac = context.actorOf(JavaAnalyzer(delayedBroadcaster, indexer, searchService), "javac")
+      javac = context.actorOf(JavaAnalyzer(broadcaster, indexer, searchService), "javac")
     }
-    debugger = context.actorOf(DebugActor.props(delayedBroadcaster, searchService), "debugging")
+    debugger = context.actorOf(DebugActor.props(broadcaster, searchService), "debugging")
     docs = context.actorOf(DocResolver(), "docs")
-    if (!serverConfig.legacy.connectionInfoReq) {
-      broadcaster ! GreetingInfo()
-      context.become(handleRequests)
-    }
+
+    broadcaster ! Broadcaster.Persist(GreetingInfo())
   }
 
   override def postStop(): Unit = {
@@ -149,7 +111,7 @@ class Project(
   // debounces compiler restarts
   private var rechecking: Cancellable = _
 
-  def handleRequests: Receive = withLabel("handleRequests") {
+  def receive: Receive = {
     case ShutdownRequest => context.parent forward ShutdownRequest
     case req @ RestartScalaCompilerReq(_, _) => scalac forward req
     case m @ TypecheckFileReq(sfi) if sfi.file.isJava => javac forward m
