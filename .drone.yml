@@ -38,4 +38,6 @@ matrix:
     - 2.12.3
     - 2.11.11
 
-branches: [ 1.0, 2.0 ]
+branches:
+  include: [ 1.0, 2.0, 3.0 ]
+  exclude: [ feature/* ]
