@@ -1,5 +1,7 @@
 package org.ensime.lsp.rpc.messages
 
+import shapeless.tag
+import shapeless.tag.@@
 import spray.json._
 
 import scala.collection.immutable.Seq
@@ -8,41 +10,52 @@ object JsonRpcMessages {
 
   final val Version = "2.0"
 
+  trait JsInnerField
+
   type CorrelationId = Option[Either[BigDecimal, String]]
 
   object CorrelationId {
-    def apply(): CorrelationId = None
+    def apply(): CorrelationId                   = None
     def apply(number: BigDecimal): CorrelationId = Some(Left(number))
-    def apply(str: String): CorrelationId = Some(Right(str))
+    def apply(str: String): CorrelationId        = Some(Right(str))
   }
 
-  type Params = Option[Either[JsObject, JsArray]]
+  type Params =
+    Option[Either[JsObject @@ JsInnerField, JsArray @@ JsInnerField]]
 
   object Params {
-    def apply(): Params = None
-    def apply(obj: JsObject): Params = Some(Left(obj))
-    def apply(arr: JsArray): Params = Some(Right(arr))
+    def apply(): Params                              = None
+    def apply(obj: JsObject @@ JsInnerField): Params = Some(Left(obj))
+    def apply(arr: JsArray @@ JsInnerField): Params  = Some(Right(arr))
   }
 }
 
-import org.ensime.lsp.rpc.messages.JsonRpcMessages._
+import JsonRpcMessages._
 
 sealed abstract class JsonRpcMessage
 
 sealed trait JsonRpcRequestOrNotificationMessage
 
-final case class JsonRpcRequestMessage(jsonrpc: String, method: String, params: Params, id: CorrelationId)
-  extends JsonRpcMessage with JsonRpcRequestOrNotificationMessage {
+final case class JsonRpcRequestMessage(jsonrpc: String,
+                                       method: String,
+                                       params: Params,
+                                       id: CorrelationId)
+    extends JsonRpcMessage
+    with JsonRpcRequestOrNotificationMessage {
   require(jsonrpc == JsonRpcMessages.Version)
 }
 object JsonRpcRequestMessage {
-  def apply(method: String, params: Params, id: CorrelationId): JsonRpcRequestMessage =
+  def apply(method: String,
+            params: Params,
+            id: CorrelationId): JsonRpcRequestMessage =
     apply(JsonRpcMessages.Version, method, params, id)
 }
 
-
-final case class JsonRpcNotificationMessage(jsonrpc: String, method: String, params: Params)
-  extends JsonRpcMessage with JsonRpcRequestOrNotificationMessage {
+final case class JsonRpcNotificationMessage(jsonrpc: String,
+                                            method: String,
+                                            params: Params)
+    extends JsonRpcMessage
+    with JsonRpcRequestOrNotificationMessage {
   require(jsonrpc == JsonRpcMessages.Version)
 }
 object JsonRpcNotificationMessage {
@@ -50,49 +63,52 @@ object JsonRpcNotificationMessage {
     apply(JsonRpcMessages.Version, method, params)
 }
 
-
-
-final case class JsonRpcRequestMessageBatch(messages: Seq[JsonRpcRequestOrNotificationMessage])
-  extends JsonRpcMessage {
+final case class JsonRpcRequestMessageBatch(
+  messages: Seq[JsonRpcRequestOrNotificationMessage]
+) extends JsonRpcMessage {
   require(messages.nonEmpty)
 }
-
 
 sealed abstract class JsonRpcResponseMessage extends JsonRpcMessage {
   def id: CorrelationId
 }
 
-
-final case class JsonRpcResponseSuccessMessage(jsonrpc: String, result: JsValue, id: CorrelationId)
-  extends JsonRpcResponseMessage {
+final case class JsonRpcResponseSuccessMessage(jsonrpc: String,
+                                               result: JsValue @@ JsInnerField,
+                                               id: CorrelationId)
+    extends JsonRpcResponseMessage {
   require(jsonrpc == JsonRpcMessages.Version)
 }
 object JsonRpcResponseSuccessMessage {
-  def apply(result: JsValue, id: CorrelationId): JsonRpcResponseSuccessMessage =
+  def apply(result: JsValue @@ JsInnerField,
+            id: CorrelationId): JsonRpcResponseSuccessMessage =
     apply(JsonRpcMessages.Version, result, id)
 }
 
-
-final case class JsonRpcResponseErrorMessage(jsonrpc: String,
-                                             error: JsonRpcResponseErrorMessage.Error,
-                                             id: CorrelationId)
-  extends JsonRpcResponseMessage {
+final case class JsonRpcResponseErrorMessage(
+  jsonrpc: String,
+  error: JsonRpcResponseErrorMessage.Error,
+  id: CorrelationId
+) extends JsonRpcResponseMessage {
   require(jsonrpc == JsonRpcMessages.Version)
 }
 object JsonRpcResponseErrorMessage {
-  case class Error(code: Int, message: String, data: Option[JsValue])
+  case class Error(code: Int,
+                   message: String,
+                   data: Option[JsValue @@ JsInnerField])
 
-  def apply(code: Int, message: String, data: Option[JsValue],
+  def apply(code: Int,
+            message: String,
+            data: Option[JsValue @@ JsInnerField],
             id: CorrelationId): JsonRpcResponseErrorMessage =
     apply(JsonRpcMessages.Version, Error(code, message, data), id)
 }
 
-
-final case class JsonRpcResponseMessageBatch(messages: Seq[JsonRpcResponseMessage])
-  extends JsonRpcMessage {
+final case class JsonRpcResponseMessageBatch(
+  messages: Seq[JsonRpcResponseMessage]
+) extends JsonRpcMessage {
   require(messages.nonEmpty)
 }
-
 
 object JsonRpcResponseErrorMessages {
 
@@ -107,15 +123,18 @@ object JsonRpcResponseErrorMessages {
   final val ServerErrorCodeFloor: Int   = -32099
   final val ServerErrorCodeCeiling: Int = -32000
 
-  def parseError(exception: Throwable, id: CorrelationId): JsonRpcResponseErrorMessage = rpcError(
+  def parseError(exception: Throwable,
+                 id: CorrelationId): JsonRpcResponseErrorMessage = rpcError(
     ParseErrorCode,
     message = "Parse error",
-    meaning = "Invalid JSON was received by the server.\nAn error occurred on the server while parsing the JSON text.",
+    meaning =
+      "Invalid JSON was received by the server.\nAn error occurred on the server while parsing the JSON text.",
     error = Some(JsString(exception.getMessage)),
     id
   )
 
-  def invalidRequest(error: JsValue, id: CorrelationId): JsonRpcResponseErrorMessage =
+  def invalidRequest(error: JsValue,
+                     id: CorrelationId): JsonRpcResponseErrorMessage =
     rpcError(
       InvalidRequestCode,
       message = "Invalid Request",
@@ -124,7 +143,8 @@ object JsonRpcResponseErrorMessages {
       id
     )
 
-  def methodNotFound(method: String, id: CorrelationId): JsonRpcResponseErrorMessage = rpcError(
+  def methodNotFound(method: String,
+                     id: CorrelationId): JsonRpcResponseErrorMessage = rpcError(
     MethodNotFoundCode,
     message = "Method not found",
     meaning = "The method does not exist / is not available.",
@@ -132,7 +152,8 @@ object JsonRpcResponseErrorMessages {
     id
   )
 
-  def invalidParams(error: JsValue, id: CorrelationId): JsonRpcResponseErrorMessage =
+  def invalidParams(error: JsValue,
+                    id: CorrelationId): JsonRpcResponseErrorMessage =
     rpcError(
       InvalidParamsCode,
       message = "Invalid params",
@@ -141,7 +162,8 @@ object JsonRpcResponseErrorMessages {
       id
     )
 
-  def internalError(error: Option[JsValue], id: CorrelationId): JsonRpcResponseErrorMessage = rpcError(
+  def internalError(error: Option[JsValue],
+                    id: CorrelationId): JsonRpcResponseErrorMessage = rpcError(
     InternalErrorCode,
     message = "Internal error",
     meaning = "Internal JSON-RPC error.",
@@ -149,7 +171,9 @@ object JsonRpcResponseErrorMessages {
     id
   )
 
-  def serverError(code: Int, error: Option[JsValue], id: CorrelationId): JsonRpcResponseErrorMessage = {
+  def serverError(code: Int,
+                  error: Option[JsValue],
+                  id: CorrelationId): JsonRpcResponseErrorMessage = {
     require(code >= ServerErrorCodeFloor && code <= ServerErrorCodeCeiling)
     rpcError(
       code,
@@ -169,9 +193,11 @@ object JsonRpcResponseErrorMessages {
       code,
       message,
       data = Some(
-        JsObject(
-          ("meaning" -> JsString(meaning)) +:
-            error.toSeq.map(error => "error" -> error): _*
+        tag[JsInnerField](
+          JsObject(
+            ("meaning" -> JsString(meaning)) +:
+              error.toSeq.map(error => "error" -> error): _*
+          )
         )
       ),
       id
@@ -185,7 +211,7 @@ object JsonRpcResponseErrorMessages {
     JsonRpcResponseErrorMessage(
       code,
       message,
-      data,
+      data.map(tag[JsInnerField](_)),
       id
     )
   }

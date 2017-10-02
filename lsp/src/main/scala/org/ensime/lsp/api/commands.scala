@@ -1,26 +1,30 @@
-package org.ensime.lsp.api
+package org.ensime.lsp.api.commands
+
+import org.ensime.lsp.api.types._
 
 object TextDocumentSyncKind {
+
   /**
-    * Documents should not be synced at all.
-    */
+   * Documents should not be synced at all.
+   */
   final val None = 0
 
   /**
-    * Documents are synced by always sending the full content
-    * of the document.
-    */
+   * Documents are synced by always sending the full content
+   * of the document.
+   */
   final val Full = 1
 
   /**
-    * Documents are synced by sending the full content on open.
-    * After that only incremental updates to the document are
-    * send.
-    */
+   * Documents are synced by sending the full content on open.
+   * After that only incremental updates to the document are
+   * send.
+   */
   final val Incremental = 2
 }
 
 object MessageType {
+
   /** An error message. */
   final val Error = 1
 
@@ -38,41 +42,34 @@ sealed trait Message
 sealed trait ServerCommand extends Message
 sealed trait ClientCommand extends Message
 
-sealed trait Response extends Message
+sealed trait Response       extends Message
 sealed trait ResultResponse extends Response
 
-sealed trait Notification extends Message
+sealed trait ClientNotification extends Message
 
 /**
  * Parameters and types used in the `initialize` message.
  */
 case class InitializeParams(
-  /**
-   * The process Id of the parent process that started
-   * the server.
-   */
-  processId: Long,
-
-  /**
-   * The rootPath of the workspace. Is null
-   * if no folder is open.
-   */
-  rootPath: String,
-
-  /**
-   * The capabilities provided by the client (editor)
-   */
-  capabilities: ClientCapabilities) extends ServerCommand
+                            /**
+                             * The process Id of the parent process that started
+                             * the server.
+                             */
+                            processId: Long,
+                            /**
+                             * The rootPath of the workspace. Is null
+                             * if no folder is open.
+                             */
+                            rootPath: String,
+                            /**
+                             * The capabilities provided by the client (editor)
+                             */
+                            capabilities: ClientCapabilities)
+    extends ServerCommand
 
 case class InitializeError(retry: Boolean)
 
 case class ClientCapabilities()
-
-//object ClientCapabilities {
-//  implicit val format: Format[ClientCapabilities] = Format(
-//    Reads(jsValue => JsSuccess(ClientCapabilities())),
-//    Writes(c => Json.obj()))
-//} // FIXME
 
 case class ServerCapabilities(
   /**
@@ -130,112 +127,97 @@ case class ServerCapabilities(
   /**
    * The server provides document formatting on typing.
    */
-  documentOnTypeFormattingProvider: Option[DocumentOnTypeFormattingOptions] = None,
+  documentOnTypeFormattingProvider: Option[DocumentOnTypeFormattingOptions] =
+    None,
   /**
    * The server provides rename support.
    */
   renameProvider: Boolean = false
 )
 
-case class CompletionOptions(resolveProvider: Boolean, triggerCharacters: Seq[String])
+case class CompletionOptions(resolveProvider: Boolean,
+                             triggerCharacters: Seq[String])
 
 case class SignatureHelpOptions(triggerCharacters: Seq[String])
 
 case class CodeLensOptions(resolveProvider: Boolean = false)
 
-case class DocumentOnTypeFormattingOptions(firstTriggerCharacter: String, moreTriggerCharacters: Seq[String])
+case class DocumentOnTypeFormattingOptions(firstTriggerCharacter: String,
+                                           moreTriggerCharacters: Seq[String])
 
-case class CompletionList(isIncomplete: Boolean, items: Seq[CompletionItem]) extends ResultResponse
+case class CompletionList(isIncomplete: Boolean, items: Seq[CompletionItem])
+    extends ResultResponse
 
-case class InitializeResult(capabilities: ServerCapabilities) extends ResultResponse
+case class InitializeResult(capabilities: ServerCapabilities)
+    extends ResultResponse
 
 case class Shutdown() extends ServerCommand
-//object Shutdown {
-//  implicit val format: Format[Shutdown] = OFormat(
-//    Reads(jsValue => JsSuccess(Shutdown())),
-//    OWrites[Shutdown](s => Json.obj()))
-//}
 
 case class ShutdownResult(dummy: Int) extends ResultResponse
 
 case class ShowMessageRequestParams(
-  /**
-   * The message type. @see MessageType
-   */
-  tpe: Long,
-
-  /**
-   * The actual message
-   */
-  message: String,
-
-  /**
-   * The message action items to present.
-   */
-  actions: Seq[MessageActionItem]) extends ClientCommand
+                                    /**
+                                     * The message type. @see MessageType
+                                     */
+                                    tpe: Long,
+                                    /**
+                                     * The actual message
+                                     */
+                                    message: String,
+                                    /**
+                                     * The message action items to present.
+                                     */
+                                    actions: Seq[MessageActionItem])
+    extends ClientCommand
 
 /**
  * A short title like 'Retry', 'Open Log' etc.
  */
 case class MessageActionItem(title: String)
 
-case class TextDocumentPositionParams(textDocument: TextDocumentIdentifier, position: Position)
-case class DocumentSymbolParams(textDocument: TextDocumentIdentifier) extends ServerCommand
+case class TextDocumentPositionParams(textDocument: TextDocumentIdentifier,
+                                      position: Position)
+case class DocumentSymbolParams(textDocument: TextDocumentIdentifier)
+    extends ServerCommand
 
-case class TextDocumentCompletionRequest(params: TextDocumentPositionParams) extends ServerCommand
-case class TextDocumentDefinitionRequest(params: TextDocumentPositionParams) extends ServerCommand
-case class TextDocumentHoverRequest(params: TextDocumentPositionParams) extends ServerCommand
+case class TextDocumentCompletionRequest(params: TextDocumentPositionParams)
+    extends ServerCommand
+case class TextDocumentDefinitionRequest(params: TextDocumentPositionParams)
+    extends ServerCommand
+case class TextDocumentHoverRequest(params: TextDocumentPositionParams)
+    extends ServerCommand
 
-case class Hover(contents: Seq[MarkedString], range: Option[Range]) extends ResultResponse
-
-//object ServerCommand extends CommandCompanion[ServerCommand] {
-//
-//  implicit val positionParamsFormat = Json.format[TextDocumentPositionParams]
-//
-//  override val CommandFormats = Message.MessageFormats(
-//    "initialize" -> Json.format[InitializeParams],
-//    "shutdown" -> Shutdown.format,
-//    "textDocument/completion" -> valueFormat(TextDocumentCompletionRequest)(_.params),
-//    "textDocument/definition" -> valueFormat(TextDocumentDefinitionRequest)(_.params),
-//    "textDocument/hover" -> valueFormat(TextDocumentHoverRequest)(_.params),
-//    "textDocument/documentSymbol" -> Json.format[DocumentSymbolParams]
-//  )
-//}
-//
-//object ClientCommand extends CommandCompanion[ClientCommand] {
-//  override val CommandFormats = Message.MessageFormats(
-//    "window/showMessageRequest" -> Json.format[ShowMessageRequestParams])
-//}
+case class Hover(contents: Seq[MarkedString], range: Option[Range])
+    extends ResultResponse
 
 ///////////////////////////// Notifications ///////////////////////////////
 
 // From server to client
 
-case class ShowMessageParams(tpe: Long, message: String) extends Notification
-case class LogMessageParams(tpe: Long, message: String) extends Notification
-case class PublishDiagnostics(uri: String, diagnostics: Seq[Diagnostic]) extends Notification
+case class ShowMessageParams(tpe: Long, message: String) extends ClientNotification
+case class LogMessageParams(tpe: Long, message: String)  extends ClientNotification
+case class PublishDiagnostics(uri: String, diagnostics: Seq[Diagnostic])
+    extends ClientNotification
 
 // from client to server
 
-case class ExitNotification() extends Notification
-case class DidOpenTextDocumentParams(textDocument: TextDocumentItem) extends Notification
+case class ExitNotification() extends ClientNotification
+case class DidOpenTextDocumentParams(textDocument: TextDocumentItem)
+    extends ClientNotification
 case class DidChangeTextDocumentParams(
   textDocument: VersionedTextDocumentIdentifier,
-  contentChanges: Seq[TextDocumentContentChangeEvent]) extends Notification
+  contentChanges: Seq[TextDocumentContentChangeEvent]
+) extends ClientNotification
 
-case class DidCloseTextDocumentParams(textDocument: TextDocumentIdentifier) extends Notification
-case class DidSaveTextDocumentParams(textDocument: TextDocumentIdentifier) extends Notification
-case class DidChangeWatchedFiles(changes: Seq[FileEvent]) extends Notification
+case class DidCloseTextDocumentParams(textDocument: TextDocumentIdentifier)
+    extends ClientNotification
+case class DidSaveTextDocumentParams(textDocument: TextDocumentIdentifier)
+    extends ClientNotification
+case class DidChangeWatchedFiles(changes: Seq[FileEvent]) extends ClientNotification
 
-case class Initialized() extends Notification
-//object Initialized {
-//  implicit val format: Format[Initialized] = OFormat(
-//    Reads(jsValue => JsSuccess(Initialized())),
-//    OWrites[Initialized](s => Json.obj()))
-//}
+case class Initialized() extends ClientNotification
 
-
-case class CancelRequest(id: Int) extends Notification
+case class CancelRequest(id: Int) extends ClientNotification
 
 case class FileEvent(uri: String, `type`: Int)
 
@@ -245,31 +227,9 @@ object FileChangeType {
   final val Deleted = 3
 }
 
-//object Notification extends NotificationCompanion[Notification] {
-//  override val NotificationFormats = Message.MessageFormats(
-//    "window/showMessage" -> Json.format[ShowMessageParams],
-//    "window/logMessage" -> Json.format[LogMessageParams],
-//    "textDocument/publishDiagnostics" -> Json.format[PublishDiagnostics],
-//    "textDocument/didOpen" -> Json.format[DidOpenTextDocumentParams],
-//    "textDocument/didChange" -> Json.format[DidChangeTextDocumentParams],
-//    "textDocument/didClose" -> Json.format[DidCloseTextDocumentParams],
-//    "textDocument/didSave" -> Json.format[DidSaveTextDocumentParams],
-//    "workspace/didChangeWatchedFiles" -> Json.format[DidChangeWatchedFiles],
-//    "initialized" -> Initialized.format,
-//    "$/cancelRequest" -> Json.format[CancelRequest]
-//  )
-//}
 
-case class DocumentSymbolResult(params: Seq[SymbolInformation]) extends ResultResponse
+case class DocumentSymbolResult(params: Seq[SymbolInformation])
+    extends ResultResponse
 case class DefinitionResult(params: Seq[Location]) extends ResultResponse
 
-//object ResultResponse extends ResponseCompanion[Any] {
-//
-//  override val ResponseFormats = Message.MessageFormats(
-//    "initialize" -> Json.format[InitializeResult],
-//    "textDocument/completion" -> Json.format[CompletionList],
-//    "textDocument/definition" -> valueFormat(DefinitionResult)(_.params),
-//    "textDocument/hover" -> Json.format[Hover],
-//    "textDocument/documentSymbol" -> valueFormat(DocumentSymbolResult)(_.params),
-//    "shutdown" -> Json.format[ShutdownResult])
-//}
+
