@@ -37,15 +37,6 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
       def write(obj: JsArray @@ JsInnerField): JsValue = obj
     }
 
-  implicit val JsonRpcRequestMessageFormat
-    : RootJsonFormat[JsonRpcRequestMessage] = cachedImplicit
-  implicit val JsonRpcNotificationMessageFormat
-    : RootJsonFormat[JsonRpcNotificationMessage] = cachedImplicit
-  implicit val JsonRpcResponseSuccessMessageFormat
-    : RootJsonFormat[JsonRpcResponseSuccessMessage] = cachedImplicit
-  implicit val JsonRpcResponseErrorMessageFormat
-    : RootJsonFormat[JsonRpcResponseErrorMessage] = cachedImplicit
-
   implicit object JsonRpcResponseMessageFormat
       extends RootJsonFormat[JsonRpcResponseMessage] {
     def read(j: JsValue): JsonRpcResponseMessage = j match {

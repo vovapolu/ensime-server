@@ -1,6 +1,8 @@
 package org.ensime.lsp.api.commands
 
 import org.ensime.lsp.api.types._
+import org.ensime.lsp.rpc.Utils
+import spray.json.JsonFormat
 
 object TextDocumentSyncKind {
 
@@ -45,7 +47,7 @@ sealed trait ClientCommand extends Message
 sealed trait Response       extends Message
 sealed trait ResultResponse extends Response
 
-sealed trait ClientNotification extends Message
+sealed trait Notification extends Message
 
 /**
  * Parameters and types used in the `initialize` message.
@@ -182,10 +184,39 @@ case class DocumentSymbolParams(textDocument: TextDocumentIdentifier)
 
 case class TextDocumentCompletionRequest(params: TextDocumentPositionParams)
     extends ServerCommand
+
+object TextDocumentCompletionRequest {
+  import spray.json._
+  import spray.json.FamilyFormats._
+
+  implicit val textDocumentCompletionRequestFormat
+    : JsonFormat[TextDocumentCompletionRequest] =
+    Utils.wrapperFormat(TextDocumentCompletionRequest.apply, _.params)
+}
+
 case class TextDocumentDefinitionRequest(params: TextDocumentPositionParams)
     extends ServerCommand
+
+object TextDocumentDefinitionRequest {
+  import spray.json._
+  import spray.json.FamilyFormats._
+
+  implicit val textDocumentDefinitionRequestFormat
+    : JsonFormat[TextDocumentDefinitionRequest] =
+    Utils.wrapperFormat(TextDocumentDefinitionRequest.apply, _.params)
+}
+
 case class TextDocumentHoverRequest(params: TextDocumentPositionParams)
     extends ServerCommand
+
+object TextDocumentHoverRequest {
+  import spray.json._
+  import spray.json.FamilyFormats._
+
+  implicit val textDocumentHoverRequestFormat
+    : JsonFormat[TextDocumentHoverRequest] =
+    Utils.wrapperFormat(TextDocumentHoverRequest.apply, _.params)
+}
 
 case class Hover(contents: Seq[MarkedString], range: Option[Range])
     extends ResultResponse
@@ -194,30 +225,30 @@ case class Hover(contents: Seq[MarkedString], range: Option[Range])
 
 // From server to client
 
-case class ShowMessageParams(tpe: Long, message: String) extends ClientNotification
-case class LogMessageParams(tpe: Long, message: String)  extends ClientNotification
+case class ShowMessageParams(tpe: Long, message: String) extends Notification
+case class LogMessageParams(tpe: Long, message: String)  extends Notification
 case class PublishDiagnostics(uri: String, diagnostics: Seq[Diagnostic])
-    extends ClientNotification
+    extends Notification
 
 // from client to server
 
-case class ExitNotification() extends ClientNotification
+case class ExitNotification() extends Notification
 case class DidOpenTextDocumentParams(textDocument: TextDocumentItem)
-    extends ClientNotification
+    extends Notification
 case class DidChangeTextDocumentParams(
   textDocument: VersionedTextDocumentIdentifier,
   contentChanges: Seq[TextDocumentContentChangeEvent]
-) extends ClientNotification
+) extends Notification
 
 case class DidCloseTextDocumentParams(textDocument: TextDocumentIdentifier)
-    extends ClientNotification
+    extends Notification
 case class DidSaveTextDocumentParams(textDocument: TextDocumentIdentifier)
-    extends ClientNotification
-case class DidChangeWatchedFiles(changes: Seq[FileEvent]) extends ClientNotification
+    extends Notification
+case class DidChangeWatchedFiles(changes: Seq[FileEvent]) extends Notification
 
-case class Initialized() extends ClientNotification
+case class Initialized() extends Notification
 
-case class CancelRequest(id: Int) extends ClientNotification
+case class CancelRequest(id: Int) extends Notification
 
 case class FileEvent(uri: String, `type`: Int)
 
@@ -227,9 +258,23 @@ object FileChangeType {
   final val Deleted = 3
 }
 
-
 case class DocumentSymbolResult(params: Seq[SymbolInformation])
     extends ResultResponse
+
+object DocumentSymbolResult {
+  import spray.json._
+  import spray.json.FamilyFormats._
+
+  implicit val documentSymbolResultFormat: JsonFormat[DocumentSymbolResult] =
+    Utils.wrapperFormat(DocumentSymbolResult.apply, _.params)
+}
+
 case class DefinitionResult(params: Seq[Location]) extends ResultResponse
 
+object DefinitionResult {
+  import spray.json._
+  import spray.json.FamilyFormats._
 
+  implicit val definitionResultFormat: JsonFormat[DefinitionResult] =
+    Utils.wrapperFormat(DefinitionResult.apply, _.params)
+}

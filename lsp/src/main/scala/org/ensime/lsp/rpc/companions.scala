@@ -2,18 +2,17 @@ package org.ensime.lsp.rpc.companions
 
 import spray.json.{ JsObject, JsonFormat }
 
-import scala.language.existentials
 import org.ensime.lsp.rpc.messages._
 import JsonRpcMessages._
 import shapeless.tag
 
 import scala.util.{ Failure, Success, Try }
 
-case class Command[A](method: String, format: JsonFormat[A])
+case class RpcCommand[A](method: String)(implicit val format: JsonFormat[A])
 
 trait CommandCompanion[A] {
 
-  protected[this] val commands: Seq[Command[_ <: A]]
+  protected[this] val commands: Seq[RpcCommand[_ <: A]]
 
   def read(
     jsonRpcRequestMessage: JsonRpcRequestMessage
@@ -34,7 +33,7 @@ trait CommandCompanion[A] {
     }
 
   def write[B <: A](obj: B, id: CorrelationId)(
-    implicit command: Command[B]
+    implicit command: RpcCommand[B]
   ): JsonRpcRequestMessage = {
     val jsObj = command.format.write(obj) match {
       case o: JsObject => o
@@ -50,19 +49,19 @@ trait CommandCompanion[A] {
   }
 }
 
-trait ResponseCompanion[A] {
+object ResponseBuilder {
 
-  def read[B <: A](
+  def read[A](
     jsonRpcResponseSuccessMessage: JsonRpcResponseSuccessMessage
-  )(implicit format: JsonFormat[B]): Either[String, B] =
+  )(implicit format: JsonFormat[A]): Either[String, A] =
     Try(format.read(jsonRpcResponseSuccessMessage.result)) match {
       // We do this just to reset the path in the success case.
       case Failure(invalid) => Left(invalid.toString)
       case Success(valid)   => Right(valid)
     }
 
-  def write[B <: A](obj: B, id: CorrelationId)(
-    implicit format: JsonFormat[B]
+  def write[A](obj: A, id: CorrelationId)(
+    implicit format: JsonFormat[A]
   ): JsonRpcResponseSuccessMessage =
     JsonRpcResponseSuccessMessage(
       tag[JsInnerField](format.write(obj)),
@@ -70,11 +69,13 @@ trait ResponseCompanion[A] {
     )
 }
 
-case class Notification[A](method: String, format: JsonFormat[A])
+case class RpcNotification[A](method: String)(
+  implicit val format: JsonFormat[A]
+)
 
 trait NotificationCompanion[A] {
 
-  protected[this] val notifications: Seq[Notification[_ <: A]]
+  protected[this] val notifications: Seq[RpcNotification[_ <: A]]
 
   def read(
     jsonRpcNotificationMessage: JsonRpcNotificationMessage
@@ -96,7 +97,7 @@ trait NotificationCompanion[A] {
 
   def write[B <: A](
     obj: B
-  )(implicit notification: Notification[B]): JsonRpcNotificationMessage = {
+  )(implicit notification: RpcNotification[B]): JsonRpcNotificationMessage = {
     val jsObj = notification.format.write(obj) match {
       case o: JsObject => o
       case _ =>

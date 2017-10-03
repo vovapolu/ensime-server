@@ -104,12 +104,20 @@ sealed trait MarkedString
 
 case class RawMarkedString(language: String, value: String)
     extends MarkedString {
-  def this(value: String) {
+  def this(value: String) { // why not a factory constructor
     this("text", value)
   }
 }
 
 case class MarkdownString(contents: String) extends MarkedString
+
+object MarkedString {
+  import org.ensime.lsp.api.TypesConversions
+  import spray.json.JsonFormat
+
+  implicit val markedStringFormat: JsonFormat[MarkedString] =
+    TypesConversions.markedStringFormat
+}
 
 case class ParameterInformation(label: String, documentation: Option[String])
 
