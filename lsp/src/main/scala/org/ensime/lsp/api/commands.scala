@@ -1,8 +1,7 @@
 package org.ensime.lsp.api.commands
 
+import org.ensime.lsp.JsonUtils
 import org.ensime.lsp.api.types._
-import org.ensime.lsp.rpc.Utils
-import spray.json.JsonFormat
 
 object TextDocumentSyncKind {
 
@@ -191,7 +190,7 @@ object TextDocumentCompletionRequest {
 
   implicit val textDocumentCompletionRequestFormat
     : JsonFormat[TextDocumentCompletionRequest] =
-    Utils.wrapperFormat(TextDocumentCompletionRequest.apply, _.params)
+    JsonUtils.wrapperFormat(TextDocumentCompletionRequest.apply, _.params)
 }
 
 case class TextDocumentDefinitionRequest(params: TextDocumentPositionParams)
@@ -203,7 +202,7 @@ object TextDocumentDefinitionRequest {
 
   implicit val textDocumentDefinitionRequestFormat
     : JsonFormat[TextDocumentDefinitionRequest] =
-    Utils.wrapperFormat(TextDocumentDefinitionRequest.apply, _.params)
+    JsonUtils.wrapperFormat(TextDocumentDefinitionRequest.apply, _.params)
 }
 
 case class TextDocumentHoverRequest(params: TextDocumentPositionParams)
@@ -215,7 +214,7 @@ object TextDocumentHoverRequest {
 
   implicit val textDocumentHoverRequestFormat
     : JsonFormat[TextDocumentHoverRequest] =
-    Utils.wrapperFormat(TextDocumentHoverRequest.apply, _.params)
+    JsonUtils.wrapperFormat(TextDocumentHoverRequest.apply, _.params)
 }
 
 case class Hover(contents: Seq[MarkedString], range: Option[Range])
@@ -266,7 +265,7 @@ object DocumentSymbolResult {
   import spray.json.FamilyFormats._
 
   implicit val documentSymbolResultFormat: JsonFormat[DocumentSymbolResult] =
-    Utils.wrapperFormat(DocumentSymbolResult.apply, _.params)
+    JsonUtils.wrapperFormat(DocumentSymbolResult.apply, _.params)
 }
 
 case class DefinitionResult(params: Seq[Location]) extends ResultResponse
@@ -276,5 +275,5 @@ object DefinitionResult {
   import spray.json.FamilyFormats._
 
   implicit val definitionResultFormat: JsonFormat[DefinitionResult] =
-    Utils.wrapperFormat(DefinitionResult.apply, _.params)
+    JsonUtils.wrapperFormat(DefinitionResult.apply, _.params)
 }

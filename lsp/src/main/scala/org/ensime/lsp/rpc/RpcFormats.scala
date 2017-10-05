@@ -4,6 +4,7 @@ import spray.json._
 import shapeless._
 import messages._
 import JsonRpcMessages._
+import org.ensime.lsp.JsonUtils
 import shapeless.tag.@@
 
 import scala.collection.immutable.Seq
@@ -73,25 +74,13 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
     }
   }
 
-  implicit object JsonRpcRequestMessageBatchFormat
-      extends RootJsonFormat[JsonRpcRequestMessageBatch] {
-    def read(j: JsValue): JsonRpcRequestMessageBatch =
-      JsonRpcRequestMessageBatch(
-        j.convertTo[Seq[JsonRpcRequestOrNotificationMessage]]
-      )
+  implicit val JsonRpcRequestMessageBatchFormat
+    : RootJsonFormat[JsonRpcRequestMessageBatch] =
+    rootFormat(JsonUtils.wrapperFormat(JsonRpcRequestMessageBatch, _.messages))
 
-    def write(obj: JsonRpcRequestMessageBatch): JsValue =
-      obj.messages.toJson
-  }
-
-  implicit object JsonRpcResponseMessageBatchFormat
-      extends RootJsonFormat[JsonRpcResponseMessageBatch] {
-    def read(j: JsValue): JsonRpcResponseMessageBatch =
-      JsonRpcResponseMessageBatch(j.convertTo[Seq[JsonRpcResponseMessage]])
-
-    def write(obj: JsonRpcResponseMessageBatch): JsValue =
-      obj.messages.toJson
-  }
+  implicit val JsonRpcResponseMessageBatchFormat
+    : RootJsonFormat[JsonRpcResponseMessageBatch] =
+    rootFormat(JsonUtils.wrapperFormat(JsonRpcResponseMessageBatch, _.messages))
 
   implicit object JsonRpcMessageFormat extends RootJsonFormat[JsonRpcMessage] {
     // we should not introduce new fields to rpc jsons
@@ -117,9 +106,16 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
     }
   }
 
+  implicit val JsonRpcRequestMessageFormat
+    : RootJsonFormat[JsonRpcRequestMessage] = cachedImplicit
+
 }
 
 object RpcFormats {
   implicit val JsonRpcMessageFormat: RootJsonFormat[JsonRpcMessage] =
     RpcConversions.JsonRpcMessageFormat
+  implicit val JsonRpcRequestMessageFormat
+    : RootJsonFormat[JsonRpcRequestMessage] =
+    RpcConversions.JsonRpcRequestMessageFormat
+
 }

@@ -1,8 +1,8 @@
-package org.ensime.lsp.rpc
+package org.ensime.lsp
 
 import spray.json._
 
-object Utils {
+object JsonUtils {
   def wrapperFormat[A, B: JsonFormat](wrap: B => A,
                                       unwrap: A => B): JsonFormat[A] =
     new JsonFormat[A] {

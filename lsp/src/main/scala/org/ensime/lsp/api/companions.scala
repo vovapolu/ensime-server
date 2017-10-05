@@ -45,7 +45,7 @@ object ClientCommand extends CommandCompanion[ClientCommand] {
   val commands = Seq(showMessageRequestCommand)
 }
 
-object ClientNotifications extends DefaultJsonProtocol with FamilyFormats {
+object Notifications extends DefaultJsonProtocol with FamilyFormats {
   implicit val showMessageNotification: RpcNotification[ShowMessageParams] =
     RpcNotification[ShowMessageParams]("window/showMessage")
   implicit val logMessageNotification: RpcNotification[LogMessageParams] =
@@ -72,9 +72,9 @@ object ClientNotifications extends DefaultJsonProtocol with FamilyFormats {
     RpcNotification[CancelRequest]("$/cancelRequest")
 }
 
-object ClientNotification extends NotificationCompanion[Notification] {
+object Notification extends NotificationCompanion[Notification] {
 
-  import ClientNotifications._
+  import Notifications._
 
   val notifications = Seq(
     showMessageNotification,

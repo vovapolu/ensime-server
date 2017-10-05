@@ -133,13 +133,13 @@ object JsonRpcResponseErrorMessages {
     id
   )
 
-  def invalidRequest(error: JsValue,
+  def invalidRequest(exception: Throwable,
                      id: CorrelationId): JsonRpcResponseErrorMessage =
     rpcError(
       InvalidRequestCode,
       message = "Invalid Request",
       meaning = "The JSON sent is not a valid Request object.",
-      error = Some(error),
+      error = Some(JsString(exception.getMessage)),
       id
     )
 
@@ -152,13 +152,13 @@ object JsonRpcResponseErrorMessages {
     id
   )
 
-  def invalidParams(error: JsValue,
+  def invalidParams(e: String,
                     id: CorrelationId): JsonRpcResponseErrorMessage =
     rpcError(
       InvalidParamsCode,
       message = "Invalid params",
       meaning = "Invalid method parameter(s).",
-      error = Some(error),
+      error = Some(JsString(e)),
       id
     )
 
