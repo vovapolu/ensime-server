@@ -7,7 +7,6 @@ import JsonRpcMessages._
 import org.ensime.lsp.JsonUtils
 import shapeless.tag.@@
 
-import scala.collection.immutable.Seq
 import scala.util.Try
 
 private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
@@ -108,6 +107,12 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
 
   implicit val JsonRpcRequestMessageFormat
     : RootJsonFormat[JsonRpcRequestMessage] = cachedImplicit
+  implicit val JsonRpcNotificationMessageFormat
+    : RootJsonFormat[JsonRpcNotificationMessage] = cachedImplicit
+  implicit val JsonRpcResponseSuccessMessageFormat
+    : RootJsonFormat[JsonRpcResponseSuccessMessage] = cachedImplicit
+  implicit val JsonRpcResponseErrorMessageFormat
+    : RootJsonFormat[JsonRpcResponseErrorMessage] = cachedImplicit
 
 }
 
@@ -117,5 +122,13 @@ object RpcFormats {
   implicit val JsonRpcRequestMessageFormat
     : RootJsonFormat[JsonRpcRequestMessage] =
     RpcConversions.JsonRpcRequestMessageFormat
-
+  implicit val JsonRpcNotificationMessageFormat
+    : RootJsonFormat[JsonRpcNotificationMessage] =
+    RpcConversions.JsonRpcNotificationMessageFormat
+  implicit val JsonRpcResponseSuccessMessageFormat
+    : RootJsonFormat[JsonRpcResponseSuccessMessage] =
+    RpcConversions.JsonRpcResponseSuccessMessageFormat
+  implicit val JsonRpcResponseErrorMessageFormat
+    : RootJsonFormat[JsonRpcResponseErrorMessage] =
+    RpcConversions.JsonRpcResponseErrorMessageFormat
 }

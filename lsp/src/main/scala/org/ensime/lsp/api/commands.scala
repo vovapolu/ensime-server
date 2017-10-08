@@ -224,8 +224,8 @@ case class Hover(contents: Seq[MarkedString], range: Option[Range])
 
 // From server to client
 
-case class ShowMessageParams(tpe: Long, message: String) extends Notification
-case class LogMessageParams(tpe: Long, message: String)  extends Notification
+case class ShowMessageParams(tpe: Int, message: String) extends Notification
+case class LogMessageParams(tpe: Int, message: String)  extends Notification
 case class PublishDiagnostics(uri: String, diagnostics: Seq[Diagnostic])
     extends Notification
 

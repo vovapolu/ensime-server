@@ -1,8 +1,8 @@
 package org.ensime.lsp
 
-import scala.util.Properties
-import java.io.PrintStream
-import java.io.FileOutputStream
+//import scala.util.Properties
+//import java.io.PrintStream
+//import java.io.FileOutputStream
 
 import org.ensime.util.Slf4jSetup
 import org.slf4j._

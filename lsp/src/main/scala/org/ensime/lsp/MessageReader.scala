@@ -8,18 +8,18 @@ import akka.event.slf4j.SLF4JLogging
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * A Language Server message Reader. It expects the following format:
-  *
-  * <Header> '\r\n' <Content>
-  *
-  * Header := FieldName ':' FieldValue '\r\n'
-  *
-  * Currently there are two defined header fields:
-  * - 'Content-Length' in bytes (required)
-  * - 'Content-Type' (string), defaults to 'application/vscode-jsonrpc; charset=utf8'
-  *
-  * @note The header part is defined to be ASCII encoded, while the content part is UTF8.
-  */
+ * A Language Server message Reader. It expects the following format:
+ *
+ * <Header> '\r\n' <Content>
+ *
+ * Header := FieldName ':' FieldValue '\r\n'
+ *
+ * Currently there are two defined header fields:
+ * - 'Content-Length' in bytes (required)
+ * - 'Content-Type' (string), defaults to 'application/vscode-jsonrpc; charset=utf8'
+ *
+ * @note The header part is defined to be ASCII encoded, while the content part is UTF8.
+ */
 class MessageReader(in: InputStream) extends SLF4JLogging {
   val BufferSize = 8192
 
@@ -32,7 +32,7 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
   private val lock = new Object
 
   private class PumpInput extends Thread("Input Reader") {
-    override def run() {
+    override def run(): Unit = {
       var nRead = 0
       do {
         nRead = in.read(buffer)
@@ -52,21 +52,20 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
   (new PumpInput).start()
 
   /**
-    * Return headers, if any are available. It returns only full headers, after the
-    * \r\n\r\n mark has been seen.
-    *
-    * @return A map of headers. If the map is empty it could be that the input stream
-    *         was closed, or there were no headers before the delimiter. You can disambiguate
-    *         by checking {{{this.streamClosed}}}
-    */
-  private[core] final def getHeaders: Map[String, String] = lock.synchronized {
-    def atDelimiter(idx: Int): Boolean = {
+   * Return headers, if any are available. It returns only full headers, after the
+   * \r\n\r\n mark has been seen.
+   *
+   * @return A map of headers. If the map is empty it could be that the input stream
+   *         was closed, or there were no headers before the delimiter. You can disambiguate
+   *         by checking {{{this.streamClosed}}}
+   */
+  private[lsp] final def getHeaders: Map[String, String] = lock.synchronized {
+    def atDelimiter(idx: Int): Boolean =
       (data.size >= idx + 4
-      && data(idx) == '\r'
-      && data(idx + 1) == '\n'
-      && data(idx + 2) == '\r'
-      && data(idx + 3) == '\n')
-    }
+        && data(idx) == '\r'
+        && data(idx + 1) == '\n'
+        && data(idx + 2) == '\r'
+        && data(idx + 3) == '\n')
 
     while (data.size < 4 && !streamClosed) lock.wait()
 
@@ -98,7 +97,8 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
       // if there was a malformed header we keep trying to re-sync and read again
       if (pairs.contains(None)) {
         log.error(
-          "There was an empty pair in $pairs, trying to read another header.")
+          s"There was an empty pair in $pairs, trying to read another header."
+        )
         getHeaders
       } else pairs.flatten.toMap
     } else if (streamClosed) {
@@ -110,11 +110,11 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
   }
 
   /**
-    * Return `len` bytes of content as a string encoded in UTF8.
-    *
-    * @note If the stream was closed this method returns the empty string.
-    */
-  private[core] def getContent(len: Int): Option[String] = lock.synchronized {
+   * Return `len` bytes of content as a string encoded in UTF8.
+   *
+   * @note If the stream was closed this method returns the empty string.
+   */
+  private[lsp] def getContent(len: Int): Option[String] = lock.synchronized {
     while (data.size < len && !streamClosed) lock.wait()
 
     if (streamClosed) None
@@ -127,8 +127,8 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
   }
 
   /**
-    * Return the next JSON RPC content payload. Blocks until enough data has been received.
-    */
+   * Return the next JSON RPC content payload. Blocks until enough data has been received.
+   */
   def nextPayload(): Option[String] =
     if (streamClosed) None
     else {
@@ -150,7 +150,8 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
           if (content.forall(_.isEmpty) && streamClosed) None else content
         } else {
           log.error(
-            "Input must have Content-Length header with a numeric value.")
+            "Input must have Content-Length header with a numeric value."
+          )
           nextPayload()
         }
       }
@@ -159,5 +160,5 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
 
 object MessageReader {
   val AsciiCharset: Charset = Charset.forName("ASCII")
-  val Utf8Charset: Charset = Charset.forName("UTF-8")
+  val Utf8Charset: Charset  = Charset.forName("UTF-8")
 }

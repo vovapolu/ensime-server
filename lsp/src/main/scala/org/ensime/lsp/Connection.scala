@@ -1,6 +1,6 @@
 package org.ensime.lsp
 
-import java.io.{InputStream, OutputStream}
+import java.io.{ InputStream, OutputStream }
 import java.util.concurrent.Executors
 
 import akka.event.slf4j.SLF4JLogging
@@ -9,6 +9,7 @@ import org.ensime.lsp.api.companions._
 import org.ensime.lsp.api.types._
 import org.ensime.lsp.rpc.RpcFormats._
 import org.ensime.lsp.rpc.companions._
+import org.ensime.lsp.api.companions.Notifications._
 import org.ensime.lsp.rpc.messages.JsonRpcMessages._
 import org.ensime.lsp.rpc.messages.{
   JsonRpcResponseErrorMessage => RpcError,
@@ -18,24 +19,25 @@ import org.ensime.lsp.rpc.messages.{
 import spray.json._
 
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 /**
-  * A connection that reads and writes Language Server Protocol messages.
-  *
-  * @note Commands are executed asynchronously via a thread pool
-  * @note Notifications are executed synchronously on the calling thread
-  * @note The command handler returns Any because sometimes response objects can't be part
-  *       of a sealed hierarchy. For instance, goto definition returns a {{{Seq[Location]}}}
-  *       and that can't subclass anything other than Any
-  */
+ * A connection that reads and writes Language Server Protocol messages.
+ *
+ * @note Commands are executed asynchronously via a thread pool
+ * @note Notifications are executed synchronously on the calling thread
+ * @note The command handler returns Any because sometimes response objects can't be part
+ *       of a sealed hierarchy. For instance, goto definition returns a {{{Seq[Location]}}}
+ *       and that can't subclass anything other than Any
+ */
 class Connection(inStream: InputStream,
                  outStream: OutputStream,
                  notificationHandlers: Seq[Notification => Unit],
                  commandHandler: (
-                     String,
-                     ServerCommand,
-                     CorrelationId) => JsonRpcResponseSuccessMessage)
+                   String,
+                   ServerCommand,
+                   CorrelationId
+                 ) => Option[JsonRpcResponseSuccessMessage])
     extends SLF4JLogging {
   private val msgReader = new MessageReader(inStream)
   private val msgWriter = new MessageWriter(outStream)
@@ -44,47 +46,47 @@ class Connection(inStream: InputStream,
   implicit private val commandExecutionContext =
     ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(4))
 
-  def notifySubscribers(n: Notification): Unit = {
-    notificationHandlers.foreach(f =>
-      Try(f(n)).recover {
-        case e => log.error("failed notification handler", e)
-    })
-  }
+  def notifySubscribers(n: Notification): Unit =
+    notificationHandlers.foreach(
+      f =>
+        Try(f(n)).recover {
+          case e => log.error("failed notification handler", e)
+      }
+    )
 
-  def sendNotification(notification: Notification): Unit = {
+  def sendNotification[N <: Notification: RpcNotification](
+    notification: N
+  ): Unit = {
     val json = Notification.write(notification)
     msgWriter.write(json)
   }
 
   /**
-    * A notification sent to the client to show a message.
-    *
-    * @param tpe One of MessageType values
-    * @param message The message to display in the client
-    */
-  def showMessage(tpe: Int, message: String): Unit = {
+   * A notification sent to the client to show a message.
+   *
+   * @param tpe One of MessageType values
+   * @param message The message to display in the client
+   */
+  def showMessage(tpe: Int, message: String): Unit =
     sendNotification(ShowMessageParams(tpe, message))
-  }
 
   /**
-    * The log message notification is sent from the server to the client to ask
-    * the client to log a particular message.
-    *
-    * @param tpe One of MessageType values
-    * @param message The message to display in the client
-    */
-  def logMessage(tpe: Int, message: String): Unit = {
+   * The log message notification is sent from the server to the client to ask
+   * the client to log a particular message.
+   *
+   * @param tpe One of MessageType values
+   * @param message The message to display in the client
+   */
+  def logMessage(tpe: Int, message: String): Unit =
     sendNotification(LogMessageParams(tpe, message))
-  }
 
   /**
-    * Publish compilation errors for the given file.
-    */
-  def publishDiagnostics(uri: String, diagnostics: Seq[Diagnostic]): Unit = {
+   * Publish compilation errors for the given file.
+   */
+  def publishDiagnostics(uri: String, diagnostics: Seq[Diagnostic]): Unit =
     sendNotification(PublishDiagnostics(uri, diagnostics))
-  }
 
-  def handleMessage(): Boolean = {
+  def handleMessage(): Boolean =
     msgReader.nextPayload() match {
       case None => false
       case Some(jsonString) =>
@@ -101,10 +103,12 @@ class Connection(inStream: InputStream,
                     {
                       case UnknownMethod =>
                         log.error(
-                          s"No notification type exists with method=${notification.method}")
+                          s"No notification type exists with method=${notification.method}"
+                        )
                       case e =>
                         log.error(
-                          s"Invalid Notification: $e - Message: $message")
+                          s"Invalid Notification: $e - Message: $message"
+                        )
                     },
                     notifySubscribers
                   )
@@ -113,8 +117,8 @@ class Connection(inStream: InputStream,
                   case Left(e) =>
                     msgWriter.write(e)
                   case Right(command) =>
-                    msgWriter.write(
-                      commandHandler(request.method, request.id, command))
+                    commandHandler(request.method, command, request.id)
+                      .foreach(msgWriter.write(_))
                 }
               case response: JsonRpcResponseMessage =>
                 log.info(s"Received response: $response")
@@ -125,14 +129,13 @@ class Connection(inStream: InputStream,
         }
         true
     }
-  }
 
-  def start(): Unit = {
+  def start(): Unit =
     while (handleMessage()) {}
-  }
 
   private def readJsonRpcMessage(
-      jsonString: String): Either[RpcError, JsonRpcMessage] = {
+    jsonString: String
+  ): Either[RpcError, JsonRpcMessage] = {
     log.debug(s"Received $jsonString")
     Try(JsonParser(jsonString)) match {
       case Failure(e) =>
@@ -162,7 +165,8 @@ class Connection(inStream: InputStream,
                   {
                     case UnknownMethod =>
                       Left(
-                        RpcErrors.methodNotFound(messsage.method, messsage.id))
+                        RpcErrors.methodNotFound(messsage.method, messsage.id)
+                      )
                     case e =>
                       Left(RpcErrors.invalidParams(e.describe, messsage.id))
                   },
@@ -172,7 +176,8 @@ class Connection(inStream: InputStream,
     }
 
   private def unpackRequest(
-      request: JsonRpcRequestMessage): Either[RpcError, ServerCommand] = {
+    request: JsonRpcRequestMessage
+  ): Either[RpcError, ServerCommand] =
     ServerCommand
       .read(request)
       .fold(
@@ -184,6 +189,5 @@ class Connection(inStream: InputStream,
         },
         command => Right(command)
       )
-  }
 
 }

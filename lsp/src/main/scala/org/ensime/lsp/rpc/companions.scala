@@ -1,12 +1,12 @@
 package org.ensime.lsp.rpc.companions
 
-import spray.json.{JsObject, JsonFormat}
+import spray.json.{ JsObject, JsonFormat }
 
 import org.ensime.lsp.rpc.messages._
 import JsonRpcMessages._
 import shapeless.tag
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 sealed trait RpcCompaionError {
   val describe: String
@@ -29,7 +29,6 @@ object RpcCompaionError {
   def apply(err: String): OtherError = OtherError(err)
 }
 
-
 case class RpcCommand[A](method: String)(implicit val format: JsonFormat[A])
 
 trait CommandCompanion[A] {
@@ -37,7 +36,7 @@ trait CommandCompanion[A] {
   protected[this] val commands: Seq[RpcCommand[_ <: A]]
 
   def read(
-      jsonRpcRequestMessage: JsonRpcRequestMessage
+    jsonRpcRequestMessage: JsonRpcRequestMessage
   ): Either[RpcCompaionError, _ <: A] =
     commands.find(_.method == jsonRpcRequestMessage.method) match {
       case None => Left(UnknownMethod)
@@ -57,7 +56,7 @@ trait CommandCompanion[A] {
     }
 
   def write[B <: A](obj: B, id: CorrelationId)(
-      implicit command: RpcCommand[B]
+    implicit command: RpcCommand[B]
   ): JsonRpcRequestMessage = {
     val jsObj = command.format.write(obj) match {
       case o: JsObject => o
@@ -76,7 +75,7 @@ trait CommandCompanion[A] {
 object RpcResponse {
 
   def read[A](
-      jsonRpcResponseSuccessMessage: JsonRpcResponseSuccessMessage
+    jsonRpcResponseSuccessMessage: JsonRpcResponseSuccessMessage
   )(implicit format: JsonFormat[A]): Either[RpcCompaionError, A] =
     Try(format.read(jsonRpcResponseSuccessMessage.result)) match {
       // We do this just to reset the path in the success case.
@@ -85,7 +84,7 @@ object RpcResponse {
     }
 
   def write[A](obj: A, id: CorrelationId)(
-      implicit format: JsonFormat[A]
+    implicit format: JsonFormat[A]
   ): JsonRpcResponseSuccessMessage =
     JsonRpcResponseSuccessMessage(
       tag[JsInnerField](format.write(obj)),
@@ -94,7 +93,7 @@ object RpcResponse {
 }
 
 case class RpcNotification[A](method: String)(
-    implicit val format: JsonFormat[A]
+  implicit val format: JsonFormat[A]
 )
 
 trait NotificationCompanion[A] {
@@ -102,7 +101,7 @@ trait NotificationCompanion[A] {
   protected[this] val notifications: Seq[RpcNotification[_ <: A]]
 
   def read(
-      jsonRpcNotificationMessage: JsonRpcNotificationMessage
+    jsonRpcNotificationMessage: JsonRpcNotificationMessage
   ): Either[RpcCompaionError, _ <: A] =
     notifications.find(_.method == jsonRpcNotificationMessage.method) match {
       case None => Left(UnknownMethod)
@@ -122,7 +121,7 @@ trait NotificationCompanion[A] {
     }
 
   def write[B <: A](
-      obj: B
+    obj: B
   )(implicit notification: RpcNotification[B]): JsonRpcNotificationMessage = {
     val jsObj = notification.format.write(obj) match {
       case o: JsObject => o

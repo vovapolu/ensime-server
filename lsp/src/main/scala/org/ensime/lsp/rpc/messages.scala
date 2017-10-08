@@ -152,8 +152,7 @@ object JsonRpcResponseErrorMessages {
     id
   )
 
-  def invalidParams(e: String,
-                    id: CorrelationId): JsonRpcResponseErrorMessage =
+  def invalidParams(e: String, id: CorrelationId): JsonRpcResponseErrorMessage =
     rpcError(
       InvalidParamsCode,
       message = "Invalid params",
