@@ -1,15 +1,15 @@
-package org.ensime.lsp
+package org.ensime.lsp.core
 
 import java.io.{ InputStream, OutputStream }
 import java.util.concurrent.Executors
 
 import akka.event.slf4j.SLF4JLogging
 import org.ensime.lsp.api.commands._
+import org.ensime.lsp.api.companions.Notifications._
 import org.ensime.lsp.api.companions._
 import org.ensime.lsp.api.types._
 import org.ensime.lsp.rpc.RpcFormats._
 import org.ensime.lsp.rpc.companions._
-import org.ensime.lsp.api.companions.Notifications._
 import org.ensime.lsp.rpc.messages.JsonRpcMessages._
 import org.ensime.lsp.rpc.messages.{
   JsonRpcResponseErrorMessage => RpcError,

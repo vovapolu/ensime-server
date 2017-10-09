@@ -1,4 +1,4 @@
-package org.ensime.lsp
+package org.ensime.lsp.core
 
 import java.io.File
 import java.net.URI

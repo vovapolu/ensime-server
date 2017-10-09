@@ -1,4 +1,4 @@
-package org.ensime.lsp
+package org.ensime.lsp.core
 
 import java.util.concurrent.{ ConcurrentHashMap, ConcurrentMap }
 
