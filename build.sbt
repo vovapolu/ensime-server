@@ -8,6 +8,7 @@ lazy val jerky     = EnsimeBuild.jerky
 lazy val swanky    = EnsimeBuild.swanky
 lazy val core      = EnsimeBuild.core
 lazy val server    = EnsimeBuild.server
+lazy val lsp       = EnsimeBuild.lsp
 
 lazy val testingEmpty     = EnsimeTestingBuild.testingEmpty
 lazy val testingSimple    = EnsimeTestingBuild.testingSimple
