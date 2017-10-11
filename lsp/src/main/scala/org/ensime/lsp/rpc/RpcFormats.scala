@@ -37,6 +37,21 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
       def write(obj: JsArray @@ JsInnerField): JsValue = obj
     }
 
+  implicit object CorrelationIdFormat extends JsonFormat[CorrelationId] {
+    override def read(j: JsValue): CorrelationId = j match {
+      case JsNull        => NullId
+      case JsNumber(num) => NumberId(num)
+      case JsString(str) => StringId(str)
+      case _             => deserError[CorrelationId]("Wrong CorrelationId format")
+    }
+
+    override def write(obj: CorrelationId): JsValue = obj match {
+      case NullId        => JsNull
+      case NumberId(num) => JsNumber(num)
+      case StringId(str) => JsString(str)
+    }
+  }
+
   implicit object JsonRpcResponseMessageFormat
       extends RootJsonFormat[JsonRpcResponseMessage] {
     def read(j: JsValue): JsonRpcResponseMessage = j match {
@@ -46,7 +61,10 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
         } else {
           j.convertTo[JsonRpcResponseSuccessMessage]
         }
-      case _ => deserError("Response message should be an object")
+      case _ =>
+        deserError[JsonRpcResponseMessage](
+          "Response message should be an object"
+        )
     }
 
     def write(obj: JsonRpcResponseMessage): JsValue = obj match {
@@ -64,7 +82,10 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
         } else {
           j.convertTo[JsonRpcNotificationMessage]
         }
-      case _ => deserError("Response message should be an object")
+      case _ =>
+        deserError[JsonRpcRequestOrNotificationMessage](
+          "Response message should be an object"
+        )
     }
 
     def write(obj: JsonRpcRequestOrNotificationMessage): JsValue = obj match {
@@ -91,8 +112,10 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
         Try(j.convertTo[JsonRpcRequestMessageBatch]) orElse
         Try(j.convertTo[JsonRpcResponseMessageBatch])
 
-      tryAll.fold(_ => deserError("Error during JsonRpcMessage parsing"),
-                  x => x)
+      tryAll.fold(
+        _ => deserError[JsonRpcMessage]("Error during JsonRpcMessage parsing"),
+        x => x
+      )
     }
 
     def write(obj: JsonRpcMessage): JsValue = obj match {
@@ -125,10 +148,19 @@ object RpcFormats {
   implicit val JsonRpcNotificationMessageFormat
     : RootJsonFormat[JsonRpcNotificationMessage] =
     RpcConversions.JsonRpcNotificationMessageFormat
+  implicit val JsonRpcResponseMessage: RootJsonFormat[JsonRpcResponseMessage] =
+    RpcConversions.JsonRpcResponseMessageFormat
   implicit val JsonRpcResponseSuccessMessageFormat
     : RootJsonFormat[JsonRpcResponseSuccessMessage] =
     RpcConversions.JsonRpcResponseSuccessMessageFormat
   implicit val JsonRpcResponseErrorMessageFormat
     : RootJsonFormat[JsonRpcResponseErrorMessage] =
     RpcConversions.JsonRpcResponseErrorMessageFormat
+
+  implicit val JsonRpcRequestMessageBatchFormat
+    : RootJsonFormat[JsonRpcRequestMessageBatch] =
+    RpcConversions.JsonRpcRequestMessageBatchFormat
+  implicit val JsonRpcResponseMessageBatchFormat
+    : RootJsonFormat[JsonRpcResponseMessageBatch] =
+    RpcConversions.JsonRpcResponseMessageBatchFormat
 }

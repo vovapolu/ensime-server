@@ -8,24 +8,24 @@ import shapeless.tag
 
 import scala.util.{ Failure, Success, Try }
 
-sealed trait RpcCompaionError {
+sealed trait RpcCompanionError {
   val describe: String
 }
 
-case object UnknownMethod extends RpcCompaionError {
+case object UnknownMethod extends RpcCompanionError {
   override val describe = "unknown method"
 }
-case object NoParams extends RpcCompaionError {
+case object NoParams extends RpcCompanionError {
   override val describe = "parameters must be given"
 }
-case object NoNamedParams extends RpcCompaionError {
+case object NoNamedParams extends RpcCompanionError {
   override val describe = "named parameters must be given"
 }
-case class OtherError(err: String) extends RpcCompaionError {
+case class OtherError(err: String) extends RpcCompanionError {
   override val describe = err
 }
 
-object RpcCompaionError {
+object RpcCompanionError {
   def apply(err: String): OtherError = OtherError(err)
 }
 
@@ -37,7 +37,7 @@ trait CommandCompanion[A] {
 
   def read(
     jsonRpcRequestMessage: JsonRpcRequestMessage
-  ): Either[RpcCompaionError, _ <: A] =
+  ): Either[RpcCompanionError, _ <: A] =
     commands.find(_.method == jsonRpcRequestMessage.method) match {
       case None => Left(UnknownMethod)
       case Some(command) =>
@@ -48,7 +48,7 @@ trait CommandCompanion[A] {
             Try(command.format.read(obj)) match {
               // We do this just to reset the path in the success case.
               case Failure(invalid) =>
-                Left(RpcCompaionError(invalid.getMessage))
+                Left(RpcCompanionError(invalid.getMessage))
               case Success(valid) =>
                 Right(valid)
             }
@@ -66,7 +66,7 @@ trait CommandCompanion[A] {
 
     JsonRpcRequestMessage(
       command.method,
-      Some(Left(tag[JsInnerField](jsObj))),
+      Params(jsObj),
       id
     )
   }
@@ -76,10 +76,9 @@ object RpcResponse {
 
   def read[A](
     jsonRpcResponseSuccessMessage: JsonRpcResponseSuccessMessage
-  )(implicit format: JsonFormat[A]): Either[RpcCompaionError, A] =
+  )(implicit format: JsonFormat[A]): Either[RpcCompanionError, A] =
     Try(format.read(jsonRpcResponseSuccessMessage.result)) match {
-      // We do this just to reset the path in the success case.
-      case Failure(invalid) => Left(RpcCompaionError(invalid.getMessage))
+      case Failure(invalid) => Left(RpcCompanionError(invalid.getMessage))
       case Success(valid)   => Right(valid)
     }
 
@@ -102,7 +101,7 @@ trait NotificationCompanion[A] {
 
   def read(
     jsonRpcNotificationMessage: JsonRpcNotificationMessage
-  ): Either[RpcCompaionError, _ <: A] =
+  ): Either[RpcCompanionError, _ <: A] =
     notifications.find(_.method == jsonRpcNotificationMessage.method) match {
       case None => Left(UnknownMethod)
       case Some(command) =>
@@ -113,7 +112,7 @@ trait NotificationCompanion[A] {
             Try(command.format.read(obj)) match {
               // We do this just to reset the path in the success case.
               case Failure(invalid) =>
-                Left(RpcCompaionError(invalid.getMessage))
+                Left(RpcCompanionError(invalid.getMessage))
               case Success(valid) =>
                 Right(valid)
             }
@@ -131,7 +130,7 @@ trait NotificationCompanion[A] {
 
     JsonRpcNotificationMessage(
       notification.method,
-      Some(Left(tag[JsInnerField](jsObj)))
+      Params(jsObj)
     )
   }
 }

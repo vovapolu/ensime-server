@@ -12,21 +12,24 @@ object JsonRpcMessages {
 
   trait JsInnerField
 
-  type CorrelationId = Option[Either[BigDecimal, String]]
+  sealed trait CorrelationId
+  case object NullId                      extends CorrelationId
+  case class NumberId(number: BigDecimal) extends CorrelationId
+  case class StringId(str: String)        extends CorrelationId
 
   object CorrelationId {
-    def apply(): CorrelationId                   = None
-    def apply(number: BigDecimal): CorrelationId = Some(Left(number))
-    def apply(str: String): CorrelationId        = Some(Right(str))
+    def apply(): CorrelationId                   = NullId
+    def apply(number: BigDecimal): CorrelationId = NumberId(number)
+    def apply(str: String): CorrelationId        = StringId(str)
   }
 
   type Params =
     Option[Either[JsObject @@ JsInnerField, JsArray @@ JsInnerField]]
 
   object Params {
-    def apply(): Params                              = None
-    def apply(obj: JsObject @@ JsInnerField): Params = Some(Left(obj))
-    def apply(arr: JsArray @@ JsInnerField): Params  = Some(Right(arr))
+    def apply(): Params              = None
+    def apply(obj: JsObject): Params = Some(Left(tag[JsInnerField](obj)))
+    def apply(arr: JsArray): Params  = Some(Right(tag[JsInnerField](arr)))
   }
 }
 
@@ -80,9 +83,8 @@ final case class JsonRpcResponseSuccessMessage(jsonrpc: String,
   require(jsonrpc == JsonRpcMessages.Version)
 }
 object JsonRpcResponseSuccessMessage {
-  def apply(result: JsValue @@ JsInnerField,
-            id: CorrelationId): JsonRpcResponseSuccessMessage =
-    apply(JsonRpcMessages.Version, result, id)
+  def apply(result: JsValue, id: CorrelationId): JsonRpcResponseSuccessMessage =
+    apply(JsonRpcMessages.Version, tag[JsInnerField](result), id)
 }
 
 final case class JsonRpcResponseErrorMessage(
@@ -99,9 +101,11 @@ object JsonRpcResponseErrorMessage {
 
   def apply(code: Int,
             message: String,
-            data: Option[JsValue @@ JsInnerField],
+            data: Option[JsValue],
             id: CorrelationId): JsonRpcResponseErrorMessage =
-    apply(JsonRpcMessages.Version, Error(code, message, data), id)
+    apply(JsonRpcMessages.Version,
+          Error(code, message, data.map(tag[JsInnerField](_))),
+          id)
 }
 
 final case class JsonRpcResponseMessageBatch(
