@@ -9,7 +9,7 @@ import JsonRpcMessages._
 import org.ensime.lsp.JsonUtils
 import shapeless.tag.@@
 
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
 
 object JsInnerFormats {
 
@@ -121,10 +121,11 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
         Try(j.convertTo[JsonRpcRequestMessageBatch]) orElse
         Try(j.convertTo[JsonRpcResponseMessageBatch])
 
-      tryAll.fold(
-        _ => deserError[JsonRpcMessage]("Error during JsonRpcMessage parsing"),
-        x => x
-      )
+      tryAll match {
+        case Failure(_) =>
+          deserError[JsonRpcMessage]("Error during JsonRpcMessage parsing")
+        case Success(x) => x
+      }
     }
 
     def write(obj: JsonRpcMessage): JsValue = obj match {
