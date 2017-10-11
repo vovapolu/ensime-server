@@ -1,3 +1,5 @@
+// Copyright: 2010 - 2017 https://github.com/ensime/ensime-server/graphs
+// License: http://www.gnu.org/licenses/gpl-3.0.en.html
 package com.dhpcs.jsonrpc
 
 import com.dhpcs.jsonrpc.MessageCompanionsSpec._
