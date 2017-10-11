@@ -1,9 +1,9 @@
 package org.ensime.lsp.rpc.companions
 
 import spray.json.{ JsObject, JsonFormat }
-
 import org.ensime.lsp.rpc.messages._
 import JsonRpcMessages._
+import org.ensime.lsp.rpc.JsInnerFormats.JsInnerField
 import shapeless.tag
 
 import scala.util.{ Failure, Success, Try }
@@ -46,7 +46,6 @@ trait CommandCompanion[A] {
           case Some(Right(_)) => Left(NoNamedParams)
           case Some(Left(obj)) =>
             Try(command.format.read(obj)) match {
-              // We do this just to reset the path in the success case.
               case Failure(invalid) =>
                 Left(RpcCompanionError(invalid.getMessage))
               case Success(valid) =>
@@ -110,7 +109,6 @@ trait NotificationCompanion[A] {
           case Some(Right(arr)) => Left(NoNamedParams)
           case Some(Left(obj)) =>
             Try(command.format.read(obj)) match {
-              // We do this just to reset the path in the success case.
               case Failure(invalid) =>
                 Left(RpcCompanionError(invalid.getMessage))
               case Success(valid) =>

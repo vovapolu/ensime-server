@@ -9,10 +9,9 @@ import shapeless.tag.@@
 
 import scala.util.Try
 
-private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
+object JsInnerFormats {
 
-  implicit override def eitherFormat[A: JsonFormat, B: JsonFormat]
-    : JsonFormat[Either[A, B]] = super.eitherFormat[A, B]
+  trait JsInnerField
 
   implicit val innerJsValue: JsonFormat[JsValue @@ JsInnerField] =
     new JsonFormat[JsValue @@ JsInnerField] {
@@ -36,6 +35,14 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
       }
       def write(obj: JsArray @@ JsInnerField): JsValue = obj
     }
+}
+
+private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
+
+  import JsInnerFormats._
+
+  implicit override def eitherFormat[A: JsonFormat, B: JsonFormat]
+    : JsonFormat[Either[A, B]] = super.eitherFormat[A, B]
 
   implicit object CorrelationIdFormat extends JsonFormat[CorrelationId] {
     override def read(j: JsValue): CorrelationId = j match {

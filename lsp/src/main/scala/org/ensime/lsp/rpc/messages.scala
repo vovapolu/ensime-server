@@ -1,5 +1,6 @@
 package org.ensime.lsp.rpc.messages
 
+import org.ensime.lsp.rpc.JsInnerFormats.JsInnerField
 import shapeless.tag
 import shapeless.tag.@@
 import spray.json._
@@ -9,8 +10,6 @@ import scala.collection.immutable.Seq
 object JsonRpcMessages {
 
   final val Version = "2.0"
-
-  trait JsInnerField
 
   sealed trait CorrelationId
   case object NullId                      extends CorrelationId

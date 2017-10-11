@@ -1,16 +1,14 @@
 package org.ensime.lsp.rpc
 
-import org.ensime.lsp.rpc.messages._
-import spray.json._
-import DefaultJsonProtocol._
-import RpcFormats._
-import org.scalatest._
-import Matchers._
+import org.ensime.lsp.rpc.RpcFormats._
 import org.ensime.lsp.rpc.messages.JsonRpcMessages._
+import org.ensime.lsp.rpc.messages._
+import org.scalatest.FreeSpec
+import org.scalatest.Matchers._
+import spray.json._
 
 import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
-import scala.util.{ Failure, Try }
 
 class JsonRpcMessageSpec extends FreeSpec {
 
