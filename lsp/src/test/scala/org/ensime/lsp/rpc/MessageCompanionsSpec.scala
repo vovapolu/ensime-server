@@ -3,13 +3,11 @@ package com.dhpcs.jsonrpc
 import com.dhpcs.jsonrpc.MessageCompanionsSpec._
 import org.ensime.lsp.JsonUtils
 import org.ensime.lsp.rpc.JsInnerFormats.JsInnerField
-import org.ensime.lsp.rpc.JsInnerFormats._
-import org.ensime.lsp.rpc.RpcFormats._
 import org.ensime.lsp.rpc.companions._
 import org.ensime.lsp.rpc.messages.JsonRpcMessages._
 import org.ensime.lsp.rpc.messages._
-import org.scalatest._
 import org.scalatest.Matchers._
+import org.scalatest._
 import shapeless.tag.@@
 import shapeless.{ cachedImplicit, tag }
 import spray.json._

@@ -239,12 +239,7 @@ object EnsimeBuild {
         ) ++ shapeless.value
       )
 
-  lazy val lsp = Project("lsp", file("lsp")).dependsOn(
-    core,
-    core % "test->test",
-    core % "it->it",
-    json
-  )
+  lazy val lsp = Project("lsp", file("lsp")).dependsOn(core, json)
 
   // manual root project so we can exclude the testing projects from publication
   lazy val root = Project(id = "ensime", base = file(".")) settings (commonSettings) aggregate (
