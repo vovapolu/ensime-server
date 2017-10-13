@@ -1,3 +1,5 @@
+// Copyright: 2010 - 2017 https://github.com/ensime/ensime-server/graphs
+// License: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.lsp.api.commands
 
 import org.ensime.lsp.api.types._
@@ -232,20 +234,4 @@ object FileChangeType {
 case class DocumentSymbolResult(params: Seq[SymbolInformation])
     extends ResultResponse
 
-//object DocumentSymbolResult {
-//  import spray.json._
-//  import spray.json.FamilyFormats._
-//
-//  implicit val documentSymbolResultFormat: JsonFormat[DocumentSymbolResult] =
-//    JsonUtils.wrapperFormat(DocumentSymbolResult.apply, _.params)
-//}
-
 case class DefinitionResult(params: Seq[Location]) extends ResultResponse
-
-//object DefinitionResult {
-//  import spray.json._
-//  import spray.json.FamilyFormats._
-//
-//  implicit val definitionResultFormat: JsonFormat[DefinitionResult] =
-//    JsonUtils.wrapperFormat(DefinitionResult.apply, _.params)
-//}
