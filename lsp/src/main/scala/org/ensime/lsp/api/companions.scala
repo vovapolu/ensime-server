@@ -1,10 +1,23 @@
 package org.ensime.lsp.api.companions
 
+import org.ensime.lsp.JsonUtils
 import org.ensime.lsp.rpc.companions._
 import org.ensime.lsp.api.commands._
 import spray.json._
 
-private object ServerCommands extends DefaultJsonProtocol with FamilyFormats {
+object ServerCommands extends DefaultJsonProtocol with FamilyFormats {
+
+  implicit val textDocumentDefinitionRequestFormat
+    : JsonFormat[TextDocumentDefinitionRequest] =
+    JsonUtils.wrapperFormat(TextDocumentDefinitionRequest.apply, _.params)
+
+  implicit val textDocumentHoverRequestFormat
+    : JsonFormat[TextDocumentHoverRequest] =
+    JsonUtils.wrapperFormat(TextDocumentHoverRequest.apply, _.params)
+
+  implicit val textDocumentCompletionRequestFormat
+    : JsonFormat[TextDocumentCompletionRequest] =
+    JsonUtils.wrapperFormat(TextDocumentCompletionRequest.apply, _.params)
 
   implicit val initializeCommand: RpcCommand[InitializeParams] =
     RpcCommand[InitializeParams]("initialize")
@@ -34,7 +47,7 @@ object ServerCommand extends CommandCompanion[ServerCommand] {
   )
 }
 
-private object ClientCommands extends DefaultJsonProtocol with FamilyFormats {
+object ClientCommands extends DefaultJsonProtocol with FamilyFormats {
   implicit val showMessageRequestCommand: RpcCommand[ShowMessageRequestParams] =
     RpcCommand[ShowMessageRequestParams]("showMessageRequest")
 }

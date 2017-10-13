@@ -1,9 +1,9 @@
 // Copyright: 2010 - 2017 https://github.com/ensime/ensime-server/graphs
 // License: http://www.gnu.org/licenses/gpl-3.0.en.html
-package com.dhpcs.jsonrpc
+package org.ensime.lsp.rpc
 
-import com.dhpcs.jsonrpc.MessageCompanionsSpec._
 import org.ensime.lsp.JsonUtils
+import org.ensime.lsp.rpc.MessageCompanionsSpec._
 import org.ensime.lsp.rpc.companions._
 import org.ensime.lsp.rpc.messages.JsonRpcMessages._
 import org.ensime.lsp.rpc.messages._

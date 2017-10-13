@@ -1,6 +1,5 @@
 package org.ensime.lsp.api.commands
 
-import org.ensime.lsp.JsonUtils
 import org.ensime.lsp.api.types._
 
 object TextDocumentSyncKind {
@@ -184,38 +183,11 @@ case class DocumentSymbolParams(textDocument: TextDocumentIdentifier)
 case class TextDocumentCompletionRequest(params: TextDocumentPositionParams)
     extends ServerCommand
 
-object TextDocumentCompletionRequest {
-  import spray.json._
-  import spray.json.FamilyFormats._
-
-  implicit val textDocumentCompletionRequestFormat
-    : JsonFormat[TextDocumentCompletionRequest] =
-    JsonUtils.wrapperFormat(TextDocumentCompletionRequest.apply, _.params)
-}
-
 case class TextDocumentDefinitionRequest(params: TextDocumentPositionParams)
     extends ServerCommand
 
-object TextDocumentDefinitionRequest {
-  import spray.json._
-  import spray.json.FamilyFormats._
-
-  implicit val textDocumentDefinitionRequestFormat
-    : JsonFormat[TextDocumentDefinitionRequest] =
-    JsonUtils.wrapperFormat(TextDocumentDefinitionRequest.apply, _.params)
-}
-
 case class TextDocumentHoverRequest(params: TextDocumentPositionParams)
     extends ServerCommand
-
-object TextDocumentHoverRequest {
-  import spray.json._
-  import spray.json.FamilyFormats._
-
-  implicit val textDocumentHoverRequestFormat
-    : JsonFormat[TextDocumentHoverRequest] =
-    JsonUtils.wrapperFormat(TextDocumentHoverRequest.apply, _.params)
-}
 
 case class Hover(contents: Seq[MarkedString], range: Option[Range])
     extends ResultResponse
@@ -260,20 +232,20 @@ object FileChangeType {
 case class DocumentSymbolResult(params: Seq[SymbolInformation])
     extends ResultResponse
 
-object DocumentSymbolResult {
-  import spray.json._
-  import spray.json.FamilyFormats._
-
-  implicit val documentSymbolResultFormat: JsonFormat[DocumentSymbolResult] =
-    JsonUtils.wrapperFormat(DocumentSymbolResult.apply, _.params)
-}
+//object DocumentSymbolResult {
+//  import spray.json._
+//  import spray.json.FamilyFormats._
+//
+//  implicit val documentSymbolResultFormat: JsonFormat[DocumentSymbolResult] =
+//    JsonUtils.wrapperFormat(DocumentSymbolResult.apply, _.params)
+//}
 
 case class DefinitionResult(params: Seq[Location]) extends ResultResponse
 
-object DefinitionResult {
-  import spray.json._
-  import spray.json.FamilyFormats._
-
-  implicit val definitionResultFormat: JsonFormat[DefinitionResult] =
-    JsonUtils.wrapperFormat(DefinitionResult.apply, _.params)
-}
+//object DefinitionResult {
+//  import spray.json._
+//  import spray.json.FamilyFormats._
+//
+//  implicit val definitionResultFormat: JsonFormat[DefinitionResult] =
+//    JsonUtils.wrapperFormat(DefinitionResult.apply, _.params)
+//}
