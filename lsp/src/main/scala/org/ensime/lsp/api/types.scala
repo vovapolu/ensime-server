@@ -60,10 +60,6 @@ case class VersionedTextDocumentIdentifier(uri: String, version: Long)
  */
 case class TextDocumentItem(uri: String,
                             languageId: String,
-                            /**
-                             * The version number of this document (it will strictly increase after each
-                             * change, including undo/redo).
-                             */
                             version: Long,
                             text: String)
 
@@ -133,11 +129,11 @@ case class SignatureInformation(label: String,
  * active and only one active parameter.
  */
 case class SignatureHelp(
-                         /** One or more signatures. */
+                         // One or more signatures.
                          signatures: Seq[SignatureInformation],
-                         /** The active signature. */
+                         // The active signature.
                          activeSignature: Option[Int],
-                         /** The active parameter of the active signature. */
+                         // The active parameter of the active signature.
                          activeParameter: Option[Int])
 
 /**
@@ -145,7 +141,7 @@ case class SignatureHelp(
  * requesting references.
  */
 case class ReferenceContext(
-  /** Include the declaration of the current symbol. */
+  // Include the declaration of the current symbol.
   includeDeclaration: Boolean
 )
 
@@ -173,9 +169,9 @@ object DocumentHighlightKind {
  * the background color of its range.
  */
 case class DocumentHighlight(
-                             /** The range this highlight applies to. */
+                             // The range this highlight applies to.
                              range: Range,
-                             /** The highlight kind, default is [text](#DocumentHighlightKind.Text). */
+                             // The highlight kind, default is [text](#DocumentHighlightKind.Text).
                              kind: Int = DocumentHighlightKind.Text)
 
 object SymbolKind {
@@ -219,36 +215,24 @@ case class CodeActionContext(diagnostics: Seq[Diagnostic])
  * reasons the creation of a code lens and resolving should be done to two stages.
  */
 case class CodeLens(
-                    /**
-                     * The range in which this code lens is valid. Should only span a single line.
-                     */
+                    // The range in which this code lens is valid. Should only span a single line.
                     range: Range,
-                    /**
-                     * The command this code lens represents.
-                     */
+                    // The command this code lens represents.
                     command: Option[Command],
-                    /**
-                     * An data entry field that is preserved on a code lens item between
-                     * a [CodeLensRequest](#CodeLensRequest) and a [CodeLensResolveRequest]
-                     * (#CodeLensResolveRequest)
-                     */
+                    // An data entry field that is preserved on a code lens item between
+                    // a [CodeLensRequest](#CodeLensRequest) and a [CodeLensResolveRequest]
+                    // (#CodeLensResolveRequest)
                     data: Option[Any])
 
 /**
  * Value-object describing what options formatting should use.
  */
 case class FormattingOptions(
-  /**
-   * Size of a tab in spaces.
-   */
+  // Size of a tab in spaces.
   tabSize: Int,
-  /**
-   * Prefer spaces over tabs.
-   */
+  // Prefer spaces over tabs.
   insertSpaces: Boolean,
-  /**
-   * Signature for further properties.
-   */
+  // Signature for further properties.
   params: Map[String, Any] // [key: string]: boolean | number | string;
 )
 
@@ -257,16 +241,10 @@ case class FormattingOptions(
  * the new text is considered to be the full content of the document.
  */
 case class TextDocumentContentChangeEvent(
-  /**
-   * The range of the document that changed.
-   */
+  // The range of the document that changed.
   range: Option[Range],
-  /**
-   * The length of the range that got replaced.
-   */
+  // The length of the range that got replaced.
   rangeLength: Option[Int],
-  /**
-   * The new text of the document.
-   */
+  // The new text of the document.
   text: String
 )

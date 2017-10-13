@@ -53,19 +53,11 @@ sealed trait Notification extends Message
  * Parameters and types used in the `initialize` message.
  */
 case class InitializeParams(
-                            /**
-                             * The process Id of the parent process that started
-                             * the server.
-                             */
+                            // The process Id of the parent process that started the server.
                             processId: Long,
-                            /**
-                             * The rootPath of the workspace. Is null
-                             * if no folder is open.
-                             */
+                            //The rootPath of the workspace. Is null if no folder is open.
                             rootPath: String,
-                            /**
-                             * The capabilities provided by the client (editor)
-                             */
+                            //The capabilities provided by the client (editor)
                             capabilities: ClientCapabilities)
     extends ServerCommand
 
@@ -74,66 +66,36 @@ case class InitializeError(retry: Boolean)
 case class ClientCapabilities()
 
 case class ServerCapabilities(
-  /**
-   * Defines how text documents are synced.
-   */
+  //Defines how text documents are synced.
   textDocumentSync: Int = TextDocumentSyncKind.Full,
-  /**
-   * The server provides hover support.
-   */
+  //The server provides hover support.
   hoverProvider: Boolean = false,
-  /**
-   * The server provides completion support.
-   */
+  //The server provides completion support.
   completionProvider: Option[CompletionOptions],
-  /**
-   * The server provides signature help support.
-   */
+  //The server provides signature help support.
   signatureHelpProvider: Option[SignatureHelpOptions] = None,
-  /**
-   * The server provides goto definition support.
-   */
+  //The server provides goto definition support.
   definitionProvider: Boolean = false,
-  /**
-   * The server provides find references support.
-   */
+  ///The server provides find references support.
   referencesProvider: Boolean = false,
-  /**
-   * The server provides document highlight support.
-   */
+  //The server provides document highlight support.
   documentHighlightProvider: Boolean = false,
-  /**
-   * The server provides document symbol support.
-   */
+  //The server provides document symbol support.
   documentSymbolProvider: Boolean = false,
-  /**
-   * The server provides workspace symbol support.
-   */
+  //The server provides workspace symbol support.
   workspaceSymbolProvider: Boolean = false,
-  /**
-   * The server provides code actions.
-   */
+  //The server provides code actions.
   codeActionProvider: Boolean = false,
-  /**
-   * The server provides code lens.
-   */
+  //The server provides code lens.
   codeLensProvider: Option[CodeLensOptions] = None,
-  /**
-   * The server provides document formatting.
-   */
+  //The server provides document formatting.
   documentFormattingProvider: Boolean = false,
-  /**
-   * The server provides document range formatting.
-   */
+  //The server provides document range formatting.
   documentRangeFormattingProvider: Boolean = false,
-  /**
-   * The server provides document formatting on typing.
-   */
+  //The server provides document formatting on typing.
   documentOnTypeFormattingProvider: Option[DocumentOnTypeFormattingOptions] =
     None,
-  /**
-   * The server provides rename support.
-   */
+  //The server provides rename support.
   renameProvider: Boolean = false
 )
 
@@ -158,17 +120,11 @@ case class Shutdown() extends ServerCommand
 case class ShutdownResult(dummy: Int) extends ResultResponse
 
 case class ShowMessageRequestParams(
-                                    /**
-                                     * The message type. @see MessageType
-                                     */
+                                    //The message type. @see MessageType
                                     tpe: Long,
-                                    /**
-                                     * The actual message
-                                     */
+                                    //The actual message
                                     message: String,
-                                    /**
-                                     * The message action items to present.
-                                     */
+                                    //The message action items to present.
                                     actions: Seq[MessageActionItem])
     extends ClientCommand
 
