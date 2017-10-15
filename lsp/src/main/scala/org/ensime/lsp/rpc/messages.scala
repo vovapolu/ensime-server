@@ -2,9 +2,6 @@
 // License: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.lsp.rpc.messages
 
-import org.ensime.lsp.rpc.JsInnerFormats.JsInnerField
-import shapeless.tag
-import shapeless.tag.@@
 import spray.json._
 
 import scala.collection.immutable.Seq
@@ -24,13 +21,11 @@ object JsonRpcMessages {
     def apply(str: String): CorrelationId        = StringId(str)
   }
 
-  type Params =
-    Option[Either[JsObject @@ JsInnerField, JsArray @@ JsInnerField]]
-
+  type Params = Option[Either[JsObject, JsArray]]
   object Params {
     def apply(): Params              = None
-    def apply(obj: JsObject): Params = Some(Left(tag[JsInnerField](obj)))
-    def apply(arr: JsArray): Params  = Some(Right(tag[JsInnerField](arr)))
+    def apply(obj: JsObject): Params = Some(Left(obj))
+    def apply(arr: JsArray): Params  = Some(Right(arr))
   }
 }
 
@@ -78,14 +73,14 @@ sealed abstract class JsonRpcResponseMessage extends JsonRpcMessage {
 }
 
 final case class JsonRpcResponseSuccessMessage(jsonrpc: String,
-                                               result: JsValue @@ JsInnerField,
+                                               result: JsValue,
                                                id: CorrelationId)
     extends JsonRpcResponseMessage {
   require(jsonrpc == JsonRpcMessages.Version)
 }
 object JsonRpcResponseSuccessMessage {
   def apply(result: JsValue, id: CorrelationId): JsonRpcResponseSuccessMessage =
-    apply(JsonRpcMessages.Version, tag[JsInnerField](result), id)
+    apply(JsonRpcMessages.Version, result, id)
 }
 
 final case class JsonRpcResponseErrorMessage(
@@ -96,17 +91,13 @@ final case class JsonRpcResponseErrorMessage(
   require(jsonrpc == JsonRpcMessages.Version)
 }
 object JsonRpcResponseErrorMessage {
-  case class Error(code: Int,
-                   message: String,
-                   data: Option[JsValue @@ JsInnerField])
+  case class Error(code: Int, message: String, data: Option[JsValue])
 
   def apply(code: Int,
             message: String,
             data: Option[JsValue],
             id: CorrelationId): JsonRpcResponseErrorMessage =
-    apply(JsonRpcMessages.Version,
-          Error(code, message, data.map(tag[JsInnerField](_))),
-          id)
+    apply(JsonRpcMessages.Version, Error(code, message, data), id)
 }
 
 final case class JsonRpcResponseMessageBatch(
@@ -197,11 +188,9 @@ object JsonRpcResponseErrorMessages {
       code,
       message,
       data = Some(
-        tag[JsInnerField](
-          JsObject(
-            ("meaning" -> JsString(meaning)) +:
-              error.toSeq.map(error => "error" -> error): _*
-          )
+        JsObject(
+          ("meaning" -> JsString(meaning)) +:
+            error.toSeq.map(error => "error" -> error): _*
         )
       ),
       id
@@ -215,7 +204,7 @@ object JsonRpcResponseErrorMessages {
     JsonRpcResponseErrorMessage(
       code,
       message,
-      data.map(tag[JsInnerField](_)),
+      data,
       id
     )
   }

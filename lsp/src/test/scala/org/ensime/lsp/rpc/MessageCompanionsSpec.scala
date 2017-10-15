@@ -4,14 +4,12 @@ package com.dhpcs.jsonrpc
 
 import com.dhpcs.jsonrpc.MessageCompanionsSpec._
 import org.ensime.lsp.JsonUtils
-import org.ensime.lsp.rpc.JsInnerFormats.JsInnerField
 import org.ensime.lsp.rpc.companions._
 import org.ensime.lsp.rpc.messages.JsonRpcMessages._
 import org.ensime.lsp.rpc.messages._
 import org.scalatest.Matchers._
 import org.scalatest._
-import shapeless.tag.@@
-import shapeless.{ cachedImplicit, tag }
+import shapeless.cachedImplicit
 import spray.json._
 
 object MessageCompanionsSpec {
@@ -25,7 +23,7 @@ object MessageCompanionsSpec {
     to: Int,
     value: BigDecimal,
     description: Option[String] = None,
-    metadata: Option[JsObject @@ JsInnerField] = None
+    metadata: Option[JsObject] = None
   ) extends Command {
     require(value >= 0)
   }
@@ -140,10 +138,8 @@ class MessageCompanionsSpec extends FreeSpec {
         value = BigDecimal(1000000),
         description = Some("Property purchase"),
         metadata = Some(
-          tag[JsInnerField](
-            JsObject(
-              "property" -> JsString("The TARDIS")
-            )
+          JsObject(
+            "property" -> JsString("The TARDIS")
           )
         )
       )
