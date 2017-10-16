@@ -7,64 +7,40 @@ import shapeless._
 import messages._
 import JsonRpcMessages._
 import org.ensime.lsp.JsonUtils
-import shapeless.tag.@@
 
 import scala.util.{ Failure, Success, Try }
 
-object JsInnerFormats {
+private object RpcConversions
+    extends DefaultJsonProtocol
+    with FamilyFormats
+    with AdditionalFormats {
 
-  trait JsInnerField
-
-  implicit val innerJsValue: JsonFormat[JsValue @@ JsInnerField] =
-    new JsonFormat[JsValue @@ JsInnerField] {
-      def read(j: JsValue): JsValue @@ JsInnerField =
-        tag[JsInnerField](j)
-      def write(obj: JsValue @@ JsInnerField): JsValue = obj
-    }
-  implicit val innerJsObject: JsonFormat[JsObject @@ JsInnerField] =
-    new JsonFormat[JsObject @@ JsInnerField] {
-      def read(j: JsValue): JsObject @@ JsInnerField = j match {
-        case jObj: JsObject => tag[JsInnerField](jObj)
-        case _              => sys.error(s"Unable to read $j as json object")
-      }
-      def write(obj: JsObject @@ JsInnerField): JsValue = obj
-    }
-  implicit val innerJsArray: JsonFormat[JsArray @@ JsInnerField] =
-    new JsonFormat[JsArray @@ JsInnerField] {
-      def read(j: JsValue): JsArray @@ JsInnerField = j match {
-        case jArr: JsArray => tag[JsInnerField](jArr)
-        case _             => sys.error(s"Unable to read $j as json array")
-      }
-      def write(obj: JsArray @@ JsInnerField): JsValue = obj
-    }
-}
-
-private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
-
-  import JsInnerFormats._
-
+  // see JerkyFormats for an explanation of this "accidental complexity"
   implicit override def eitherFormat[A: JsonFormat, B: JsonFormat]
-    : JsonFormat[Either[A, B]] = super.eitherFormat[A, B]
+    : JsonFormat[Either[A, B]]                                = super.eitherFormat[A, B]
+  implicit val highPriorityJsValue: JsonFormat[JsValue]       = jsValue
+  implicit val highPriorityJsObject: RootJsonFormat[JsObject] = jsObject
+  implicit val highPriorityJsArray: RootJsonFormat[JsArray]   = jsArray
 
-  implicit object CorrelationIdFormat extends JsonFormat[CorrelationId] {
-    override def read(j: JsValue): CorrelationId = j match {
+  implicit val CorrelationIdFormat: JsonFormat[CorrelationId] =
+    JsonFormat.instance[CorrelationId] {
+      case NullId        => JsNull
+      case NumberId(num) => JsNumber(num)
+      case StringId(str) => JsString(str)
+    } {
       case JsNull        => NullId
       case JsNumber(num) => NumberId(num)
       case JsString(str) => StringId(str)
       case _             => deserError[CorrelationId]("Wrong CorrelationId format")
     }
 
-    override def write(obj: CorrelationId): JsValue = obj match {
-      case NullId        => JsNull
-      case NumberId(num) => JsNumber(num)
-      case StringId(str) => JsString(str)
-    }
-  }
-
-  implicit object JsonRpcResponseMessageFormat
-      extends RootJsonFormat[JsonRpcResponseMessage] {
-    def read(j: JsValue): JsonRpcResponseMessage = j match {
-      case JsObject(fields) =>
+  implicit val JsonRpcResponseMessageFormat
+    : RootJsonFormat[JsonRpcResponseMessage] =
+    RootJsonFormat.instance[JsonRpcResponseMessage] {
+      case r: JsonRpcResponseSuccessMessage => r.toJson
+      case e: JsonRpcResponseErrorMessage   => e.toJson
+    } {
+      case j @ JsObject(fields) =>
         if (fields.contains("error")) {
           j.convertTo[JsonRpcResponseErrorMessage]
         } else {
@@ -76,16 +52,13 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
         )
     }
 
-    def write(obj: JsonRpcResponseMessage): JsValue = obj match {
-      case r: JsonRpcResponseSuccessMessage => r.toJson
-      case e: JsonRpcResponseErrorMessage   => e.toJson
-    }
-  }
-
-  implicit object JsonRpcRequestOrNotificationMessageFormat
-      extends RootJsonFormat[JsonRpcRequestOrNotificationMessage] {
-    def read(j: JsValue): JsonRpcRequestOrNotificationMessage = j match {
-      case JsObject(fields) =>
+  implicit val JsonRpcRequestOrNotificationMessageFormat
+    : RootJsonFormat[JsonRpcRequestOrNotificationMessage] =
+    RootJsonFormat.instance[JsonRpcRequestOrNotificationMessage] {
+      case r: JsonRpcRequestMessage      => r.toJson
+      case n: JsonRpcNotificationMessage => n.toJson
+    } {
+      case j @ JsObject(fields) =>
         if (fields.contains("id")) {
           j.convertTo[JsonRpcRequestMessage]
         } else {
@@ -97,12 +70,6 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
         )
     }
 
-    def write(obj: JsonRpcRequestOrNotificationMessage): JsValue = obj match {
-      case r: JsonRpcRequestMessage      => r.toJson
-      case n: JsonRpcNotificationMessage => n.toJson
-    }
-  }
-
   implicit val JsonRpcRequestMessageBatchFormat
     : RootJsonFormat[JsonRpcRequestMessageBatch] =
     rootFormat(JsonUtils.wrapperFormat(JsonRpcRequestMessageBatch, _.messages))
@@ -111,9 +78,16 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
     : RootJsonFormat[JsonRpcResponseMessageBatch] =
     rootFormat(JsonUtils.wrapperFormat(JsonRpcResponseMessageBatch, _.messages))
 
-  implicit object JsonRpcMessageFormat extends RootJsonFormat[JsonRpcMessage] {
-    // we should not introduce new fields to rpc jsons
-    def read(j: JsValue): JsonRpcMessage = {
+  implicit val JsonRpcMessageFormat: RootJsonFormat[JsonRpcMessage] =
+    RootJsonFormat.instance[JsonRpcMessage] {
+      case req: JsonRpcRequestMessage         => req.toJson
+      case n: JsonRpcNotificationMessage      => n.toJson
+      case suc: JsonRpcResponseSuccessMessage => suc.toJson
+      case e: JsonRpcResponseErrorMessage     => e.toJson
+      case breq: JsonRpcRequestMessageBatch   => breq.toJson
+      case bres: JsonRpcResponseMessageBatch  => bres.toJson
+    } { j =>
+      // we should not introduce new fields to rpc jsons
       val tryAll = Try(j.convertTo[JsonRpcRequestMessage]) orElse
         Try(j.convertTo[JsonRpcNotificationMessage]) orElse
         Try(j.convertTo[JsonRpcResponseSuccessMessage]) orElse
@@ -127,16 +101,6 @@ private object RpcConversions extends DefaultJsonProtocol with FamilyFormats {
         case Success(x) => x
       }
     }
-
-    def write(obj: JsonRpcMessage): JsValue = obj match {
-      case req: JsonRpcRequestMessage         => req.toJson
-      case n: JsonRpcNotificationMessage      => n.toJson
-      case suc: JsonRpcResponseSuccessMessage => suc.toJson
-      case e: JsonRpcResponseErrorMessage     => e.toJson
-      case breq: JsonRpcRequestMessageBatch   => breq.toJson
-      case bres: JsonRpcResponseMessageBatch  => bres.toJson
-    }
-  }
 
   implicit val JsonRpcRequestMessageFormat
     : RootJsonFormat[JsonRpcRequestMessage] = cachedImplicit

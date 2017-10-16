@@ -5,8 +5,6 @@ package org.ensime.lsp.rpc.companions
 import spray.json.{ JsObject, JsonFormat }
 import org.ensime.lsp.rpc.messages._
 import JsonRpcMessages._
-import org.ensime.lsp.rpc.JsInnerFormats.JsInnerField
-import shapeless.tag
 
 import scala.util.{ Failure, Success, Try }
 
@@ -87,7 +85,7 @@ object RpcResponse {
     implicit format: JsonFormat[A]
   ): JsonRpcResponseSuccessMessage =
     JsonRpcResponseSuccessMessage(
-      tag[JsInnerField](format.write(obj)),
+      format.write(obj),
       id
     )
 }
