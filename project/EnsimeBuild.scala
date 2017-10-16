@@ -239,9 +239,11 @@ object EnsimeBuild {
         ) ++ shapeless.value
       )
 
+  lazy val lsp = Project("lsp", file("lsp")).dependsOn(core, json)
+
   // manual root project so we can exclude the testing projects from publication
   lazy val root = Project(id = "ensime", base = file(".")) settings (commonSettings) aggregate (
-    api, monkeys, util, s_express, jerky, swanky, core, server, json
+    api, monkeys, util, s_express, jerky, swanky, core, server, json, lsp
   ) dependsOn (server) settings (
       // e.g. `sbt ++2.11.11 ensime/assembly`
       test in assembly := {},
