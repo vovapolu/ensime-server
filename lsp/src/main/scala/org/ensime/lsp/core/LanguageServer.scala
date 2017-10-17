@@ -14,16 +14,16 @@ object LanguageServer {
 
   object ResponseHandler extends DefaultJsonProtocol with FamilyFormats {
     def buildHandler(
-      langServer: LanguageServer
+      l: LanguageServer
     ): PartialFunction[(String, ServerCommand, CorrelationId), Option[
       JsonRpcResponseSuccessMessage
     ]] = {
       case (_, InitializeParams(pid, rootPath, capabilities), id) =>
         Some(
-          RpcResponse.write(InitializeResult(
-                              langServer.initialize(pid, rootPath, capabilities)
-                            ),
-                            id)
+          RpcResponse.write(
+            InitializeResult(l.initialize(pid, rootPath, capabilities)),
+            id
+          )
         )
       case ("textDocument/completion",
             TextDocumentCompletionRequest(
@@ -32,7 +32,7 @@ object LanguageServer {
             id) =>
         Some(
           RpcResponse
-            .write(langServer.completionRequest(textDocument, position), id)
+            .write(l.completionRequest(textDocument, position), id)
         )
       case ("textDocument/definition",
             TextDocumentDefinitionRequest(
@@ -41,7 +41,7 @@ object LanguageServer {
             id) =>
         Some(
           RpcResponse
-            .write(langServer.gotoDefinitionRequest(textDocument, position), id)
+            .write(l.gotoDefinitionRequest(textDocument, position), id)
         )
       case ("textDocument/hover",
             TextDocumentHoverRequest(
@@ -49,15 +49,15 @@ object LanguageServer {
             ),
             id) =>
         Some(
-          RpcResponse.write(langServer.hoverRequest(textDocument, position), id)
+          RpcResponse.write(l.hoverRequest(textDocument, position), id)
         )
       case ("textDocument/documentSymbol", DocumentSymbolParams(tdi), id) =>
         Some(
           RpcResponse
-            .write(DocumentSymbolResult(langServer.documentSymbols(tdi)), id)
+            .write(DocumentSymbolResult(l.documentSymbols(tdi)), id)
         )
       case (_, Shutdown(), _) =>
-        langServer.shutdown()
+        l.shutdown()
         None
     }
   }

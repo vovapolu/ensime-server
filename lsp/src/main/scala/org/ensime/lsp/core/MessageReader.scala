@@ -59,7 +59,7 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
    *         was closed, or there were no headers before the delimiter. You can disambiguate
    *         by checking {{{this.streamClosed}}}
    */
-  private[lsp] final def getHeaders: Map[String, String] = lock.synchronized {
+  private[core] final def getHeaders: Map[String, String] = lock.synchronized {
     def atDelimiter(idx: Int): Boolean =
       (data.size >= idx + 4
         && data(idx) == '\r'
@@ -97,7 +97,7 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
       // if there was a malformed header we keep trying to re-sync and read again
       if (pairs.contains(None)) {
         log.error(
-          s"There was an empty pair in $pairs, trying to read another header."
+          s"There was an empty pair in ${pairs.toSeq}, trying to read another header."
         )
         getHeaders
       } else pairs.flatten.toMap
@@ -114,7 +114,7 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
    *
    * @note If the stream was closed this method returns the empty string.
    */
-  private[lsp] def getContent(len: Int): Option[String] = lock.synchronized {
+  private[core] def getContent(len: Int): Option[String] = lock.synchronized {
     while (data.size < len && !streamClosed) lock.wait()
 
     if (streamClosed) None

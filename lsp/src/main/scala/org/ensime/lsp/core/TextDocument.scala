@@ -32,7 +32,9 @@ case class TextDocument(uri: String, contents: Array[Char]) {
         s"$uri: asked position at offset $offset, but contents is only ${contents.length} characters long."
       )
 
-    var i, line, col = 0
+    var i    = 0
+    var line = 0
+    var col  = 0
 
     while (i < offset) {
       contents(i) match {
@@ -60,8 +62,10 @@ case class TextDocument(uri: String, contents: Array[Char]) {
   def positionToOffset(pos: Position): Int = {
     val Position(line, col) = pos
 
-    var i, l, c = 0
-    while (i < contents.size && l < line) {
+    var i = 0
+    var l = 0
+
+    while (i < contents.length && l < line) {
       contents(i) match {
         case '\r' =>
           l += 1
@@ -79,7 +83,7 @@ case class TextDocument(uri: String, contents: Array[Char]) {
       throw new IllegalArgumentException(
         s"$uri: Can't find position $pos in contents of only $l lines long."
       )
-    if (i + col < contents.size)
+    if (i + col < contents.length)
       i + col
     else
       throw new IllegalArgumentException(
