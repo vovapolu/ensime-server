@@ -5,8 +5,8 @@ import java.util.concurrent.Executors
 
 import akka.event.slf4j.SLF4JLogging
 import org.ensime.lsp.api.commands._
-import org.ensime.lsp.api.companions.Notifications._
-import org.ensime.lsp.api.companions._
+import org.ensime.lsp.api.methods.Notifications._
+import org.ensime.lsp.api.methods._
 import org.ensime.lsp.api.types._
 import org.ensime.lsp.rpc.RpcFormats._
 import org.ensime.lsp.rpc.companions._
@@ -148,32 +148,6 @@ class Connection(inStream: InputStream,
         )
     }
   }
-
-  private def readCommand(jsonString: String) // FIXME it's unused...
-    : (Option[CorrelationId], Either[RpcError, ServerCommand]) =
-    Try(JsonParser(jsonString)) match {
-      case Failure(e) =>
-        None -> Left(RpcErrors.parseError(e, CorrelationId()))
-      case Success(json) =>
-        Try(JsonRpcRequestMessageFormat.read(json)).fold(
-          e => None -> Left(RpcErrors.invalidRequest(e, CorrelationId())),
-          messsage =>
-            Some(messsage.id) ->
-              ServerCommand
-                .read(messsage)
-                .fold(
-                  {
-                    case UnknownMethod =>
-                      Left(
-                        RpcErrors.methodNotFound(messsage.method, messsage.id)
-                      )
-                    case e =>
-                      Left(RpcErrors.invalidParams(e.describe, messsage.id))
-                  },
-                  command => Right(command)
-              )
-        )
-    }
 
   private def unpackRequest(
     request: JsonRpcRequestMessage

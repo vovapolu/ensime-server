@@ -18,7 +18,7 @@ case class TextDocument(uri: String, contents: Array[Char]) {
     copy(contents = change.text.toArray)
   }
 
-  private def peek(idx: Int): Int =
+  private[this] def peek(idx: Int): Int =
     if (idx < contents.length) contents(idx).toInt else -1
 
   def toFile: File = new File(URI.create(uri))
@@ -87,7 +87,7 @@ case class TextDocument(uri: String, contents: Array[Char]) {
       i + col
     else
       throw new IllegalArgumentException(
-        s"$uri: Invalid column. Position $pos in line '${contents.slice(i, contents.size).mkString}'"
+        s"$uri: Invalid column. Position $pos in line '${contents.slice(i, contents.length).mkString}'"
       )
   }
 

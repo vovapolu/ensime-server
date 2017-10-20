@@ -69,43 +69,46 @@ class MessageReader(in: InputStream) extends SLF4JLogging {
 
     while (data.size < 4 && !streamClosed) lock.wait()
 
-    if (streamClosed) return Map.empty
-
-    var i = 0
-    while (i + 4 < data.size && !atDelimiter(i)) {
-      i += 1
-    }
-
-    if (atDelimiter(i)) {
-      val headers =
-        new String(data.slice(0, i).toArray, MessageReader.AsciiCharset)
-      log.debug(s"Received headers:\n$headers")
-
-      val pairs = headers.split("\r\n").filter(_.trim.length() > 0) map {
-        line =>
-          line.split(":") match {
-            case Array(key, value) => Some(key.trim -> value.trim)
-            case _ =>
-              log.error(s"Malformed input: $line")
-              None
-          }
+    if (!streamClosed) {
+      var i = 0
+      while (i + 4 < data.size && !atDelimiter(i)) {
+        i += 1
       }
 
-      // drop headers
-      data = data.drop(i + 4)
+      if (atDelimiter(i)) {
+        val headers =
+          new String(data.slice(0, i).toArray, MessageReader.AsciiCharset)
+        log.debug(s"Received headers:\n$headers")
 
-      // if there was a malformed header we keep trying to re-sync and read again
-      if (pairs.contains(None)) {
-        log.error(
-          s"There was an empty pair in ${pairs.toSeq}, trying to read another header."
-        )
+        val pairs = headers.split("\r\n").filter(_.trim.length() > 0) map {
+          line =>
+            line.split(":") match {
+              case Array(key, value) => Some(key.trim -> value.trim)
+              case _ =>
+                log.error(s"Malformed input: $line")
+                None
+            }
+        }
+
+        // drop headers
+        data = data.drop(i + 4)
+
+        // if there was a malformed header we keep trying to re-sync and read again
+
+        if (pairs.contains(None)) {
+          log.error(
+            s"There was an empty pair in ${pairs.toSeq}, trying to read another header."
+          )
+          getHeaders
+        } else pairs.flatten.toMap
+      } else if (streamClosed) {
+        Map.empty
+      } else {
+        lock.wait()
         getHeaders
-      } else pairs.flatten.toMap
-    } else if (streamClosed) {
-      Map.empty
+      }
     } else {
-      lock.wait()
-      getHeaders
+      Map.empty
     }
   }
 

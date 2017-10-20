@@ -4,7 +4,7 @@ package org.ensime.lsp.api
 
 import com.sun.tools.corba.se.idl.InvalidArgument
 import org.ensime.lsp.api.commands._
-import org.ensime.lsp.api.companions._
+import org.ensime.lsp.api.methods._
 import org.ensime.lsp.api.types._
 import org.ensime.lsp.rpc.companions._
 import org.ensime.lsp.rpc.messages.JsonRpcMessages._

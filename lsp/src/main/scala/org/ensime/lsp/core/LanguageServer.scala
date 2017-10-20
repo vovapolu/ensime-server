@@ -8,11 +8,12 @@ import org.ensime.lsp.api.types._
 import org.ensime.lsp.rpc.companions.RpcResponse
 import org.ensime.lsp.rpc.messages.JsonRpcMessages.CorrelationId
 import org.ensime.lsp.rpc.messages.JsonRpcResponseSuccessMessage
-import spray.json.{ DefaultJsonProtocol, FamilyFormats }
 
 object LanguageServer {
 
-  object ResponseHandler extends DefaultJsonProtocol with FamilyFormats {
+  object ResponseHandler {
+    import org.ensime.lsp.api.methods.RpcResponseConversions._
+
     def buildHandler(
       l: LanguageServer
     ): PartialFunction[(String, ServerCommand, CorrelationId), Option[
@@ -130,7 +131,7 @@ class LanguageServer(inStream: InputStream, outStream: OutputStream)
   }
 
   def completionRequest(textDocument: TextDocumentIdentifier,
-                        position: Position): ResultResponse =
+                        position: Position): CompletionList =
     CompletionList(isIncomplete = false, Nil)
 
   def shutdown(): Unit = {}

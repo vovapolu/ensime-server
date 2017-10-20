@@ -1,13 +1,22 @@
 // Copyright: 2010 - 2017 https://github.com/ensime/ensime-server/graphs
 // License: http://www.gnu.org/licenses/gpl-3.0.en.html
-package org.ensime.lsp.api.companions
+package org.ensime.lsp.api.methods
 
 import org.ensime.lsp.JsonUtils
 import org.ensime.lsp.rpc.companions._
 import org.ensime.lsp.api.commands._
+import org.ensime.lsp.api.types.{
+  MarkdownString,
+  MarkedString,
+  RawMarkedString
+}
 import spray.json._
 
-object ServerCommands extends DefaultJsonProtocol with FamilyFormats {
+import scala.util.{ Failure, Success, Try }
+
+private[lsp] object ServerCommandConversions
+    extends DefaultJsonProtocol
+    with FamilyFormats {
 
   implicit val textDocumentDefinitionRequestFormat
     : JsonFormat[TextDocumentDefinitionRequest] =
@@ -20,6 +29,10 @@ object ServerCommands extends DefaultJsonProtocol with FamilyFormats {
   implicit val textDocumentCompletionRequestFormat
     : JsonFormat[TextDocumentCompletionRequest] =
     JsonUtils.wrapperFormat(TextDocumentCompletionRequest.apply, _.params)
+}
+
+object ServerCommands {
+  import ServerCommandConversions._
 
   implicit val initializeCommand: RpcCommand[InitializeParams] =
     RpcCommand[InitializeParams]("initialize")
@@ -49,7 +62,9 @@ object ServerCommand extends CommandCompanion[ServerCommand] {
   )
 }
 
-object ClientCommands extends DefaultJsonProtocol with FamilyFormats {
+object ClientCommands {
+  import FamilyFormats._
+
   implicit val showMessageRequestCommand: RpcCommand[ShowMessageRequestParams] =
     RpcCommand[ShowMessageRequestParams]("showMessageRequest")
 }
@@ -60,7 +75,9 @@ object ClientCommand extends CommandCompanion[ClientCommand] {
   val commands = Seq(showMessageRequestCommand)
 }
 
-object Notifications extends DefaultJsonProtocol with FamilyFormats {
+object Notifications {
+  import FamilyFormats._
+
   implicit val showMessageNotification: RpcNotification[ShowMessageParams] =
     RpcNotification[ShowMessageParams]("window/showMessage")
   implicit val logMessageNotification: RpcNotification[LogMessageParams] =
@@ -103,4 +120,26 @@ object Notification extends NotificationCompanion[Notification] {
     initializedNotification,
     cancelRequestNotification
   )
+}
+
+private[lsp] object RpcResponseConversions
+    extends DefaultJsonProtocol
+    with FamilyFormats {
+
+  implicit val markedStringFormat: JsonFormat[MarkedString] =
+    JsonFormat.instance[MarkedString]({
+      case raw: RawMarkedString     => raw.toJson
+      case markdown: MarkdownString => markdown.toJson
+    })(
+      j =>
+        Try(j.convertTo[RawMarkedString]) orElse
+          Try(j.convertTo[MarkdownString]) match {
+          case Failure(e) => sys.error(s"Wrong MarkedString format for $j")
+          case Success(x) => x
+      }
+    )
+  implicit val definitionResultFormat: JsonFormat[DefinitionResult] =
+    JsonUtils.wrapperFormat(DefinitionResult, _.params)
+  implicit val documentSymbolResultFormat: JsonFormat[DocumentSymbolResult] =
+    JsonUtils.wrapperFormat(DocumentSymbolResult, _.params)
 }
