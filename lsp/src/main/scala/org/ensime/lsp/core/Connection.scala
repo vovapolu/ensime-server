@@ -99,21 +99,17 @@ class Connection(inStream: InputStream,
           case Right(message) =>
             message match {
               case notification: JsonRpcNotificationMessage =>
-                Notification
-                  .read(notification)
-                  .fold(
-                    {
-                      case UnknownMethod =>
-                        log.error(
-                          s"No notification type exists with method=${notification.method}"
-                        )
-                      case e =>
-                        log.error(
-                          s"Invalid Notification: $e - Message: $message"
-                        )
-                    },
-                    notifySubscribers
-                  )
+                Notification.read(notification) match {
+                  case Left(UnknownMethod) =>
+                    log.error(
+                      s"No notification type exists with method=${notification.method}"
+                    )
+                  case Left(e) =>
+                    log.error(
+                      s"Invalid Notification: $e - Message: $message"
+                    )
+                  case Right(n) => notifySubscribers(n)
+                }
               case request: JsonRpcRequestMessage =>
                 unpackRequest(request) match {
                   case Left(e) =>
@@ -144,26 +140,22 @@ class Connection(inStream: InputStream,
         Left(RpcErrors.parseError(e, CorrelationId()))
 
       case Success(json) =>
-        Try(JsonRpcMessageFormat.read(json)).fold(
-          e => Left(RpcErrors.invalidRequest(e, CorrelationId())),
-          Right(_)
-        )
+        Try(JsonRpcMessageFormat.read(json)) match {
+          case Failure(e) => Left(RpcErrors.invalidRequest(e, CorrelationId()))
+          case Success(x) => Right(x)
+        }
     }
   }
 
   private def unpackRequest(
     request: JsonRpcRequestMessage
   ): Either[RpcError, ServerCommand] =
-    ServerCommand
-      .read(request)
-      .fold(
-        {
-          case UnknownMethod =>
-            Left(RpcErrors.methodNotFound(request.method, request.id))
-          case e =>
-            Left(RpcErrors.invalidParams(e.describe, request.id))
-        },
-        command => Right(command)
-      )
-
+    ServerCommand.read(request) match {
+      case Left(UnknownMethod) =>
+        Left(RpcErrors.methodNotFound(request.method, request.id))
+      case Left(e) =>
+        Left(RpcErrors.invalidParams(e.describe, request.id))
+      case Right(command) =>
+        Right(command)
+    }
 }
