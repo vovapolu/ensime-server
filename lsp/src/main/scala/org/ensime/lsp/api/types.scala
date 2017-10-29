@@ -109,14 +109,6 @@ case class RawMarkedString(language: String, value: String)
 
 case class MarkdownString(contents: String) extends MarkedString
 
-object MarkedString {
-  import org.ensime.lsp.api.TypesConversions
-  import spray.json.JsonFormat
-
-  implicit val markedStringFormat: JsonFormat[MarkedString] =
-    TypesConversions.markedStringFormat
-}
-
 case class ParameterInformation(label: String, documentation: Option[String])
 
 case class SignatureInformation(label: String,
