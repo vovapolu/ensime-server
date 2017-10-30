@@ -8,8 +8,7 @@ import akka.event.slf4j.SLF4JLogging
 import org.ensime.lsp.api.commands._
 import org.ensime.lsp.api.types._
 import org.ensime.lsp.rpc.companions.RpcResponse
-import org.ensime.lsp.rpc.messages.JsonRpcMessages.CorrelationId
-import org.ensime.lsp.rpc.messages.JsonRpcResponseSuccessMessage
+import org.ensime.lsp.rpc.messages._
 
 object LanguageServer {
 
@@ -69,7 +68,7 @@ object LanguageServer {
 /**
  * A language server implementation. Users should subclass this class and implement specific behavior.
  */
-class LanguageServer(inStream: InputStream, outStream: OutputStream)
+abstract class LanguageServer(inStream: InputStream, outStream: OutputStream)
     extends SLF4JLogging {
 
   protected val documentManager = new TextDocumentManager
@@ -105,47 +104,31 @@ class LanguageServer(inStream: InputStream, outStream: OutputStream)
   def start(): Unit =
     connection.start()
 
-  def onOpenTextDocument(td: TextDocumentItem): Unit =
-    log.debug(s"openTextDocument $td")
+  def onOpenTextDocument(td: TextDocumentItem): Unit
 
   def onChangeTextDocument(td: VersionedTextDocumentIdentifier,
-                           changes: Seq[TextDocumentContentChangeEvent]): Unit =
-    log.debug(s"changeTextDocument $td")
+                           changes: Seq[TextDocumentContentChangeEvent]): Unit
 
-  def onSaveTextDocument(td: TextDocumentIdentifier): Unit = {
-    log.debug(s"saveTextDocument $td")
-    connection.showMessage(MessageType.Info, s"Saved text document ${td.uri}")
-  }
+  def onSaveTextDocument(td: TextDocumentIdentifier): Unit
 
-  def onCloseTextDocument(td: TextDocumentIdentifier): Unit =
-    log.debug(s"closeTextDocument $td")
+  def onCloseTextDocument(td: TextDocumentIdentifier): Unit
 
-  def onChangeWatchedFiles(changes: Seq[FileEvent]): Unit =
-    log.debug(s"changeWatchedFiles $changes")
+  def onChangeWatchedFiles(changes: Seq[FileEvent]): Unit
 
   def initialize(pid: Long,
                  rootPath: String,
-                 capabilities: ClientCapabilities): ServerCapabilities = {
-    log.info(s"Initialized with $pid, $rootPath, $capabilities")
-    ServerCapabilities(
-      completionProvider = Some(CompletionOptions(false, Seq(".")))
-    )
-  }
+                 capabilities: ClientCapabilities): ServerCapabilities
 
   def completionRequest(textDocument: TextDocumentIdentifier,
-                        position: Position): CompletionList =
-    CompletionList(isIncomplete = false, Nil)
+                        position: Position): CompletionList
 
-  def shutdown(): Unit = {}
+  def shutdown(): Unit
 
   def gotoDefinitionRequest(textDocument: TextDocumentIdentifier,
-                            position: Position): DefinitionResult =
-    DefinitionResult(Seq.empty[Location])
+                            position: Position): DefinitionResult
 
   def hoverRequest(textDocument: TextDocumentIdentifier,
-                   position: Position): Hover =
-    Hover(Nil, None)
+                   position: Position): Hover
 
-  def documentSymbols(tdi: TextDocumentIdentifier): Seq[SymbolInformation] =
-    Seq.empty
+  def documentSymbols(tdi: TextDocumentIdentifier): Seq[SymbolInformation]
 }
