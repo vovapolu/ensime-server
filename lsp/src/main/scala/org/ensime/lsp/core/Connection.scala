@@ -36,7 +36,7 @@ class Connection(inStream: InputStream,
                    String,
                    ServerCommand,
                    CorrelationId
-                 ) => Option[JsonRpcResponseSuccessMessage])
+                 ) => JsonRpcResponseSuccessMessage)
     extends SLF4JLogging {
   private val msgReader = new MessageReader(inStream)
   private val msgWriter = new MessageWriter(outStream)
@@ -108,8 +108,9 @@ class Connection(inStream: InputStream,
                   case Left(e) =>
                     msgWriter.write(e)
                   case Right(command) =>
-                    commandHandler(request.method, command, request.id)
-                      .foreach(msgWriter.write(_))
+                    msgWriter.write(
+                      commandHandler(request.method, command, request.id)
+                    )
                 }
               case response: JsonRpcResponseMessage =>
                 log.info(s"Received response: $response")

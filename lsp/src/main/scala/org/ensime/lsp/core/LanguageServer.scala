@@ -17,50 +17,41 @@ object LanguageServer {
 
     def buildHandler(
       l: LanguageServer
-    ): PartialFunction[(String, ServerCommand, CorrelationId), Option[
+    ): PartialFunction[
+      (String, ServerCommand, CorrelationId),
       JsonRpcResponseSuccessMessage
-    ]] = {
+    ] = {
       case (_, InitializeParams(pid, rootPath, capabilities), id) =>
-        Some(
-          RpcResponse.write(
-            InitializeResult(l.initialize(pid, rootPath, capabilities)),
-            id
-          )
+        RpcResponse.write(
+          InitializeResult(l.initialize(pid, rootPath, capabilities)),
+          id
         )
       case ("textDocument/completion",
             TextDocumentCompletionRequest(
               TextDocumentPositionParams(textDocument, position)
             ),
             id) =>
-        Some(
-          RpcResponse
-            .write(l.completionRequest(textDocument, position), id)
-        )
+        RpcResponse
+          .write(l.completionRequest(textDocument, position), id)
       case ("textDocument/definition",
             TextDocumentDefinitionRequest(
               TextDocumentPositionParams(textDocument, position)
             ),
             id) =>
-        Some(
-          RpcResponse
-            .write(l.gotoDefinitionRequest(textDocument, position), id)
-        )
+        RpcResponse
+          .write(l.gotoDefinitionRequest(textDocument, position), id)
       case ("textDocument/hover",
             TextDocumentHoverRequest(
               TextDocumentPositionParams(textDocument, position)
             ),
             id) =>
-        Some(
-          RpcResponse.write(l.hoverRequest(textDocument, position), id)
-        )
+        RpcResponse.write(l.hoverRequest(textDocument, position), id)
       case ("textDocument/documentSymbol", DocumentSymbolParams(tdi), id) =>
-        Some(
-          RpcResponse
-            .write(DocumentSymbolResult(l.documentSymbols(tdi)), id)
-        )
-      case (_, Shutdown(), _) =>
+        RpcResponse
+          .write(DocumentSymbolResult(l.documentSymbols(tdi)), id)
+      case ("shutdown", Shutdown(), id) =>
         l.shutdown()
-        None
+        JsonRpcResponseSuccessMessage(spray.json.JsNull, id)
     }
   }
 }

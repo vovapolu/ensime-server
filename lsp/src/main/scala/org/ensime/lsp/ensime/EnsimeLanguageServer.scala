@@ -91,6 +91,8 @@ class EnsimeLanguageServer(in: InputStream, out: OutputStream)
     extends LanguageServer(in, out) {
   private var system: ActorSystem      = _
   private var fileStore: TempFileStore = _
+  private var projectPath: String      = _
+  // these fields will eventually become constructor params
 
   // Ensime root actor
   private var ensimeActor: ActorRef = _
@@ -165,6 +167,7 @@ class EnsimeLanguageServer(in: InputStream, out: OutputStream)
             Props(classOf[EnsimeActor], this, config, serverConfig),
             "server"
           )
+          projectPath = rootPath
         }
         t.recover {
           case e =>
@@ -182,7 +185,8 @@ class EnsimeLanguageServer(in: InputStream, out: OutputStream)
   override def onChangeWatchedFiles(changes: Seq[FileEvent]): Unit =
     changes match {
       case FileEvent(uri, FileChangeType.Created | FileChangeType.Changed) +: _ =>
-        val rootPath = Try(new File(new URI(uri).toURL.getPath).getParent)
+        val rootPath =
+          Try(new URI(uri).toURL.getPath).filter(_ == s"$projectPath/.ensime")
         rootPath.foreach { path =>
           connection.showMessage(MessageType.Info,
                                  ".ensime file change detected. Reloading")
@@ -387,6 +391,9 @@ class EnsimeLanguageServer(in: InputStream, out: OutputStream)
             log.info(s"Retrieved signature $sig from @sigPair")
             Hover(Seq(RawMarkedString("scala", sig)),
                   Some(Range(position, position)))
+          case None =>
+            log.info(s"No signature")
+            Hover(Seq.empty, None)
         }
       }
     res.map(f => Await.result(f, 5 seconds)).getOrElse(Hover(Nil, None))
