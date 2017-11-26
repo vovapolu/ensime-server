@@ -2,8 +2,6 @@
 // License: http://www.gnu.org/licenses/gpl-3.0.en.html
 package org.ensime.lsp.rpc
 
-import org.ensime.lsp.JsonUtils
-import org.ensime.lsp.rpc.MessageCompanionsSpec._
 import org.ensime.lsp.rpc.companions._
 import org.ensime.lsp.rpc.messages._
 import org.scalatest.Matchers._
@@ -28,6 +26,9 @@ object MessageCompanionsSpec {
   }
 
   object Commands extends DefaultJsonProtocol with FamilyFormats {
+    override implicit def optionFormat[T: JsonFormat]: JsonFormat[Option[T]] =
+      super.optionFormat
+
     implicit val updateAccountCommand: RpcCommand[UpdateAccountCommand] =
       RpcCommand[UpdateAccountCommand]("updateAccount")
     implicit val addTransactionCommand: RpcCommand[AddTransactionCommand] =
@@ -48,10 +49,13 @@ object MessageCompanionsSpec {
   final case class AddTransactionResponse(id: Int) extends Response
 
   object ResponsesFormats extends DefaultJsonProtocol with FamilyFormats {
+    override implicit def optionFormat[T: JsonFormat]: JsonFormat[Option[T]] =
+      super.optionFormat
+
     implicit val updateAccountCommand: RootJsonFormat[UpdateAccountCommand] =
       cachedImplicit
-    implicit val addTransactionCommand: RootJsonFormat[AddTransactionResponse] =
-      rootFormat(JsonUtils.wrapperFormat(AddTransactionResponse, _.id))
+    implicit val addTransactionCommand: JsonFormat[AddTransactionResponse] =
+      int.xmap[AddTransactionResponse](AddTransactionResponse(_), _.id)
   }
 
   sealed abstract class Notification extends Message
@@ -61,6 +65,9 @@ object MessageCompanionsSpec {
       extends Notification
 
   object Notifications extends DefaultJsonProtocol with FamilyFormats {
+    override implicit def optionFormat[T: JsonFormat]: JsonFormat[Option[T]] =
+      super.optionFormat
+
     implicit val accountUpdatedNotification
       : RpcNotification[AccountUpdatedNotification] =
       RpcNotification[AccountUpdatedNotification]("accountUpdated")
@@ -93,6 +100,7 @@ object MessageCompanionsSpec {
 }
 
 class MessageCompanionsSpec extends FreeSpec {
+  import org.ensime.lsp.rpc.MessageCompanionsSpec._
 
   "A Command" - {
     "with an invalid method" - {
