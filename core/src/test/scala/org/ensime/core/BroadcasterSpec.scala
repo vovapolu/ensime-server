@@ -40,7 +40,7 @@ class BroadcasterSpec extends EnsimeSpec with SharedTestKitFixture {
 
     broadcaster ! ping
 
-    sub1.expectNoMsg(3 seconds)
+    sub1.expectNoMessage(3 seconds)
   }
 
   it should "send persistent messages on registration" in withTestKit { fix =>
@@ -50,7 +50,7 @@ class BroadcasterSpec extends EnsimeSpec with SharedTestKitFixture {
 
     broadcaster ! Persist(ping)
 
-    sub1.expectNoMsg(3 seconds)
+    sub1.expectNoMessage(3 seconds)
     sub1.send(broadcaster, Register)
     sub1.expectMsg(ping)
     sub1.lastSender shouldBe self

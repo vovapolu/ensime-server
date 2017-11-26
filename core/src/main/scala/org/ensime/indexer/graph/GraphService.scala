@@ -167,11 +167,6 @@ class GraphService(dir: File) extends SLF4JLogging {
     OGlobalConfiguration.USE_WAL.setValue(true)
     OGlobalConfiguration.DISK_CACHE_SIZE.setValue(64) // 64MB is far more sensible than 4GB
 
-    //This is a hack, that resolves some classloading issues in OrientDB.
-    //https://github.com/orientechnologies/orientdb/issues/5146
-    if (ODatabaseRecordThreadLocal.INSTANCE == null) {
-      sys.error("Calling this manually prevents an initialization issue.")
-    }
     Orient.setRegisterDatabaseByPath(true)
 
     val url = "plocal:" + dir.getAbsolutePath

@@ -470,7 +470,7 @@ class BasicWorkflow
           expectMsg(VoidResponse)
 
         // we're getting a spurious error here about acyclic deps
-        // asyncHelper.expectNoMsg(3 seconds)
+        // asyncHelper.expectNoMessage(3 seconds)
         }
       }
     }

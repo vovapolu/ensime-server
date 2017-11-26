@@ -212,7 +212,7 @@ object EnsimeBuild {
   }
 
   val luceneVersion = "6.4.2" // 6.6 deprecates index time boosting
-  val nettyVersion  = "4.1.15.Final"
+  val nettyVersion  = "4.1.17.Final"
   lazy val server = Project("server", file("server"))
     .dependsOn(
       core,
@@ -274,8 +274,8 @@ object EnsimeBuild {
     assemblyJarName in assembly := s"ensime_${scalaBinaryVersion.value}-${version.value}-assembly.jar"
   )
 
-  private val akkaVersion   = "2.5.4"
-  private val orientVersion = "2.2.27"
+  private val akkaVersion   = "2.5.7"
+  private val orientVersion = "2.2.30"
 }
 
 // projects used in the integration tests, not published
