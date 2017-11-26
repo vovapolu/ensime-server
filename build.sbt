@@ -23,3 +23,22 @@ lazy val testingDocs      = EnsimeTestingBuild.testingDocs
 lazy val testingJava      = EnsimeTestingBuild.testingJava
 
 lazy val root = EnsimeBuild.root
+
+// WORKAROUND: until https://github.com/scalameta/scalafmt/issues/1081
+commands += Command.args("fmt", "scalafmt CLI") {
+  case (state, args) =>
+    val Right(scalafmt) =
+      org.scalafmt.bootstrap.ScalafmtBootstrap.fromVersion("1.3.0-16-49815ab4")
+    scalafmt.main(
+      List(
+        "--config",
+        "project/scalafmt.conf",
+        "--git",
+        "true",
+        "--exclude",
+        "testing",
+        "--non-interactive"
+      ) ++: args
+    )
+    state
+}

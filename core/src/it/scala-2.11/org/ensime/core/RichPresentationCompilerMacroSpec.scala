@@ -10,7 +10,8 @@ import ReallyRichPresentationCompilerFixture.runForPositionInCompiledSource
 // RichPresentationCompiler tests using the macros project. We can't
 // define the macros inline because they have to be in a different
 // compile run.
-class RichPresentationCompilerMacroSpec extends EnsimeSpec
+class RichPresentationCompilerMacroSpec
+    extends EnsimeSpec
     with IsolatedRichPresentationCompilerFixture
     with RichPresentationCompilerTestUtils
     with ReallyRichPresentationCompilerFixture {
@@ -23,24 +24,26 @@ class RichPresentationCompilerMacroSpec extends EnsimeSpec
     // presentation compiler thread but it's quite elusive.
     withPresCompiler { (config, cc) =>
       runForPositionInCompiledSource(
-        config, cc,
+        config,
+        cc,
         "import org.ensime.testing.macros.bad._",
         "object Foo {",
         "  val foo: String = BadMacro.ba@bad@d",
         "}"
       ) { (p, label, cc) =>
-          val handler = cc.reporter.asInstanceOf[TestReporter].handler
+        val handler = cc.reporter.asInstanceOf[TestReporter].handler
 
-          val notes = eventually {
-            val notes = handler.notes
-            notes should not be 'empty
-            notes
-          }
-          notes.head should matchPattern {
-            case Note(_, msg, NoteError, 0, 0, 1, 1) if msg.contains("compiler crashed") =>
-          }
-
+        val notes = eventually {
+          val notes = handler.notes
+          notes should not be 'empty
+          notes
         }
+        notes.head should matchPattern {
+          case Note(_, msg, NoteError, 0, 0, 1, 1)
+              if msg.contains("compiler crashed") =>
+        }
+
+      }
     }
   }
 

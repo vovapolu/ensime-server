@@ -18,12 +18,7 @@ pipeline:
         fi
       - export BUILD_DIR=$PWD
       - mkdir $SBT_VOLATILE_TARGET && mount -t tmpfs -o size=4g tmpfs $SBT_VOLATILE_TARGET ; df -h
-      - sbt ++$SCALA_VERSION fmt;
-        if $(! git diff --exit-code --quiet) ; then
-          echo "Code formatting does not meet the project's standards:" ;
-          git --no-pager diff ;
-          exit 1 ;
-        fi
+      - sbt ++$SCALA_VERSION "fmt --test";
       - echo "ensimeServerJars := Nil" > ensime.sbt ;
         echo "ensimeServerProjectJars := Nil" >> ensime.sbt ;
       - sbt ++$SCALA_VERSION ensimeConfig ";compile ;test:compile ;it:compile ;doc ;ensime/assembly";

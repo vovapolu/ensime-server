@@ -16,6 +16,6 @@ trait PositionBackCompat {
   implicit class RichPosition(pos: Position) {
     // annoyingly, {start, end}OrPoint is deprecated
     def startOrCursor: Int = if (pos.isRange) pos.start else pos.point
-    def endOrCursor: Int = if (pos.isRange) pos.end else pos.point
+    def endOrCursor: Int   = if (pos.isRange) pos.end else pos.point
   }
 }

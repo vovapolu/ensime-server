@@ -11,7 +11,8 @@ import org.ensime.util.file._
  * This is a reproduction of https://github.com/ensime/ensime-server/issues/1176
  * which might be caused by https://github.com/scala/scala/pull/4777
  */
-class ImplicitsWildcardImports extends EnsimeSpec
+class ImplicitsWildcardImports
+    extends EnsimeSpec
     with IsolatedEnsimeConfigFixture
     with IsolatedTestKitFixture
     with IsolatedProjectFixture {
@@ -24,7 +25,7 @@ class ImplicitsWildcardImports extends EnsimeSpec
         withProject { (project, asyncHelper) =>
           import testkit._
 
-          val sourceRoot = scalaMain(config)
+          val sourceRoot  = scalaMain(config)
           val exampleFile = sourceRoot / "org/example/Example.scala"
 
           project ! SymbolAtPointReq(Left(exampleFile), 116)
