@@ -1,13 +1,14 @@
 pipeline:
   build:
     secrets: [ SONATYPE_USERNAME, SONATYPE_PASSWORD, DOCKER_TRIGGER_TOKEN ]
-    image: ensime/ensime:v2.x-cache
+    image: fommil/docker-openjdk-sbt:latest
     pull: true
     privileged: true
     environment:
       - SBT_VOLATILE_TARGET=/root/ramdisk
       - SBT_TASK_LIMIT=4
       - AKKA_TEST_TIMEFACTOR=5
+      - COURSIER_CACHE=project/.sbt/coursier
     commands:
       - host `curl -s http://httpbin.org/ip | jq -r '.origin'` || true ;
       - git log | head -n 20 ; git fetch -q --tags
@@ -36,9 +37,13 @@ pipeline:
 
 matrix:
   SCALA_VERSION:
-    - 2.12.3
-    - 2.11.11
+    - 2.12.4
+    - 2.11.12
 
 branches:
   include: [ 1.0, 2.0, 3.0 ]
   exclude: [ feature/* ]
+
+cache:
+  mount:
+    - project/.sbt
