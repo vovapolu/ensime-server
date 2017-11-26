@@ -7,7 +7,7 @@ import org.ensime.EnsimeCoursierKeys._
  integration testing the ensimeServerIndex feature.
  */
 
-sonatypeGithub := ("ensime", "ensime-server-testing-cache")
+sonatypeGithost := (Github, "ensime", "ensime-server-testing-cache")
 licenses := Seq(Apache2)
 
 // override sbt-sensible

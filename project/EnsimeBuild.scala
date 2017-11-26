@@ -1,5 +1,6 @@
 import java.io._
 import scala.util.{ Properties, Try }
+import scala.sys.process._
 
 import sbt.Keys._
 import sbt.{ IntegrationTest => It, _ }
@@ -30,6 +31,7 @@ object ProjectPlugin extends AutoPlugin {
   )
 
   override def projectSettings = Seq(
+    excludeDependencies += ExclusionRule("stax", "stax-api"),
     scalacOptions in Compile -= "-Ywarn-value-discard",
     scalacOptions ++= Seq("-language:postfixOps",
                           "-language:implicitConversions")
@@ -39,7 +41,7 @@ object ProjectPlugin extends AutoPlugin {
 object EnsimeBuild {
   // common to the ensimeBuild, but not the testing projects
   lazy val commonSettings = Seq(
-    dependencyOverrides ++= Set(
+    dependencyOverrides ++= Seq(
       "com.typesafe.akka" %% "akka-actor"   % akkaVersion,
       "com.typesafe.akka" %% "akka-testkit" % akkaVersion
     ),
@@ -57,7 +59,7 @@ object EnsimeBuild {
       "-XX:+UnlockExperimentalVMOptions",
       "-XX:SymbolTableSize=1000003"
     ),
-    dependencyOverrides ++= Set(
+    dependencyOverrides ++= Seq(
       "org.apache.lucene" % "lucene-core" % luceneVersion
     ),
     updateOptions := updateOptions.value.withCachedResolution(true)
@@ -326,7 +328,7 @@ object EnsimeTestingBuild {
   lazy val testingDebug = testingProject("testing/debug")
 
   lazy val testingDocs = testingProject("testing/docs").settings(
-    dependencyOverrides ++= Set("com.google.guava" % "guava" % "18.0"),
+    dependencyOverrides ++= Seq("com.google.guava" % "guava" % "18.0"),
     libraryDependencies ++= Seq(
       "com.github.dvdme" % "ForecastIOLib" % "1.5.1" intransitive (),
       "com.google.guava" % "guava"         % "18.0"
